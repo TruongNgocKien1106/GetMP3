@@ -1,0 +1,62 @@
+# Gradle
+.gradle/
+.kotlin/
+**/build/
+build/
+.gradle.zip
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+.navigation/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local Android SDK
+local.properties
+
+# Generated packages
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# Signing keys and secrets
+*.jks
+*.keystore
+keystore.properties
+.env
+.env.*
+google-services.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.chaquopy/
+
+# Temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+
+# Local ADB connection
+scripts/.adb-target
+
+# Downloaded media
+*.mp3
+*.m4a
+*.aac
+*.wav
+*.flac
+*.webm
+*.part
+
+# Operating system
+.DS_Store
+Thumbs.db
+desktop.ini
