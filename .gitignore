@@ -5,7 +5,7 @@
 build/
 .gradle.zip
 
-# Android Studio / IntelliJ
+# Android Studio and IntelliJ IDEA
 .idea/
 *.iml
 .navigation/
@@ -16,17 +16,18 @@ captures/
 # Local Android SDK
 local.properties
 
-# Generated packages
+# Generated Android packages
 *.apk
 *.aab
 *.ap_
 *.dex
 *.class
 
-# Signing keys and secrets
+# Release signing and secrets
 *.jks
 *.keystore
 keystore.properties
+signing.properties
 .env
 .env.*
 google-services.json
@@ -43,8 +44,10 @@ venv/
 *.tmp
 *.temp
 *.bak
+*.swp
+*.swo
 
-# Local ADB connection
+# Local ADB settings
 scripts/.adb-target
 
 # Downloaded media
@@ -54,6 +57,7 @@ scripts/.adb-target
 *.wav
 *.flac
 *.webm
+*.opus
 *.part
 
 # Operating system

@@ -262,7 +262,7 @@ class AppSettingsRepository(
 
         private const val KEY_FILTER_SYMBOLS =
             "title_filter_symbols"
-
+
 
         private const val KEY_FILTER_TERMS_VERSION =
             "title_filter_terms_version"

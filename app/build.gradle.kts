@@ -12,12 +12,12 @@ android {
     defaultConfig {
         applicationId = "com.ngoctien.getmp3"
 
-        // Chỉ dùng MediaStore hiện đại, không cần quyền ghi bộ nhớ cũ.
+        // Chá»‰ dÃ¹ng MediaStore hiá»‡n Ä‘áº¡i, khÃ´ng cáº§n quyá»n ghi bá»™ nhá»› cÅ©.
         minSdk = 29
         targetSdk = 36
 
-        versionCode = 4
-        versionName = "2.0-debug"
+        versionCode = 5
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -64,10 +64,10 @@ android {
 
     packaging {
         jniLibs {
-            // Bắt buộc giải nén binary ra nativeLibraryDir để ProcessBuilder chạy.
+            // Báº¯t buá»™c giáº£i nÃ©n binary ra nativeLibraryDir Ä‘á»ƒ ProcessBuilder cháº¡y.
             useLegacyPackaging = true
 
-            // Không để Gradle strip executable FFmpeg.
+            // KhÃ´ng Ä‘á»ƒ Gradle strip executable FFmpeg.
             keepDebugSymbols += "**/libffmpeg.so"
         }
     }

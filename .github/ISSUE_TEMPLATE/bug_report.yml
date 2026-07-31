@@ -1,0 +1,94 @@
+name: Bug report
+description: Report a reproducible GetMP3 problem.
+title: "[Bug]: "
+labels:
+  - bug
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a problem.
+        Remove private information from screenshots and logs.
+
+  - type: input
+    id: version
+    attributes:
+      label: GetMP3 version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: android_version
+    attributes:
+      label: Android version
+      placeholder: "Android 16"
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device model
+      placeholder: "Vivo V2505A"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Download
+        - Waiting list
+        - YouTube search
+        - Tag editor
+        - Settings
+        - Storage
+        - Build
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Open...
+        2. Tap...
+        3. Observe...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Remove URLs, filenames, IP addresses, tokens, and private data.
+      render: shell
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmation
+      options:
+        - label: I searched existing issues.
+          required: true
+        - label: I removed private information from logs and screenshots.
+          required: true
