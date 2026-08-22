@@ -11,6 +11,12 @@ data class DownloadJobEntity(
 
     val url: String,
 
+    /*
+     * Nullable because downloads created manually are not
+     * connected to a song note.
+     */
+    val sourceNoteId: Long? = null,
+
     val title: String,
     val artist: String,
     val thumbnailUrl: String?,

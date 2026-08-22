@@ -56,8 +56,54 @@ class NotificationHelper(
 
         when (job.status) {
             DownloadStatus.COMPLETED -> {
-                title = "Tải MP3 hoàn tất"
-                content = job.title
+
+                val completedMessage =
+                    job.statusMessage
+                        ?.takeIf(
+                            String::isNotBlank
+                        )
+                        ?: "Hoàn tất"
+
+                title =
+                    when {
+
+                        "Library" in
+                            completedMessage ->
+
+                            "Đã thêm vào Library"
+
+                        "Inbox" in
+                            completedMessage ->
+
+                            "Đã lưu vào Inbox"
+
+                        else ->
+
+                            "Tải MP3 hoàn tất"
+                    }
+
+                content =
+                    buildList {
+
+                        add(
+                            job.title
+                        )
+
+                        add(
+                            completedMessage
+                        )
+
+                        job.warningMessage
+                            ?.takeIf(
+                                String::isNotBlank
+                            )
+                            ?.let(
+                                ::add
+                            )
+                    }
+                        .joinToString(
+                            separator = " • "
+                        )
             }
 
             DownloadStatus.CANCELLED -> {

@@ -1,9 +1,27 @@
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.chaquopy)
     alias(libs.plugins.ksp)
 }
+
+val buildInstant = Instant.now()
+val versionEpoch = Instant.parse("2026-01-01T00:00:00Z")
+val generatedVersionCode =
+    ((buildInstant.epochSecond - versionEpoch.epochSecond) + 1_000L)
+        .coerceIn(6L, 2_100_000_000L)
+        .toInt()
+
+val generatedVersionName =
+    "1.0.0-dev." +
+        DateTimeFormatter
+            .ofPattern("yyyyMMdd.HHmmss")
+            .withZone(ZoneId.systemDefault())
+            .format(buildInstant)
 
 android {
     namespace = "com.ngoctien.getmp3"
@@ -16,8 +34,8 @@ android {
         minSdk = 29
         targetSdk = 36
 
-        versionCode = 5
-        versionName = "1.0.0"
+        versionCode = generatedVersionCode
+        versionName = generatedVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -93,6 +111,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation(libs.coil.compose)
 
+    // Safe ID3 decoding for the shared Media Index.
+    implementation("androidx.media3:media3-extractor:1.10.1")
+
     testImplementation(libs.junit)
 
     androidTestImplementation(libs.androidx.junit)
@@ -102,4 +123,14 @@ dependencies {
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+tasks.register("printGeneratedVersion") {
+    group = "verification"
+    description = "Print the generated GetMP3 application version."
+
+    doLast {
+        println("GETMP3_VERSION_NAME=$generatedVersionName")
+        println("GETMP3_VERSION_CODE=$generatedVersionCode")
+    }
 }

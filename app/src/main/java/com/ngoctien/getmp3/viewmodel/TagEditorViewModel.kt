@@ -3,6 +3,10 @@ package com.ngoctien.getmp3.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.ngoctien.getmp3.library.InboxWorkflowRepository
+import com.ngoctien.getmp3.library.LibraryAdmissionPolicy
+import com.ngoctien.getmp3.library.MediaIndexRepository
+import com.ngoctien.getmp3.note.ReferenceSongMatch
 import com.ngoctien.getmp3.settings.AppSettingsRepository
 import com.ngoctien.getmp3.tag.EditableSong
 import com.ngoctien.getmp3.tag.MediaSongFile
@@ -52,10 +56,12 @@ data class TagEditorUiState(
     val artist: String = "",
 
     val artistCaseMode: ArtistCaseMode =
-        ArtistCaseMode.KEEP_ORIGINAL,
+        ArtistCaseMode.CAPITALIZE_WORDS,
 
     val selectedAlbum: String =
         DefaultAlbumOptions.first(),
+
+    val year: String = "",
 
     val albumOptions: List<String> =
         DefaultAlbumOptions,
@@ -94,6 +100,18 @@ data class TagEditorUiState(
             files.isNotEmpty() &&
                 currentIndex < files.lastIndex
 
+    /*
+     * Title của tên file luôn dùng dạng viết hoa chữ đầu.
+     *
+     * Không ép lại state trong lúc người dùng đang gõ để tránh
+     * làm cursor nhảy khi sửa ở giữa chuỗi.
+     */
+    val effectiveTitle: String
+        get() =
+            capitalizeWords(
+                normalizeSpaces(title)
+            )
+
     val effectiveArtist: String
         get() =
             formatArtistForSave(
@@ -104,7 +122,7 @@ data class TagEditorUiState(
     val previewFileName: String
         get() =
             buildPreviewFileName(
-                title = title,
+                title = effectiveTitle,
                 artist = effectiveArtist
             )
 }
@@ -123,6 +141,13 @@ class TagEditorViewModel(
     private val settingsRepository =
         AppSettingsRepository(application)
 
+    private val mediaIndexRepository =
+        MediaIndexRepository(application)
+
+    private val inboxWorkflowRepository =
+        InboxWorkflowRepository(
+            application
+        )
     private val mutableUiState =
         MutableStateFlow(
             TagEditorUiState()
@@ -139,6 +164,22 @@ class TagEditorViewModel(
     val events: SharedFlow<TagEditorEvent> =
         mutableEvents.asSharedFlow()
 
+    private var hasLoadedOnce =
+        false
+
+    /**
+     * Switching back to Sửa thẻ should not rescan/reset the working list.
+     * The list button still calls refreshFileList() when the user wants a
+     * fresh inventory.
+     */
+    fun ensureLoaded() {
+        if (hasLoadedOnce) {
+            return
+        }
+
+        refresh()
+    }
+
     fun refresh() {
         val state =
             mutableUiState.value
@@ -152,13 +193,18 @@ class TagEditorViewModel(
         }
 
         viewModelScope.launch {
-            val settings =
-                settingsRepository.getSettings()
+            val libraryAlbums =
+                mediaIndexRepository
+                    .getLibraryAlbums()
+
+            val knownArtists =
+                mediaIndexRepository
+                    .getLibraryArtists()
 
             val albumOptions =
                 (
                     DefaultAlbumOptions +
-                        settings.indexedAlbums
+                        libraryAlbums
                     )
                     .map(::normalizeSpaces)
                     .filter {
@@ -192,7 +238,7 @@ class TagEditorViewModel(
                         selectedAlbum,
 
                     knownArtistCount =
-                        settings.indexedArtists.size,
+                        knownArtists.size,
 
                     artistCandidates =
                         emptyList(),
@@ -204,7 +250,11 @@ class TagEditorViewModel(
 
             try {
                 val files =
-                    repository.scanSongs()
+                    mediaIndexRepository
+                        .syncInboxLibrary()
+
+                hasLoadedOnce =
+                    true
 
                 mutableUiState.update {
                     it.copy(
@@ -217,6 +267,8 @@ class TagEditorViewModel(
                         title = "",
 
                         artist = "",
+
+                        year = "",
 
                         isScanning = false,
 
@@ -250,13 +302,248 @@ class TagEditorViewModel(
         }
     }
 
+    fun openReferenceSong(
+        match: ReferenceSongMatch
+    ) {
+        val state =
+            mutableUiState.value
+
+        if (
+            state.isScanning ||
+            state.isLoadingSong ||
+            state.isSaving ||
+            state.isDeleting
+        ) {
+            mutableEvents.tryEmit(
+                TagEditorEvent(
+                    "Sửa thẻ đang bận. Hãy thử lại sau."
+                )
+            )
+
+            return
+        }
+
+        val referenceFile =
+            MediaSongFile(
+                id =
+                    match.uri.hashCode()
+                        .toLong(),
+                uri = match.uri,
+                displayName =
+                    match.displayName,
+                sizeBytes = 0L,
+                dateModifiedSeconds = 0L,
+                treeUri = match.treeUri
+            )
+
+        viewModelScope.launch {
+            val latestFiles =
+                mutableUiState.value.files
+                    .toMutableList()
+
+            val existingIndex =
+                latestFiles.indexOfFirst {
+                    it.uri == match.uri
+                }
+
+            val targetIndex =
+                if (existingIndex >= 0) {
+                    existingIndex
+                } else {
+                    latestFiles.add(
+                        index = 0,
+                        element = referenceFile
+                    )
+
+                    0
+                }
+
+            mutableUiState.update {
+                it.copy(
+                    files = latestFiles,
+                    currentIndex =
+                        targetIndex,
+                    currentSong = null,
+                    title = "",
+                    artist = "",
+
+                    year = "",
+                    isLoadingSong = false,
+                    errorMessage = null,
+                    artistCandidates =
+                        emptyList(),
+                    showArtistCandidates =
+                        false
+                )
+            }
+
+            loadSongAt(targetIndex)
+        }
+    }
+    fun refreshFileList() {
+        val state =
+            mutableUiState.value
+
+        if (
+            state.isScanning ||
+            state.isSaving ||
+            state.isDeleting ||
+            state.isLoadingSong
+        ) {
+            return
+        }
+
+        viewModelScope.launch {
+            mutableUiState.update {
+                it.copy(
+                    isScanning = true,
+                    errorMessage = null
+                )
+            }
+
+            try {
+                val files =
+                    mediaIndexRepository
+                        .syncInboxLibrary()
+
+                if (files.isEmpty()) {
+                    mutableUiState.update {
+                        it.copy(
+                            files = emptyList(),
+                            currentIndex = 0,
+                            currentSong = null,
+                            title = "",
+                            artist = "",
+
+                            year = "",
+                            isScanning = false,
+                            isLoadingSong = false,
+                            errorMessage = null,
+                            artistCandidates =
+                                emptyList(),
+                            showArtistCandidates =
+                                false
+                        )
+                    }
+
+                    return@launch
+                }
+
+                val currentSong =
+                    state.currentSong
+
+                val matchingIndex =
+                    currentSong
+                        ?.file
+                        ?.let { currentFile ->
+                            files.indexOfFirst {
+                                    candidate ->
+
+                                candidate.uri ==
+                                    currentFile.uri ||
+                                    candidate.id ==
+                                    currentFile.id ||
+                                    candidate.displayName.equals(
+                                        currentFile.displayName,
+                                        ignoreCase = true
+                                    )
+                            }
+                        }
+                        ?: -1
+
+                if (
+                    currentSong != null &&
+                    matchingIndex >= 0
+                ) {
+                    val refreshedFile =
+                        files[matchingIndex]
+
+                    mutableUiState.update {
+                        it.copy(
+                            files = files,
+
+                            currentIndex =
+                                matchingIndex,
+
+                            currentSong =
+                                currentSong.copy(
+                                    file =
+                                        refreshedFile
+                                ),
+
+                            isScanning = false,
+                            isLoadingSong = false,
+                            errorMessage = null,
+
+                            artistCandidates =
+                                emptyList(),
+
+                            showArtistCandidates =
+                                false
+                        )
+                    }
+                } else {
+                    val targetIndex =
+                        state.currentIndex.coerceIn(
+                            0,
+                            files.lastIndex
+                        )
+
+                    mutableUiState.update {
+                        it.copy(
+                            files = files,
+
+                            currentIndex =
+                                targetIndex,
+
+                            currentSong = null,
+
+                            isScanning = false,
+                            isLoadingSong = false,
+                            errorMessage = null,
+
+                            artistCandidates =
+                                emptyList(),
+
+                            showArtistCandidates =
+                                false
+                        )
+                    }
+
+                    loadSongAt(
+                        targetIndex
+                    )
+                }
+            } catch (exception: Exception) {
+                val message =
+                    exception.message
+                        ?.takeIf(
+                            String::isNotBlank
+                        )
+                        ?: "Kh\u00f4ng qu\u00e9t l\u1ea1i \u0111\u01b0\u1ee3c danh s\u00e1ch MP3"
+
+                mutableUiState.update {
+                    it.copy(
+                        isScanning = false,
+                        isLoadingSong = false,
+                        errorMessage = message
+                    )
+                }
+
+                mutableEvents.emit(
+                    TagEditorEvent(
+                        message
+                    )
+                )
+            }
+        }
+    }
     fun setTitle(
         value: String
     ) {
         mutableUiState.update {
             it.copy(
-                title =
-                    capitalizeWords(value)
+                title = value
             )
         }
     }
@@ -293,6 +580,23 @@ class TagEditorViewModel(
         mutableUiState.update {
             it.copy(
                 artistCaseMode = mode
+            )
+        }
+    }
+
+    fun setYear(
+        value: String
+    ) {
+        mutableUiState.update {
+            it.copy(
+                year =
+                    value
+                        .filter(
+                            Char::isDigit
+                        )
+                        .take(
+                            4
+                        )
             )
         }
     }
@@ -340,23 +644,22 @@ class TagEditorViewModel(
             return
         }
 
-        val compareDataMissing =
-            settings.indexedArtists.isEmpty() ||
-                settings.compareIndexSourceUri !=
-                settings.compareTreeUri
-
-        if (compareDataMissing) {
-            mutableEvents.tryEmit(
-                TagEditorEvent(
-                    "Chưa có dữ liệu Artist. Hãy quét lại thư mục đối chiếu"
-                )
-            )
-
-            return
-        }
-
         viewModelScope.launch {
             try {
+                val knownArtists =
+                    mediaIndexRepository
+                        .getLibraryArtists()
+
+                if (knownArtists.isEmpty()) {
+                    mutableEvents.emit(
+                        TagEditorEvent(
+                            "Chưa có dữ liệu thư viện. Hãy vào Cài đặt → Chuẩn bị dữ liệu."
+                        )
+                    )
+
+                    return@launch
+                }
+
                 val result =
                     withContext(
                         Dispatchers.Default
@@ -364,10 +667,8 @@ class TagEditorViewModel(
                         val cleanTitle =
                             QuickFormatEngine.cleanTitle(
                                 title = state.title,
-
                                 filterTerms =
                                     settings.titleFilterTerms,
-
                                 filterSymbols =
                                     settings.titleFilterSymbols
                             )
@@ -382,12 +683,10 @@ class TagEditorViewModel(
                                 .findArtistCandidates(
                                     rawArtist =
                                         cleanArtist,
-
                                     rawTitle =
                                         cleanTitle,
-
                                     knownArtists =
-                                        settings.indexedArtists
+                                        knownArtists
                                 )
 
                         QuickFormatResult(
@@ -403,17 +702,13 @@ class TagEditorViewModel(
                             capitalizeWords(
                                 result.title
                             ),
-
                         artist =
                             result.artist,
-
                         artistCandidates =
                             result.candidates,
-
                         showArtistCandidates =
                             result.candidates
                                 .isNotEmpty(),
-
                         errorMessage = null
                     )
                 }
@@ -559,6 +854,7 @@ class TagEditorViewModel(
     }
 
     fun saveAndNext() {
+
         val state =
             mutableUiState.value
 
@@ -583,14 +879,35 @@ class TagEditorViewModel(
 
         val cleanArtist =
             formatArtistForSave(
-                value = state.artist,
-                mode = state.artistCaseMode
+                value =
+                    state.artist,
+
+                mode =
+                    state.artistCaseMode
             )
 
         val cleanAlbum =
             normalizeSpaces(
                 state.selectedAlbum
             )
+
+        val cleanYear =
+            state.year.trim()
+
+        if (
+            !Regex("""\d{4}""")
+                .matches(
+                    cleanYear
+                )
+        ) {
+            mutableEvents.tryEmit(
+                TagEditorEvent(
+                    "Year phải gồm đúng 4 chữ số"
+                )
+            )
+
+            return
+        }
 
         if (cleanTitle.isBlank()) {
             mutableEvents.tryEmit(
@@ -623,46 +940,139 @@ class TagEditorViewModel(
         }
 
         viewModelScope.launch {
+
             mutableUiState.update {
                 it.copy(
-                    isSaving = true,
-                    errorMessage = null
+                    isSaving =
+                        true,
+
+                    errorMessage =
+                        null
                 )
             }
 
             try {
+
                 val updatedSong =
                     repository.saveSong(
-                        song = currentSong,
-                        title = cleanTitle,
-                        artist = cleanArtist,
-                        album = cleanAlbum
+                        song =
+                            currentSong,
+
+                        title =
+                            cleanTitle,
+
+                        artist =
+                            cleanArtist,
+
+                        album =
+                            cleanAlbum,
+
+                        year =
+                            cleanYear
                     )
+
+                /*
+                 * Cập nhật đúng một file.
+                 * Không scan lại toàn Inbox.
+                 */
+                val indexed =
+                    mediaIndexRepository
+                        .refreshEditedFile(
+                            oldUri =
+                                currentSong
+                                    .file
+                                    .uri,
+
+                            updatedFile =
+                                updatedSong
+                                    .file
+                        )
+
+                val admission =
+                    LibraryAdmissionPolicy
+                        .evaluate(
+                            indexed
+                        )
+
+                val promotion =
+                    if (
+                        admission.allowed
+                    ) {
+
+                        runCatching {
+                            inboxWorkflowRepository
+                                .promoteToLibrary(
+                                    updatedSong
+                                        .file
+                                        .uri
+                                )
+                        }
+                            .getOrNull()
+
+                    }
+                    else {
+
+                        null
+                    }
+
+                val promoted =
+                    promotion != null
 
                 val latestState =
                     mutableUiState.value
 
+                val actualIndex =
+                    latestState
+                        .files
+                        .indexOfFirst {
+                            it.uri ==
+                                currentSong
+                                    .file
+                                    .uri ||
+                                it.uri ==
+                                updatedSong
+                                    .file
+                                    .uri
+                        }
+                        .takeIf {
+                            it >= 0
+                        }
+                        ?: latestState
+                            .currentIndex
+
                 val updatedFiles =
-                    latestState.files
+                    latestState
+                        .files
                         .toMutableList()
                         .apply {
-                            val index =
-                                latestState.currentIndex
 
-                            if (index in indices) {
-                                this[index] =
-                                    updatedSong.file
+                            if (
+                                actualIndex in
+                                indices
+                            ) {
+
+                                if (promoted) {
+                                    removeAt(
+                                        actualIndex
+                                    )
+                                }
+                                else {
+                                    this[
+                                        actualIndex
+                                    ] =
+                                        updatedSong
+                                            .file
+                                }
                             }
                         }
 
-                val currentIndex =
-                    latestState.currentIndex
-
                 mutableUiState.update {
                     it.copy(
-                        files = updatedFiles,
+                        files =
+                            updatedFiles,
 
-                        isSaving = false,
+                        isSaving =
+                            false,
 
                         artistCandidates =
                             emptyList(),
@@ -672,22 +1082,107 @@ class TagEditorViewModel(
                     )
                 }
 
-                mutableEvents.emit(
-                    TagEditorEvent(
-                        "Đã lưu ${updatedSong.file.displayName}"
+                if (promoted) {
+
+                    mutableEvents.emit(
+                        TagEditorEvent(
+                            "Đã chuẩn hóa và đưa vào Library: " +
+                                promotion
+                                    ?.displayName
+                        )
                     )
-                )
+                }
+                else {
+
+                    val reason =
+                        admission
+                            .message
+                            .takeIf(
+                                String::isNotBlank
+                            )
+
+                    mutableEvents.emit(
+                        TagEditorEvent(
+                            if (reason != null) {
+                                "Đã lưu. File vẫn ở Inbox: $reason"
+                            }
+                            else {
+                                "Đã lưu ${updatedSong.file.displayName}"
+                            }
+                        )
+                    )
+                }
 
                 if (
-                    currentIndex <
-                    updatedFiles.lastIndex
+                    updatedFiles
+                        .isEmpty()
                 ) {
-                    loadSongAt(
-                        currentIndex + 1
-                    )
-                } else {
+
                     mutableUiState.update {
                         it.copy(
+                            files =
+                                emptyList(),
+
+                            currentIndex =
+                                0,
+
+                            currentSong =
+                                null,
+
+                            title =
+                                "",
+
+                            artist =
+                                "",
+
+                            year =
+                                "",
+
+                            isSaving =
+                                false,
+
+                            isLoadingSong =
+                                false
+                        )
+                    }
+
+                    return@launch
+                }
+
+                val targetIndex =
+                    if (promoted) {
+
+                        actualIndex.coerceAtMost(
+                            updatedFiles
+                                .lastIndex
+                        )
+                    }
+                    else if (
+                        actualIndex <
+                        updatedFiles.lastIndex
+                    ) {
+
+                        actualIndex + 1
+                    }
+                    else {
+
+                        actualIndex
+                    }
+
+                if (
+                    !promoted &&
+                    targetIndex ==
+                    actualIndex &&
+                    actualIndex ==
+                    updatedFiles
+                        .lastIndex
+                ) {
+
+                    mutableUiState.update {
+                        it.copy(
+                            currentIndex =
+                                actualIndex,
+
                             currentSong =
                                 updatedSong,
 
@@ -696,6 +1191,12 @@ class TagEditorViewModel(
 
                             artist =
                                 cleanArtist,
+
+                            selectedAlbum =
+                                cleanAlbum,
+
+                            year =
+                                cleanYear,
 
                             isSaving =
                                 false
@@ -708,15 +1209,53 @@ class TagEditorViewModel(
                         )
                     )
                 }
-            } catch (exception: Exception) {
+                else {
+
+                    mutableUiState.update {
+                        it.copy(
+                            currentIndex =
+                                targetIndex,
+
+                            currentSong =
+                                null,
+
+                            title =
+                                "",
+
+                            artist =
+                                "",
+
+                            year =
+                                "",
+
+                            isSaving =
+                                false,
+
+                            isLoadingSong =
+                                false
+                        )
+                    }
+
+                    loadSongAt(
+                        targetIndex
+                    )
+                }
+
+            } catch (
+                exception: Exception
+            ) {
+
                 mutableUiState.update {
                     it.copy(
-                        isSaving = false,
+                        isSaving =
+                            false,
 
                         errorMessage =
                             exception.message
-                                ?.takeIf(String::isNotBlank)
-                                ?: "Không lưu được metadata"
+                                ?.takeIf(
+                                    String::isNotBlank
+                                )
+                                ?: "Không xử lý được file"
                     )
                 }
             }
@@ -752,6 +1291,12 @@ class TagEditorViewModel(
                 repository.deleteSong(
                     currentSong.file
                 )
+
+
+                mediaIndexRepository
+                    .deleteUri(
+                        currentSong.file.uri
+                    )
 
                 val latestState =
                     mutableUiState.value
@@ -792,6 +1337,8 @@ class TagEditorViewModel(
 
                             artist = "",
 
+                            year = "",
+
                             artistCandidates =
                                 emptyList(),
 
@@ -824,6 +1371,8 @@ class TagEditorViewModel(
                             title = "",
 
                             artist = "",
+
+                            year = "",
 
                             artistCandidates =
                                 emptyList(),
@@ -891,6 +1440,8 @@ class TagEditorViewModel(
 
                 artist = "",
 
+                year = "",
+
                 isLoadingSong = true,
 
                 errorMessage = null,
@@ -904,10 +1455,99 @@ class TagEditorViewModel(
         }
 
         try {
+            val file =
+                files[safeIndex]
+
+            /*
+             * Fast path: the shared media index already contains the fields
+             * needed to render the editor. Opening the MP3 and copying it to
+             * cache is only a compatibility fallback when the row is missing.
+             */
+            val indexed =
+                mediaIndexRepository
+                    .getByUri(
+                        file.uri
+                    )
+
             val song =
-                repository.loadSong(
-                    files[safeIndex]
+                if (indexed != null) {
+                    EditableSong(
+                        file = file,
+                        title = indexed.fileTitle
+                            .ifBlank {
+                                indexed.title
+                            },
+                        artist = indexed.fileArtist
+                            .ifBlank {
+                                indexed.artist
+                            },
+                        album = indexed.album,
+                        coverPath = indexed.coverPath,
+                        year = indexed.year
+                    )
+                } else {
+                    repository.loadSong(
+                        file
+                    )
+                }
+
+            /*
+             * Album phải lấy từ metadata thật của bài đang mở,
+             * không được giữ Album của bài trước hoặc Album mặc định.
+             */
+            val loadedAlbum =
+                normalizeSpaces(
+                    song.album
                 )
+
+            val currentAlbumOptions =
+                mutableUiState
+                    .value
+                    .albumOptions
+
+            val matchingAlbum =
+                loadedAlbum
+                    .takeIf {
+                        it.isNotBlank()
+                    }
+                    ?.let { album ->
+                        currentAlbumOptions
+                            .firstOrNull { option ->
+                                normalizeText(option) ==
+                                    normalizeText(album)
+                            }
+                    }
+
+            /*
+             * Nếu MP3 có Album mà danh sách hiện tại chưa có,
+             * thêm Album đó vào dropdown để UI vẫn hiển thị đúng.
+             */
+            val resolvedAlbumOptions =
+                when {
+                    loadedAlbum.isBlank() ->
+                        currentAlbumOptions
+
+                    matchingAlbum != null ->
+                        currentAlbumOptions
+
+                    else ->
+                        currentAlbumOptions +
+                            loadedAlbum
+                }
+
+            val selectedAlbum =
+                when {
+                    loadedAlbum.isBlank() ->
+                        resolvedAlbumOptions
+                            .firstOrNull()
+                            .orEmpty()
+
+                    matchingAlbum != null ->
+                        matchingAlbum
+
+                    else ->
+                        loadedAlbum
+                }
 
             mutableUiState.update {
                 it.copy(
@@ -925,6 +1565,15 @@ class TagEditorViewModel(
                         normalizeSpaces(
                             song.artist
                         ),
+
+                    albumOptions =
+                        resolvedAlbumOptions,
+
+                    selectedAlbum =
+                        selectedAlbum,
+
+                    year =
+                        song.year,
 
                     isLoadingSong =
                         false
@@ -1588,7 +2237,9 @@ private fun capitalizeWords(
                         character.titlecase()
                     )
                 } else {
-                    output.append(character)
+                    output.append(
+                        character.lowercase()
+                    )
                 }
 
                 capitalizeNext = false
@@ -1596,6 +2247,7 @@ private fun capitalizeWords(
 
             character.isDigit() -> {
                 output.append(character)
+
                 capitalizeNext = false
             }
 

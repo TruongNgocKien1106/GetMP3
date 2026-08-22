@@ -6,8 +6,10 @@ import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.MediaStore
+import com.ngoctien.getmp3.storage.resolveSafDirectoryDocumentId
 import com.ngoctien.getmp3.data.AppDatabase
 import com.ngoctien.getmp3.data.DownloadRepository
+import com.ngoctien.getmp3.note.SongNameMatcher
 import com.ngoctien.getmp3.python.EditorTagReadResult
 import com.ngoctien.getmp3.python.EditorTagWriteResult
 import com.ngoctien.getmp3.python.Mp3TagBridge
@@ -114,25 +116,45 @@ class TagEditorRepository(
                         )
                 ) {
                     is EditorTagReadResult.Success -> {
+                        val parsedFileName =
+                            SongNameMatcher
+                                .parseFileName(
+                                    file.displayName
+                                )
+
+                        val fileStem =
+                            file.displayName
+                                .substringBeforeLast(
+                                    delimiter = ".",
+                                    missingDelimiterValue =
+                                        file.displayName
+                                )
+                                .trim()
+
                         EditableSong(
                             file = file,
 
                             title =
-                                result.title.ifBlank {
-                                    file.displayName
-                                        .substringBeforeLast(
-                                            "."
-                                        )
-                                },
+                                parsedFileName
+                                    ?.title
+                                    ?.takeIf(
+                                        String::isNotBlank
+                                    )
+                                    ?: fileStem,
 
                             artist =
-                                result.artist,
+                                parsedFileName
+                                    ?.artist
+                                    .orEmpty(),
 
                             album =
                                 result.album,
 
                             coverPath =
-                                result.coverPath
+                                result.coverPath,
+
+                            year =
+                                result.year
                         )
                     }
 
@@ -152,7 +174,8 @@ class TagEditorRepository(
         song: EditableSong,
         title: String,
         artist: String,
-        album: String
+        album: String,
+        year: String
     ): EditableSong {
         return withContext(Dispatchers.IO) {
             cacheDirectory.mkdirs()
@@ -182,6 +205,21 @@ class TagEditorRepository(
             val cleanAlbum =
                 album.trim()
 
+            val cleanYear =
+                year.trim()
+
+            if (
+                cleanYear.isNotBlank() &&
+                !Regex("""\d{4}""")
+                    .matches(
+                        cleanYear
+                    )
+            ) {
+                throw IllegalArgumentException(
+                    "Year phải gồm đúng 4 chữ số"
+                )
+            }
+
             val updatedFile: MediaSongFile
 
             try {
@@ -194,7 +232,8 @@ class TagEditorRepository(
 
                             title = cleanTitle,
                             artist = cleanArtist,
-                            album = cleanAlbum
+                            album = cleanAlbum,
+                            year = cleanYear
                         )
                 ) {
                     is EditorTagWriteResult.Success -> {
@@ -230,7 +269,10 @@ class TagEditorRepository(
                             cleanArtist,
 
                         album =
-                            cleanAlbum
+                            cleanAlbum,
+
+                        year =
+                            cleanYear
                     )
             } finally {
                 temporaryMp3.delete()
@@ -244,7 +286,19 @@ class TagEditorRepository(
                     artist = cleanArtist
                 )
 
-            loadSong(updatedFile)
+            /*
+             * Không mở lại MediaStore URI ngay sau khi vừa ghi và đổi tên.
+             * Một số thiết bị re-index MediaStore trong thời gian ngắn,
+             * khiến URI vừa lưu tạm thời báo No item at content URI.
+             */
+            EditableSong(
+                file = updatedFile,
+                title = cleanTitle,
+                artist = cleanArtist,
+                album = cleanAlbum,
+                coverPath = song.coverPath,
+                year = cleanYear
+            )
         }
     }
 
@@ -424,8 +478,9 @@ class TagEditorRepository(
         treeUri: Uri
     ): List<MediaSongFile> {
         val treeDocumentId =
-            DocumentsContract
-                .getTreeDocumentId(treeUri)
+            resolveSafDirectoryDocumentId(
+                treeUri
+            )
 
         val childrenUri =
             DocumentsContract
@@ -530,7 +585,8 @@ class TagEditorRepository(
         sourceFile: File,
         title: String,
         artist: String,
-        album: String
+        album: String,
+        year: String
     ): MediaSongFile {
         val sourceUri =
             Uri.parse(originalFile.uri)
@@ -558,7 +614,8 @@ class TagEditorRepository(
                 targetBaseName = targetBaseName,
                 title = title,
                 artist = artist,
-                album = album
+                album = album,
+                year = year
             )
         }
     }
@@ -568,7 +625,8 @@ class TagEditorRepository(
         targetBaseName: String,
         title: String,
         artist: String,
-        album: String
+        album: String,
+        year: String
     ): MediaSongFile {
         val uri =
             Uri.parse(originalFile.uri)
@@ -608,6 +666,23 @@ class TagEditorRepository(
 
                     album
                 )
+
+                if (
+                    year.isBlank()
+                ) {
+                    putNull(
+                        MediaStore.Audio.Media
+                            .YEAR
+                    )
+                }
+                else {
+                    put(
+                        MediaStore.Audio.Media
+                            .YEAR,
+
+                        year.toInt()
+                    )
+                }
 
                 put(
                     MediaStore.Audio.Media
@@ -767,8 +842,9 @@ class TagEditorRepository(
         baseName: String
     ): String {
         val treeDocumentId =
-            DocumentsContract
-                .getTreeDocumentId(treeUri)
+            resolveSafDirectoryDocumentId(
+                treeUri
+            )
 
         val childrenUri =
             DocumentsContract

@@ -3,9 +3,10 @@ package com.ngoctien.getmp3.download
 import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
-import android.provider.MediaStore
 import android.provider.DocumentsContract
+import android.provider.MediaStore
 import com.ngoctien.getmp3.settings.AppSettings
+import com.ngoctien.getmp3.storage.resolveSafDirectoryDocumentId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -46,14 +47,31 @@ class MediaStoreWriter(
                     artist = artist
                 )
 
-            if (settings.usesCustomFolder) {
+            if (
+                settings
+                    .usesCustomInboxFolder
+            ) {
+
+                val inboxTreeUriText =
+                    settings
+                        .inboxTreeUri
+                        ?: throw IllegalStateException(
+                            "Inbox đã chọn nhưng không có Tree URI"
+                        )
+
                 saveToDocumentTree(
-                    sourceFile = sourceFile,
-                    baseName = baseName,
-                    treeUri = Uri.parse(
-                        settings.downloadTreeUri
-                    )
+                    sourceFile =
+                        sourceFile,
+
+                    baseName =
+                        baseName,
+
+                    treeUri =
+                        Uri.parse(
+                            inboxTreeUriText
+                        )
                 )
+
             } else {
                 saveToMediaStore(
                     sourceFile = sourceFile,
@@ -195,19 +213,97 @@ class MediaStoreWriter(
         val resolver =
             context.contentResolver
 
-        val displayName =
-            findAvailableTreeName(
-                treeUri = treeUri,
-                baseName = baseName
+        /*
+         * URI nhận từ ACTION_OPEN_DOCUMENT_TREE có dạng:
+         *
+         * content://authority/tree/documentId
+         *
+         * Đây là Tree URI, không được truyền trực tiếp
+         * vào DocumentsContract.createDocument().
+         */
+        if (!DocumentsContract.isTreeUri(treeUri)) {
+            throw IllegalArgumentException(
+                "Inbox không phải SAF Tree URI hợp lệ"
             )
+        }
 
+        /*
+         * Ví dụ:
+         *
+         * Tree URI:
+         * content://.../tree/primary%3AMusic%2FGetMP3
+         *
+         * Tree document ID:
+         * primary:Music/GetMP3
+         */
+        val treeDocumentId =
+            try {
+                resolveSafDirectoryDocumentId(
+                    treeUri
+                )
+            } catch (exception: Exception) {
+                throw IllegalArgumentException(
+                    "Không đọc được Inbox đã chọn",
+                    exception
+                )
+            }
+
+        /*
+         * createDocument() yêu cầu URI của document cha.
+         *
+         * Vì vậy phải đổi Tree URI thành dạng:
+         *
+         * content://.../tree/.../document/...
+         */
+        val parentDocumentUri =
+            try {
+                DocumentsContract
+                    .buildDocumentUriUsingTree(
+                        treeUri,
+                        treeDocumentId
+                    )
+            } catch (exception: Exception) {
+                throw IllegalArgumentException(
+                    "Không tạo được URI Inbox hợp lệ",
+                    exception
+                )
+            }
+
+        val displayName =
+            try {
+                findAvailableTreeName(
+                    treeUri = treeUri,
+                    treeDocumentId =
+                        treeDocumentId,
+                    baseName = baseName
+                )
+            } catch (exception: SecurityException) {
+                throw IllegalStateException(
+                    "App không còn quyền đọc Inbox. " +
+                        "Hãy chọn lại thư mục trong Cài đặt.",
+                    exception
+                )
+            }
+
+        /*
+         * Đây mới là URI đúng để tạo file con.
+         */
         val destinationUri =
-            DocumentsContract.createDocument(
-                resolver,
-                treeUri,
-                MIME_TYPE,
-                displayName
-            ) ?: throw IllegalStateException(
+            try {
+                DocumentsContract
+                    .createDocument(
+                        resolver,
+                        parentDocumentUri,
+                        MIME_TYPE,
+                        displayName
+                    )
+            } catch (exception: SecurityException) {
+                throw IllegalStateException(
+                    "App không còn quyền ghi vào Inbox. " +
+                        "Hãy chọn lại thư mục trong Cài đặt.",
+                    exception
+                )
+            } ?: throw IllegalStateException(
                 "Không thể tạo file trong thư mục đã chọn"
             )
 
@@ -242,11 +338,16 @@ class MediaStoreWriter(
                 bytesWritten = bytesWritten
             )
         } catch (exception: Exception) {
+            /*
+             * Nếu copy lỗi giữa chừng thì xóa file dở,
+             * tránh để lại MP3 0 byte hoặc file hỏng.
+             */
             runCatching {
-                DocumentsContract.deleteDocument(
-                    resolver,
-                    destinationUri
-                )
+                DocumentsContract
+                    .deleteDocument(
+                        resolver,
+                        destinationUri
+                    )
             }
 
             throw exception
@@ -310,15 +411,16 @@ class MediaStoreWriter(
 
     private fun findAvailableTreeName(
         treeUri: Uri,
+        treeDocumentId: String,
         baseName: String
     ): String {
         val resolver =
             context.contentResolver
 
-        val treeDocumentId =
-            DocumentsContract
-                .getTreeDocumentId(treeUri)
-
+        /*
+         * Query các file con trực tiếp của thư mục SAF
+         * để tránh ghi đè file đã có.
+         */
         val childrenUri =
             DocumentsContract
                 .buildChildDocumentsUriUsingTree(
@@ -345,7 +447,9 @@ class MediaStoreWriter(
             while (cursor.moveToNext()) {
                 cursor.getString(0)
                     ?.lowercase()
-                    ?.let(existingNames::add)
+                    ?.let(
+                        existingNames::add
+                    )
             }
         }
 
@@ -384,33 +488,40 @@ class MediaStoreWriter(
         title: String,
         artist: String
     ): String {
-        val raw = buildString {
-            append(
-                title.ifBlank {
-                    "Unknown Title"
-                }
-            )
+        val raw =
+            buildString {
+                append(
+                    title.ifBlank {
+                        "Unknown Title"
+                    }
+                )
 
-            append(" - ")
+                append(" - ")
 
-            append(
-                artist.ifBlank {
-                    "Unknown Artist"
-                }
-            )
-        }
+                append(
+                    artist.ifBlank {
+                        "Unknown Artist"
+                    }
+                )
+            }
 
         return raw
             .replace(
-                Regex("""[\\/:*?"<>|]"""),
+                Regex(
+                    """[\\/:*?"<>|]"""
+                ),
                 "_"
             )
             .replace(
-                Regex("""[\u0000-\u001F\u007F]"""),
+                Regex(
+                    """[\u0000-\u001F\u007F]"""
+                ),
                 ""
             )
             .replace(
-                Regex("""\s+"""),
+                Regex(
+                    """\s+"""
+                ),
                 " "
             )
             .trim()

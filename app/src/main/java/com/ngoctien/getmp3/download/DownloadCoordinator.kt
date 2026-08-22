@@ -45,6 +45,11 @@ class DownloadCoordinator(
     private val mediaStoreWriter =
         MediaStoreWriter(applicationContext)
 
+    private val downloadIntakeProcessor =
+        DownloadIntakeProcessor(
+            applicationContext
+        )
+
     private val settingsRepository =
         AppSettingsRepository(applicationContext)
 
@@ -313,6 +318,8 @@ class DownloadCoordinator(
                     outputDirectory =
                         jobDirectory.absolutePath,
                     jobId = jobId,
+                    preferredThumbnailUrl =
+                        currentJob.thumbnailUrl,
                     callback = callback
                 )
             }
@@ -323,7 +330,7 @@ class DownloadCoordinator(
             checkCancelled()
 
             val downloadedAudio: File
-            val rawCover: File?
+            val rawCover: File
 
             when (downloadResult) {
                 is DownloadResult.Success -> {
@@ -331,19 +338,19 @@ class DownloadCoordinator(
                         downloadResult.audioPath
                     )
 
-                    rawCover =
-                        downloadResult.coverPath
-                            ?.let(::File)
-                            ?.takeIf {
-                                it.isFile &&
-                                    it.length() > 0L
-                            }
-
-                    downloadResult.coverWarning
+                    rawCover = downloadResult.coverPath
+                        ?.let(::File)
                         ?.takeIf {
-                            it.isNotBlank()
+                            it.isFile &&
+                                it.length() > 0L
                         }
-                        ?.let(warnings::add)
+                        ?: throw IllegalStateException(
+                            downloadResult.coverWarning
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
+                                ?: "Không tải được ảnh bìa"
+                        )
                 }
 
                 is DownloadResult.Error -> {
@@ -450,11 +457,14 @@ class DownloadCoordinator(
                     )
                 )
 
-            coverResult.warning
-                ?.takeIf {
-                    it.isNotBlank()
-                }
-                ?.let(warnings::add)
+            val jpegCover = coverResult.jpegFile
+                ?: throw IllegalStateException(
+                    coverResult.warning
+                        ?.takeIf {
+                            it.isNotBlank()
+                        }
+                        ?: "Không xử lý được ảnh bìa"
+                )
 
             checkCancelled()
 
@@ -477,8 +487,7 @@ class DownloadCoordinator(
                     title = currentJob.title,
                     artist = currentJob.artist,
                     coverPath =
-                        coverResult.jpegFile
-                            ?.absolutePath
+                        jpegCover.absolutePath
                 )
             }
 
@@ -511,11 +520,11 @@ class DownloadCoordinator(
                     }
 
                     if (
-                        coverResult.jpegFile != null &&
-                        !tagResult.coverEmbedded
+                        !tagResult.coverEmbedded ||
+                        "APIC" !in tagResult.frames
                     ) {
-                        warnings.add(
-                            "Không nhúng được ảnh bìa"
+                        throw IllegalStateException(
+                            "Không xác minh được ảnh bìa APIC trong file MP3"
                         )
                     }
 
@@ -545,39 +554,125 @@ class DownloadCoordinator(
                 status = DownloadStatus.SAVING,
                 stageProgress = 0,
                 overallProgress = 96,
-                message = "Đang lưu vào Music/GetMP3..."
+                message = "Đang lưu vào Inbox..."
             )
 
             val savedAudio =
                 mediaStoreWriter.saveMp3(
-                    sourceFile = mp3File,
-                    title = currentJob.title,
-                    artist = currentJob.artist,
-                    settings = appSettings
+                    sourceFile =
+                        mp3File,
+
+                    title =
+                        currentJob.title,
+
+                    artist =
+                        currentJob.artist,
+
+                    settings =
+                        appSettings
                 )
 
-            resultJob = mutateJob { job ->
-                val warningText = warnings
-                    .takeIf {
-                        it.isNotEmpty()
-                    }
-                    ?.joinToString(" • ")
+            mutateJob {
+                    job ->
+
+                val now =
+                    System.currentTimeMillis()
 
                 job.copy(
-                    status = DownloadStatus.COMPLETED,
-                    stageProgress = 100,
-                    overallProgress = 100,
-                    statusMessage = "Hoàn tất",
-                    warningMessage = warningText,
-                    errorMessage = null,
-                    outputUri =
-                        savedAudio.uri.toString(),
+                    status =
+                        DownloadStatus
+                            .SAVING,
+
+                    stageProgress =
+                        90,
+
+                    overallProgress =
+                        99,
+
+                    statusMessage =
+                        "Đang cập nhật Inbox...",
+
                     lastProgressAt =
-                        System.currentTimeMillis(),
+                        now,
+
                     updatedAt =
-                        System.currentTimeMillis()
+                        now
                 )
             }
+
+            /*
+             * File MP3 đã được ghi thật.
+             *
+             * Lỗi Media Index hoặc Library từ đây trở đi
+             * không được biến một download thành FAILED.
+             */
+            val intakeResult =
+                downloadIntakeProcessor
+                    .process(
+                        savedAudio =
+                            savedAudio,
+
+                        settings =
+                            appSettings
+                    )
+
+            intakeResult
+                .warningMessage
+                ?.takeIf {
+                    it.isNotBlank()
+                }
+                ?.let(
+                    warnings::add
+                )
+
+            resultJob =
+                mutateJob {
+                        job ->
+
+                    val warningText =
+                        warnings
+                            .takeIf {
+                                it.isNotEmpty()
+                            }
+                            ?.joinToString(
+                                " • "
+                            )
+
+                    val now =
+                        System.currentTimeMillis()
+
+                    job.copy(
+                        status =
+                            DownloadStatus
+                                .COMPLETED,
+
+                        stageProgress =
+                            100,
+
+                        overallProgress =
+                            100,
+
+                        statusMessage =
+                            intakeResult
+                                .statusMessage,
+
+                        warningMessage =
+                            warningText,
+
+                        errorMessage =
+                            null,
+
+                        outputUri =
+                            intakeResult
+                                .outputUri,
+
+                        lastProgressAt =
+                            now,
+
+                        updatedAt =
+                            now
+                    )
+                }
         } catch (exception: Exception) {
             val cancelled =
                 exception is JobCancelledException ||

@@ -64,3 +64,17 @@ scripts/.adb-target
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Local AI / CodeGraph data
+.codegraph/
+.chatgpt_context/
+tools/phone/.adb-target
+tools/phone/.adb-device.json
+._chatgpt_context/
+_chatgpt_context/
+
+# Local development handoff / editor state
+scripts/.adb-device.json
+/fix.patch
+/note/
+.vscode/

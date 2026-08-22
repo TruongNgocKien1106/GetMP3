@@ -18,24 +18,33 @@ class Mp3TagBridge(
         }
     }
 
-    private val module = Python
-        .getInstance()
-        .getModule("ytdlp_bridge")
+    private val module =
+        Python.getInstance()
+            .getModule(
+                "ytdlp_bridge"
+            )
 
     fun readTags(
         mp3Path: String,
         coverOutputPath: String
     ): EditorTagReadResult {
         return try {
-            val response = module.callAttr(
-                "read_mp3_editor_tags",
-                mp3Path,
-                coverOutputPath
-            ).toString()
+            val response =
+                module.callAttr(
+                    "read_mp3_editor_tags",
+                    mp3Path,
+                    coverOutputPath
+                ).toString()
 
-            val json = JSONObject(response)
+            val json =
+                JSONObject(response)
 
-            if (!json.optBoolean("success", false)) {
+            if (
+                !json.optBoolean(
+                    "success",
+                    false
+                )
+            ) {
                 return EditorTagReadResult.Error(
                     json.optString(
                         "error",
@@ -45,16 +54,27 @@ class Mp3TagBridge(
             }
 
             EditorTagReadResult.Success(
-                title = json.optString("title"),
-                artist = json.optString("artist"),
-                album = json.optString("album"),
-                coverPath = json
-                    .optString("coverPath")
-                    .takeIf {
-                        it.isNotBlank()
-                    }
+                album =
+                    json.optString(
+                        "album"
+                    ),
+
+                year =
+                    json.optString(
+                        "year"
+                    ),
+
+                coverPath =
+                    json.optString(
+                        "coverPath"
+                    )
+                        .takeIf(
+                            String::isNotBlank
+                        )
             )
-        } catch (exception: Exception) {
+        } catch (
+            exception: Exception
+        ) {
             EditorTagReadResult.Error(
                 exception.message
                     ?: "Không đọc được phản hồi Python"
@@ -66,20 +86,29 @@ class Mp3TagBridge(
         mp3Path: String,
         title: String,
         artist: String,
-        album: String
+        album: String,
+        year: String = ""
     ): EditorTagWriteResult {
         return try {
-            val response = module.callAttr(
-                "update_mp3_editor_tags",
-                mp3Path,
-                title,
-                artist,
-                album
-            ).toString()
+            val response =
+                module.callAttr(
+                    "update_mp3_editor_tags",
+                    mp3Path,
+                    title,
+                    artist,
+                    album,
+                    year
+                ).toString()
 
-            val json = JSONObject(response)
+            val json =
+                JSONObject(response)
 
-            if (!json.optBoolean("success", false)) {
+            if (
+                !json.optBoolean(
+                    "success",
+                    false
+                )
+            ) {
                 return EditorTagWriteResult.Error(
                     json.optString(
                         "error",
@@ -89,14 +118,124 @@ class Mp3TagBridge(
             }
 
             EditorTagWriteResult.Success(
-                id3Version = json.optString(
-                    "id3Version"
-                )
+                id3Version =
+                    json.optString(
+                        "id3Version"
+                    )
             )
-        } catch (exception: Exception) {
+        } catch (
+            exception: Exception
+        ) {
             EditorTagWriteResult.Error(
                 exception.message
                     ?: "Không ghi được metadata MP3"
+            )
+        }
+    }
+
+    fun readLyrics(
+        mp3Path: String
+    ): LyricsTagReadResult {
+        return try {
+            val response =
+                module.callAttr(
+                    "read_mp3_lyrics",
+                    mp3Path
+                ).toString()
+
+            val json =
+                JSONObject(response)
+
+            if (
+                !json.optBoolean(
+                    "success",
+                    false
+                )
+            ) {
+                return LyricsTagReadResult.Error(
+                    json.optString(
+                        "error",
+                        "Không đọc được lời bài hát"
+                    )
+                )
+            }
+
+            LyricsTagReadResult.Success(
+                text =
+                    json.optString(
+                        "lyrics"
+                    ),
+
+                language =
+                    json.optString(
+                        "language",
+                        "und"
+                    ),
+
+                description =
+                    json.optString(
+                        "description"
+                    )
+            )
+        } catch (
+            exception: Exception
+        ) {
+            LyricsTagReadResult.Error(
+                exception.message
+                    ?: "Không đọc được lời bài hát"
+            )
+        }
+    }
+
+    fun writeLyrics(
+        mp3Path: String,
+        lyrics: String,
+        language: String
+    ): LyricsTagWriteResult {
+        return try {
+            val response =
+                module.callAttr(
+                    "update_mp3_lyrics",
+                    mp3Path,
+                    lyrics,
+                    language
+                ).toString()
+
+            val json =
+                JSONObject(response)
+
+            if (
+                !json.optBoolean(
+                    "success",
+                    false
+                )
+            ) {
+                return LyricsTagWriteResult.Error(
+                    json.optString(
+                        "error",
+                        "Không ghi được lời bài hát"
+                    )
+                )
+            }
+
+            LyricsTagWriteResult.Success(
+                id3Version =
+                    json.optString(
+                        "id3Version"
+                    ),
+
+                language =
+                    json.optString(
+                        "language",
+                        "und"
+                    )
+            )
+        } catch (
+            exception: Exception
+        ) {
+            LyricsTagWriteResult.Error(
+                exception.message
+                    ?: "Không ghi được lời bài hát"
             )
         }
     }
@@ -104,10 +243,9 @@ class Mp3TagBridge(
 
 sealed interface EditorTagReadResult {
     data class Success(
-        val title: String,
-        val artist: String,
         val album: String,
-        val coverPath: String?
+        val coverPath: String?,
+        val year: String = ""
     ) : EditorTagReadResult
 
     data class Error(
@@ -123,4 +261,27 @@ sealed interface EditorTagWriteResult {
     data class Error(
         val message: String
     ) : EditorTagWriteResult
+}
+
+sealed interface LyricsTagReadResult {
+    data class Success(
+        val text: String,
+        val language: String,
+        val description: String
+    ) : LyricsTagReadResult
+
+    data class Error(
+        val message: String
+    ) : LyricsTagReadResult
+}
+
+sealed interface LyricsTagWriteResult {
+    data class Success(
+        val id3Version: String,
+        val language: String
+    ) : LyricsTagWriteResult
+
+    data class Error(
+        val message: String
+    ) : LyricsTagWriteResult
 }

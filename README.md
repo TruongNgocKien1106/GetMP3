@@ -4,7 +4,7 @@
 ![Android](https://img.shields.io/badge/platform-Android-3DDC84)
 ![Kotlin](https://img.shields.io/badge/language-Kotlin-7F52FF)
 ![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4)
-![Version](https://img.shields.io/badge/version-1.0.0-2EA44F)
+![Version](https://img.shields.io/badge/version-auto--dev-2EA44F)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 GetMP3 is a local-first Android audio workflow for recording songs to download later, finding suitable YouTube results, processing personal audio files, and editing MP3 metadata directly on the device.
@@ -78,7 +78,7 @@ Before committing screenshots, remove notifications, email addresses, account na
 
 ## Current release
 
-Current version: **1.0.0**
+Development builds use an automatically generated version such as **1.0.0-dev.YYYYMMDD.HHMMSS**.
 
 Public APK files should be signed with a stable release key and distributed through GitHub Releases.
 

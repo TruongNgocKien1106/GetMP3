@@ -73,6 +73,7 @@ class YtDlpBridge(
         url: String,
         outputDirectory: String,
         jobId: String,
+        preferredThumbnailUrl: String?,
         callback: PythonProgressCallback
     ): DownloadResult {
         return try {
@@ -81,7 +82,8 @@ class YtDlpBridge(
                 url,
                 outputDirectory,
                 jobId,
-                callback
+                callback,
+                preferredThumbnailUrl.orEmpty()
             ).toString()
 
             val json = JSONObject(response)
@@ -109,7 +111,6 @@ class YtDlpBridge(
             )
         }
     }
-
     fun writeId3Tags(
         mp3Path: String,
         title: String,

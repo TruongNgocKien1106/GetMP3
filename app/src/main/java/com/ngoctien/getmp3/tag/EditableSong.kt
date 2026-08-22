@@ -19,5 +19,6 @@ data class EditableSong(
     val title: String,
     val artist: String,
     val album: String,
-    val coverPath: String?
+    val coverPath: String?,
+    val year: String = ""
 )

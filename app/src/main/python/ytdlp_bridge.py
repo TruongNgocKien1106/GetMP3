@@ -1,9 +1,11 @@
 import glob
 import json
 import os
-import shutil
+import re
 import ssl
+import time
 import traceback
+import urllib.parse
 import urllib.request
 
 import certifi
@@ -83,15 +85,70 @@ def _number(value):
         return 0
 
 
-def _best_thumbnail_url(info):
+_COVER_CANDIDATE_LIMIT = 8
+_COVER_RETRY_DELAYS_SECONDS = (0.0, 0.8)
+_COVER_MINIMUM_BYTES = 256
+_COVER_DOWNLOAD_TIMEOUT_SECONDS = 15
+
+
+def _normalize_http_url(value):
+    text = str(value or "").strip()
+
+    if not text:
+        return None
+
+    parsed = urllib.parse.urlparse(text)
+
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        return None
+
+    return text
+
+
+def _youtube_video_id(info, source_url):
+    video_id = str(info.get("id") or "").strip()
+
+    if video_id:
+        return video_id
+
+    parsed = urllib.parse.urlparse(str(source_url or "").strip())
+    host = parsed.netloc.lower().split(":", 1)[0]
+
+    if host in ("youtu.be", "www.youtu.be"):
+        return parsed.path.strip("/").split("/", 1)[0]
+
+    if host.endswith("youtube.com"):
+        query_id = urllib.parse.parse_qs(parsed.query).get("v")
+
+        if query_id:
+            return str(query_id[0]).strip()
+
+        path_parts = [
+            part
+            for part in parsed.path.split("/")
+            if part
+        ]
+
+        if len(path_parts) >= 2 and path_parts[0] in (
+            "shorts",
+            "live",
+            "embed",
+            "v",
+        ):
+            return path_parts[1]
+
+    return ""
+
+
+def _thumbnail_urls(info, preferred_url=None, source_url=None):
+    ranked = []
     thumbnails = info.get("thumbnails") or []
-    valid = []
 
     for thumbnail in thumbnails:
         if not isinstance(thumbnail, dict):
             continue
 
-        url = thumbnail.get("url")
+        url = _normalize_http_url(thumbnail.get("url"))
 
         if not url:
             continue
@@ -100,55 +157,249 @@ def _best_thumbnail_url(info):
         height = _number(thumbnail.get("height"))
         preference = _number(thumbnail.get("preference"))
 
-        valid.append(
+        ranked.append(
             (
                 preference,
                 width * height,
                 width,
                 height,
-                str(url),
+                url,
             )
         )
 
-    if valid:
-        valid.sort(reverse=True)
-        return valid[0][4]
+    ranked.sort(reverse=True)
 
-    thumbnail = info.get("thumbnail")
+    ranked_urls = [
+        item[4]
+        for item in ranked
+    ]
 
-    return str(thumbnail) if thumbnail else None
+    candidates = [
+        _normalize_http_url(preferred_url),
+        _normalize_http_url(info.get("thumbnail")),
+    ]
+
+    candidates.extend(ranked_urls[:2])
+
+    video_id = _youtube_video_id(info, source_url)
+
+    if video_id:
+        encoded_video_id = urllib.parse.quote(
+            video_id,
+            safe="",
+        )
+
+        candidates.extend(
+            [
+                f"https://i.ytimg.com/vi/{encoded_video_id}/maxresdefault.jpg",
+                f"https://i.ytimg.com/vi/{encoded_video_id}/sddefault.jpg",
+                f"https://i.ytimg.com/vi/{encoded_video_id}/hqdefault.jpg",
+                f"https://i.ytimg.com/vi/{encoded_video_id}/mqdefault.jpg",
+            ]
+        )
+
+    candidates.extend(ranked_urls[2:])
+
+    unique = []
+    seen = set()
+
+    for candidate in candidates:
+        normalized = _normalize_http_url(candidate)
+
+        if not normalized or normalized in seen:
+            continue
+
+        seen.add(normalized)
+        unique.append(normalized)
+
+        if len(unique) >= _COVER_CANDIDATE_LIMIT:
+            break
+
+    return unique
+
+
+def _best_thumbnail_url(info, source_url=None):
+    candidates = _thumbnail_urls(
+        info,
+        source_url=source_url,
+    )
+
+    return candidates[0] if candidates else None
 
 
 def _ssl_context():
     return ssl.create_default_context(cafile=certifi.where())
 
 
-def _download_cover(url, destination):
-    request = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": (
-                "Mozilla/5.0 (Linux; Android 14) "
-                "AppleWebKit/537.36 Chrome/122 Mobile Safari/537.36"
-            ),
-            "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
-        },
+def _detect_cover_format(path):
+    if not path or not os.path.isfile(path):
+        return None
+
+    with open(path, "rb") as image_file:
+        header = image_file.read(32)
+
+    if header.startswith(b"\xff\xd8\xff"):
+        return "jpeg"
+
+    if header.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+
+    if (
+        len(header) >= 12
+        and header.startswith(b"RIFF")
+        and header[8:12] == b"WEBP"
+    ):
+        return "webp"
+
+    return None
+
+
+def _remove_file_quietly(path):
+    try:
+        if path and os.path.exists(path):
+            os.remove(path)
+    except Exception:
+        pass
+
+
+def _download_cover(
+    url,
+    destination,
+    check_cancelled=None,
+):
+    last_error = None
+    temporary_path = destination + ".part"
+
+    for retry_index, delay_seconds in enumerate(
+        _COVER_RETRY_DELAYS_SECONDS,
+        start=1,
+    ):
+        if check_cancelled:
+            check_cancelled()
+
+        if delay_seconds > 0:
+            time.sleep(delay_seconds)
+
+        _remove_file_quietly(temporary_path)
+
+        request = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Linux; Android 14) "
+                    "AppleWebKit/537.36 Chrome/122 Mobile Safari/537.36"
+                ),
+                "Accept": (
+                    "image/jpeg,image/png,image/webp,image/*;q=0.8,"
+                    "*/*;q=0.1"
+                ),
+                "Accept-Language": "vi-VN,vi;q=0.9,en;q=0.8",
+                "Cache-Control": "no-cache",
+                "Referer": "https://www.youtube.com/",
+            },
+        )
+
+        try:
+            with urllib.request.urlopen(
+                request,
+                timeout=_COVER_DOWNLOAD_TIMEOUT_SECONDS,
+                context=_ssl_context(),
+            ) as response:
+                with open(temporary_path, "wb") as output:
+                    while True:
+                        if check_cancelled:
+                            check_cancelled()
+
+                        chunk = response.read(64 * 1024)
+
+                        if not chunk:
+                            break
+
+                        output.write(chunk)
+
+            if not os.path.isfile(temporary_path):
+                raise RuntimeError("Không tạo được file ảnh bìa")
+
+            if os.path.getsize(temporary_path) < _COVER_MINIMUM_BYTES:
+                raise RuntimeError("File ảnh bìa quá nhỏ")
+
+            cover_format = _detect_cover_format(temporary_path)
+
+            if not cover_format:
+                raise RuntimeError(
+                    "Phản hồi ảnh bìa không phải JPEG, PNG hoặc WebP"
+                )
+
+            _remove_file_quietly(destination)
+            os.replace(temporary_path, destination)
+
+            return cover_format
+
+        except DownloadCancelled:
+            _remove_file_quietly(temporary_path)
+            raise
+
+        except Exception as error:
+            last_error = error
+            _remove_file_quietly(temporary_path)
+
+            if retry_index >= len(_COVER_RETRY_DELAYS_SECONDS):
+                break
+
+    raise RuntimeError(
+        str(last_error or "Không tải được ảnh bìa")
     )
 
-    with urllib.request.urlopen(
-        request,
-        timeout=30,
-        context=_ssl_context(),
-    ) as response:
-        with open(destination, "wb") as output:
-            shutil.copyfileobj(response, output)
 
-    if not os.path.isfile(destination):
-        raise RuntimeError("Không tạo được file ảnh bìa")
+def _download_cover_candidates(
+    urls,
+    destination,
+    check_cancelled,
+):
+    errors = []
 
-    if os.path.getsize(destination) <= 0:
-        raise RuntimeError("File ảnh bìa rỗng")
+    for index, url in enumerate(urls, start=1):
+        if check_cancelled:
+            check_cancelled()
 
+        try:
+            _download_cover(
+                url,
+                destination,
+                check_cancelled=check_cancelled,
+            )
+
+            return (
+                os.path.abspath(destination),
+                None,
+            )
+
+        except DownloadCancelled:
+            raise
+
+        except Exception as error:
+            errors.append(
+                f"#{index}: {str(error)}"
+            )
+
+    _remove_file_quietly(destination)
+
+    if not urls:
+        return (
+            None,
+            "Video không cung cấp địa chỉ ảnh bìa",
+        )
+
+    details = "; ".join(errors[-3:])
+
+    return (
+        None,
+        (
+            "Không tải được ảnh bìa sau "
+            f"{len(urls)} địa chỉ và nhiều lần thử"
+            + (f": {details}" if details else "")
+        ),
+    )
 
 def extract_video_info(url):
     try:
@@ -178,7 +429,10 @@ def extract_video_info(url):
             "success": True,
             "title": _select_title(info),
             "artist": _select_artist(info),
-            "thumbnailUrl": _best_thumbnail_url(info),
+            "thumbnailUrl": _best_thumbnail_url(
+                info,
+                source_url=normalized_url,
+            ),
             "durationSeconds": _number(info.get("duration")),
         }
 
@@ -193,7 +447,13 @@ def extract_video_info(url):
         )
 
 
-def download_audio(url, output_dir, job_id, callback):
+def download_audio(
+    url,
+    output_dir,
+    job_id,
+    callback,
+    preferred_thumbnail_url=None,
+):
     try:
         normalized_url = str(url or "").strip()
         normalized_output_dir = os.path.abspath(str(output_dir))
@@ -336,40 +596,24 @@ def download_audio(url, output_dir, job_id, callback):
         if os.path.getsize(audio_path) <= 0:
             raise RuntimeError("File âm thanh bị rỗng")
 
-        cover_path = None
-        cover_warning = None
-        thumbnail_url = _best_thumbnail_url(info)
+        check_cancelled()
 
-        if thumbnail_url:
-            check_cancelled()
+        raw_cover_path = os.path.join(
+            normalized_output_dir,
+            f"{normalized_job_id}_cover.raw",
+        )
 
-            raw_cover_path = os.path.join(
-                normalized_output_dir,
-                f"{normalized_job_id}_cover.raw",
-            )
+        thumbnail_urls = _thumbnail_urls(
+            info,
+            preferred_url=preferred_thumbnail_url,
+            source_url=normalized_url,
+        )
 
-            try:
-                _download_cover(
-                    thumbnail_url,
-                    raw_cover_path,
-                )
-
-                cover_path = os.path.abspath(raw_cover_path)
-
-            except Exception as cover_error:
-                cover_warning = (
-                    "Không tải được ảnh bìa: "
-                    f"{str(cover_error)}"
-                )
-
-                try:
-                    if os.path.exists(raw_cover_path):
-                        os.remove(raw_cover_path)
-                except Exception:
-                    pass
-
-        else:
-            cover_warning = "Video không cung cấp ảnh bìa"
+        cover_path, cover_warning = _download_cover_candidates(
+            thumbnail_urls,
+            raw_cover_path,
+            check_cancelled,
+        )
 
         return _json(
             {
@@ -526,6 +770,7 @@ def write_id3_tags(mp3_path, title, artist, cover_path):
             "TIT2",
             "TPE1",
             "APIC",
+            "USLT",
         }
 
         unexpected_frames = [
@@ -632,6 +877,23 @@ def read_mp3_editor_tags(mp3_path, cover_output_path):
         artist = first_text("TPE1")
         album = first_text("TALB")
 
+        raw_year = (
+            first_text("TYER")
+            or first_text("TDRC")
+            or first_text("TYE")
+        )
+
+        year_match = re.search(
+            r"(?<!\d)(\d{4})(?!\d)",
+            raw_year or "",
+        )
+
+        year = (
+            year_match.group(1)
+            if year_match
+            else ""
+        )
+
         cover_path = None
         cover_frames = tags.getall("APIC")
 
@@ -657,6 +919,7 @@ def read_mp3_editor_tags(mp3_path, cover_output_path):
                 "title": title,
                 "artist": artist,
                 "album": album,
+                "year": year,
                 "coverPath": cover_path,
             }
         )
@@ -675,6 +938,7 @@ def update_mp3_editor_tags(
     title,
     artist,
     album,
+    year="",
 ):
     try:
         from mutagen.id3 import (
@@ -684,6 +948,8 @@ def update_mp3_editor_tags(
             TALB,
             TIT2,
             TPE1,
+            TYER,
+            USLT,
         )
 
         normalized_path = os.path.abspath(str(mp3_path))
@@ -695,6 +961,21 @@ def update_mp3_editor_tags(
         normalized_artist = str(artist or "").strip()
         normalized_album = str(album or "").strip()
 
+        normalized_year = str(
+            year or ""
+        ).strip()
+
+        if (
+            normalized_year
+            and not re.fullmatch(
+                r"\d{4}",
+                normalized_year,
+            )
+        ):
+            raise RuntimeError(
+                "Year phải gồm đúng 4 chữ số"
+            )
+
         if not normalized_title:
             raise RuntimeError("Title không được để trống")
 
@@ -702,6 +983,7 @@ def update_mp3_editor_tags(
             raise RuntimeError("Artist không được để trống")
 
         preserved_cover = None
+        preserved_lyrics = []
 
         try:
             current_tags = ID3(
@@ -710,6 +992,28 @@ def update_mp3_editor_tags(
             )
 
             covers = current_tags.getall("APIC")
+
+            preserved_lyrics = [
+                {
+                    "lang": str(
+                        getattr(frame, "lang", "und")
+                        or "und"
+                    ),
+                    "desc": str(
+                        getattr(frame, "desc", "")
+                        or ""
+                    ),
+                    "text": str(
+                        getattr(frame, "text", "")
+                        or ""
+                    ),
+                }
+                for frame in current_tags.getall("USLT")
+                if str(
+                    getattr(frame, "text", "")
+                    or ""
+                ).strip()
+            ]
 
             if covers:
                 original_cover = covers[0]
@@ -762,6 +1066,14 @@ def update_mp3_editor_tags(
                 )
             )
 
+        if normalized_year:
+            tags.add(
+                TYER(
+                    encoding=1,
+                    text=[normalized_year],
+                )
+            )
+
         if (
             preserved_cover
             and preserved_cover["data"]
@@ -773,6 +1085,22 @@ def update_mp3_editor_tags(
                     type=3,
                     desc="Cover",
                     data=preserved_cover["data"],
+                )
+            )
+
+        for lyrics_frame in preserved_lyrics:
+            tags.add(
+                USLT(
+                    encoding=1,
+                    lang=(
+                        lyrics_frame["lang"][:3]
+                        if len(
+                            lyrics_frame["lang"]
+                        ) >= 3
+                        else "und"
+                    ),
+                    desc=lyrics_frame["desc"],
+                    text=lyrics_frame["text"],
                 )
             )
 
@@ -801,7 +1129,9 @@ def update_mp3_editor_tags(
             "TIT2",
             "TPE1",
             "TALB",
+            "TYER",
             "APIC",
+            "USLT",
         }
 
         unexpected_frames = sorted(
@@ -833,5 +1163,292 @@ def update_mp3_editor_tags(
             {
                 "success": False,
                 "error": str(error),
+            }
+        )
+
+def read_mp3_lyrics(mp3_path):
+    try:
+        from mutagen.id3 import (
+            ID3,
+            ID3NoHeaderError,
+        )
+
+        normalized_path = os.path.abspath(
+            str(mp3_path)
+        )
+
+        if not os.path.isfile(normalized_path):
+            raise RuntimeError(
+                "File MP3 không tồn tại"
+            )
+
+        try:
+            tags = ID3(
+                normalized_path,
+                translate=False,
+            )
+        except ID3NoHeaderError:
+            return _json(
+                {
+                    "success": True,
+                    "lyrics": "",
+                    "language": "und",
+                    "description": "",
+                }
+            )
+
+        frames = tags.getall("USLT")
+
+        if not frames:
+            return _json(
+                {
+                    "success": True,
+                    "lyrics": "",
+                    "language": "und",
+                    "description": "",
+                }
+            )
+
+        empty_description_frame = next(
+            (
+                frame
+                for frame in frames
+                if not str(
+                    getattr(
+                        frame,
+                        "desc",
+                        "",
+                    )
+                    or ""
+                ).strip()
+            ),
+            None,
+        )
+
+        legacy_getmp3_frame = next(
+            (
+                frame
+                for frame in frames
+                if str(
+                    getattr(
+                        frame,
+                        "desc",
+                        "",
+                    )
+                    or ""
+                ).strip().lower()
+                == "getmp3 lyrics"
+            ),
+            None,
+        )
+
+        selected = (
+            empty_description_frame
+            or legacy_getmp3_frame
+            or frames[0]
+        )
+
+        return _json(
+            {
+                "success": True,
+                "lyrics": str(
+                    getattr(
+                        selected,
+                        "text",
+                        "",
+                    )
+                    or ""
+                ),
+                "language": str(
+                    getattr(
+                        selected,
+                        "lang",
+                        "und",
+                    )
+                    or "und"
+                ),
+                "description": str(
+                    getattr(
+                        selected,
+                        "desc",
+                        "",
+                    )
+                    or ""
+                ),
+            }
+        )
+
+    except Exception as error:
+        return _json(
+            {
+                "success": False,
+                "error": str(error),
+            }
+        )
+
+
+def update_mp3_lyrics(
+    mp3_path,
+    lyrics,
+    language="eng",
+):
+    try:
+        from mutagen.id3 import (
+            ID3,
+            ID3NoHeaderError,
+            USLT,
+        )
+
+        normalized_path = os.path.abspath(
+            str(mp3_path)
+        )
+
+        if not os.path.isfile(normalized_path):
+            raise RuntimeError(
+                "File MP3 không tồn tại"
+            )
+
+        normalized_lyrics = str(
+            lyrics or ""
+        ).replace(
+            "\r\n",
+            "\n",
+        ).replace(
+            "\r",
+            "\n",
+        ).strip()
+
+        if not normalized_lyrics:
+            raise RuntimeError(
+                "Nội dung lyrics đang trống"
+            )
+
+        normalized_language = str(
+            language or "eng"
+        ).strip().lower()
+
+        if len(normalized_language) != 3:
+            normalized_language = "eng"
+
+        try:
+            tags = ID3(
+                normalized_path,
+                translate=False,
+            )
+        except ID3NoHeaderError:
+            tags = ID3()
+
+        tags.delall("USLT")
+
+        # Description để rỗng nhằm tương thích với
+        # nhiều trình phát và trình sửa tag Android.
+        tags.add(
+            USLT(
+                encoding=1,
+                lang=normalized_language,
+                desc="",
+                text=normalized_lyrics,
+            )
+        )
+
+        tags.save(
+            normalized_path,
+            v1=0,
+            v2_version=3,
+        )
+
+        verification = ID3(
+            normalized_path,
+            translate=False,
+        )
+
+        version = verification.version
+
+        if (
+            not version
+            or version[0:2] != (2, 3)
+        ):
+            raise RuntimeError(
+                "Tag không phải ID3v2.3"
+            )
+
+        lyrics_frames = verification.getall(
+            "USLT"
+        )
+
+        if not lyrics_frames:
+            raise RuntimeError(
+                "Không xác minh được USLT"
+            )
+
+        selected = next(
+            (
+                frame
+                for frame in lyrics_frames
+                if not str(
+                    getattr(
+                        frame,
+                        "desc",
+                        "",
+                    )
+                    or ""
+                ).strip()
+            ),
+            lyrics_frames[0],
+        )
+
+        verified_text = str(
+            getattr(
+                selected,
+                "text",
+                "",
+            )
+            or ""
+        ).replace(
+            "\r\n",
+            "\n",
+        ).replace(
+            "\r",
+            "\n",
+        ).strip()
+
+        verified_description = str(
+            getattr(
+                selected,
+                "desc",
+                "",
+            )
+            or ""
+        )
+
+        if verified_text != normalized_lyrics:
+            raise RuntimeError(
+                "Lyrics đọc lại không khớp"
+            )
+
+        if verified_description:
+            raise RuntimeError(
+                "Description của USLT chưa rỗng"
+            )
+
+        return _json(
+            {
+                "success": True,
+                "id3Version": ".".join(
+                    str(part)
+                    for part in version
+                ),
+                "language": normalized_language,
+                "description": verified_description,
+                "frameCount": len(lyrics_frames),
+            }
+        )
+
+    except Exception as error:
+        return _json(
+            {
+                "success": False,
+                "error": str(error),
+                "traceback": traceback.format_exc(),
             }
         )

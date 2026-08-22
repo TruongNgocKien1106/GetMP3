@@ -8,6 +8,25 @@ data class YouTubeSearchResult(
     val thumbnailUrl: String?,
     val webpageUrl: String
 ) {
+    val effectiveThumbnailUrl: String
+        get() {
+            return thumbnailUrl
+                ?.trim()
+                ?.takeIf {
+                    it.startsWith(
+                        "http://"
+                    ) ||
+                        it.startsWith(
+                            "https://"
+                        )
+                }
+                ?: (
+                    "https://i.ytimg.com/vi/" +
+                        videoId +
+                        "/hqdefault.jpg"
+                    )
+        }
+
     val formattedDuration: String
         get() {
             val totalSeconds =

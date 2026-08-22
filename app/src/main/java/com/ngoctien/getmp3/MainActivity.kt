@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.DocumentsContract
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -14,12 +15,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ngoctien.getmp3.ui.GetMp3Screen
+import com.ngoctien.getmp3.storage.MusicFolderProvisioner
+import com.ngoctien.getmp3.ui.app.GetMp3Route
 import com.ngoctien.getmp3.ui.theme.GetMP3Theme
+import com.ngoctien.getmp3.viewmodel.CompareViewModel
 import com.ngoctien.getmp3.viewmodel.DownloadViewModel
+import com.ngoctien.getmp3.viewmodel.LibraryViewModel
 import com.ngoctien.getmp3.viewmodel.SettingsViewModel
-import com.ngoctien.getmp3.viewmodel.SongNoteViewModel
+import com.ngoctien.getmp3.viewmodel.LyricsViewModel
+import com.ngoctien.getmp3.viewmodel.MetadataRepairViewModel
 import com.ngoctien.getmp3.viewmodel.TagEditorViewModel
+import com.ngoctien.getmp3.viewmodel.YouTubeSearchViewModel
 
 class MainActivity : ComponentActivity() {
     private val downloadViewModel:
@@ -28,10 +34,22 @@ class MainActivity : ComponentActivity() {
     private val tagEditorViewModel:
         TagEditorViewModel by viewModels()
 
+    private val compareViewModel:
+        CompareViewModel by viewModels()
+
+    private val metadataRepairViewModel:
+        MetadataRepairViewModel by viewModels()
+
     private val settingsViewModel:
         SettingsViewModel by viewModels()
-    private val songNoteViewModel:
-        SongNoteViewModel by viewModels()
+
+    private val libraryViewModel:
+        LibraryViewModel by viewModels()
+
+    private val lyricsViewModel:
+        LyricsViewModel by viewModels()
+    private val youtubeSearchViewModel:
+        YouTubeSearchViewModel by viewModels()
 
     private val notificationPermissionLauncher =
         registerForActivityResult(
@@ -41,7 +59,7 @@ class MainActivity : ComponentActivity() {
             // App vẫn tải nếu người dùng từ chối.
         }
 
-    private val downloadFolderPicker =
+    private val musicFolderPicker =
         registerForActivityResult(
             ActivityResultContracts
                 .OpenDocumentTree()
@@ -52,37 +70,56 @@ class MainActivity : ComponentActivity() {
 
             persistFolderPermission(uri)
 
-            settingsViewModel
-                .setDownloadFolder(
-                    treeUri =
-                        uri.toString(),
+            runCatching {
+                val folders =
+                    MusicFolderProvisioner(
+                        this
+                    ).ensure(
+                        uri
+                    )
 
-                    displayName =
-                        resolveFolderName(uri)
-                )
+                val rootName =
+                    resolveFolderName(
+                        uri
+                    )
 
-            tagEditorViewModel.refresh()
-        }
+                settingsViewModel
+                    .setInboxFolder(
+                        treeUri =
+                            folders.inboxUri
+                                .toString(),
 
-    private val compareFolderPicker =
-        registerForActivityResult(
-            ActivityResultContracts
-                .OpenDocumentTree()
-        ) { uri ->
-            if (uri == null) {
-                return@registerForActivityResult
+                        displayName =
+                            "$rootName/Inbox"
+                    )
+
+                settingsViewModel
+                    .setLibraryFolder(
+                        treeUri =
+                            folders.libraryUri
+                                .toString(),
+
+                        displayName =
+                            "$rootName/Library"
+                    )
+
+                tagEditorViewModel.refresh()
+
+                Toast.makeText(
+                    this,
+                    "Đã dùng $rootName/Inbox và $rootName/Library",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }.onFailure {
+                    exception ->
+
+                Toast.makeText(
+                    this,
+                    exception.message
+                        ?: "Không thể chuẩn bị Inbox và Library",
+                    Toast.LENGTH_LONG
+                ).show()
             }
-
-            persistFolderPermission(uri)
-
-            settingsViewModel
-                .setCompareFolder(
-                    treeUri =
-                        uri.toString(),
-
-                    displayName =
-                        resolveFolderName(uri)
-                )
         }
 
     override fun onCreate(
@@ -102,33 +139,42 @@ class MainActivity : ComponentActivity() {
                 themeMode =
                     settings.themeMode
             ) {
-                GetMp3Screen(
+                GetMp3Route(
                     downloadViewModel =
                         downloadViewModel,
 
                     tagEditorViewModel =
                         tagEditorViewModel,
 
+                    compareViewModel =
+                        compareViewModel,
+
+                    metadataRepairViewModel =
+                        metadataRepairViewModel,
+
                     settingsViewModel =
                         settingsViewModel,
 
-                    songNoteViewModel =
-                        songNoteViewModel,
+                    libraryViewModel =
+                        libraryViewModel,
+
+                    lyricsViewModel =
+                        lyricsViewModel,
+                    youtubeSearchViewModel =
+                        youtubeSearchViewModel,
                     onRequestNotificationPermission = {
                         requestNotificationPermission()
                     },
 
-                    onChooseDownloadFolder = {
-                        downloadFolderPicker.launch(
-                            settings.downloadTreeUri
-                                ?.let(Uri::parse)
+                    onChooseInboxFolder = {
+                        musicFolderPicker.launch(
+                            null
                         )
                     },
 
-                    onChooseCompareFolder = {
-                        compareFolderPicker.launch(
-                            settings.compareTreeUri
-                                ?.let(Uri::parse)
+                    onChooseLibraryFolder = {
+                        musicFolderPicker.launch(
+                            null
                         )
                     }
                 )

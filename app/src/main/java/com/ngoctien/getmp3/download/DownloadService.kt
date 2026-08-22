@@ -54,6 +54,7 @@ class DownloadService : Service() {
     private lateinit var repository:
         DownloadRepository
 
+
     private lateinit var notificationHelper:
         NotificationHelper
 
@@ -71,6 +72,7 @@ class DownloadService : Service() {
                 .getDatabase(this)
                 .downloadJobDao()
         )
+
 
         notificationHelper =
             NotificationHelper(this)

@@ -1,0 +1,101 @@
+﻿# =========================================================
+# CODEGRAPH IGNORE - Android / Kotlin / Gradle
+# Chỉ loại bỏ cache, build output, binary và dữ liệu local.
+# =========================================================
+
+# Git và dữ liệu index của công cụ
+.git/
+.codegraph/
+.chatgpt_context/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Gradle / Kotlin cache
+.gradle/
+.kotlin/
+**/.gradle/
+**/.kotlin/
+
+# Build output
+build/
+**/build/
+out/
+**/out/
+
+# Generated source
+**/generated/
+**/ksp/
+**/kapt/
+**/intermediates/
+**/outputs/
+**/tmp/
+
+# Android binary
+*.apk
+*.aab
+*.aar
+*.dex
+*.class
+
+# Native binary
+*.so
+*.dll
+*.exe
+*.dylib
+
+# Archive
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
+
+# Logs, reports và test output
+*.log
+logs/
+reports/
+**/reports/
+test-results/
+**/test-results/
+coverage/
+**/coverage/
+
+# Dữ liệu local hoặc chứa thông tin máy
+local.properties
+.env
+.env.*
+*.keystore
+*.jks
+*.p12
+*.pem
+*.key
+
+# File tạm
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+Thumbs.db
+.DS_Store
+
+# Các bản sao script được tạo khi backup/chỉnh sửa
+scripts/*.before_*
+scripts/*.backup.*
+scripts/*.bak
+
+# Python cache nếu dự án có script Python
+__pycache__/
+**/__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node.js nếu sau này có tool JavaScript
+node_modules/
+**/node_modules/
+._chatgpt_context/
+_chatgpt_context/

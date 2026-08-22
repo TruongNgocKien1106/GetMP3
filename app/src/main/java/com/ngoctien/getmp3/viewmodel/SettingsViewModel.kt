@@ -3,12 +3,13 @@ package com.ngoctien.getmp3.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.ngoctien.getmp3.library.MediaIndexProgress
+import com.ngoctien.getmp3.library.MediaIndexRepository
 import com.ngoctien.getmp3.settings.AppSettings
 import com.ngoctien.getmp3.settings.AppSettingsRepository
 import com.ngoctien.getmp3.settings.AppThemeMode
-import com.ngoctien.getmp3.settings.CompareLibraryRepository
+import com.ngoctien.getmp3.settings.AppUiStyle
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,14 +17,47 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
+/**
+ * UI state for the shared reference-media index.
+ *
+ * The data itself lives in Room. This state only mirrors progress/stats.
+ */
 data class CompareIndexUiState(
     val isScanning: Boolean = false,
-    val scannedFiles: Int = 0,
+    val totalFiles: Int = 0,
+    val processedFiles: Int = 0,
+    val newFiles: Int = 0,
+    val changedFiles: Int = 0,
+    val skippedFiles: Int = 0,
+    val failedFiles: Int = 0,
+    val coverFiles: Int = 0,
+    val artistCount: Int = 0,
+    val albumCount: Int = 0,
+    val updatedAt: Long = 0L,
+    val sourceUri: String? = null,
+    val currentFileName: String = "",
     val message: String? = null,
     val errorMessage: String? = null
-)
+) {
+    val progressFraction: Float
+        get() =
+            if (totalFiles <= 0) {
+                0f
+            } else {
+                processedFiles
+                    .toFloat()
+                    .div(totalFiles.toFloat())
+                    .coerceIn(0f, 1f)
+            }
+
+    val hasIndex: Boolean
+        get() =
+            sourceUri
+                .isNullOrBlank()
+                .not() &&
+                totalFiles > 0
+}
 
 class SettingsViewModel(
     application: Application
@@ -32,22 +66,18 @@ class SettingsViewModel(
     private val repository =
         AppSettingsRepository(application)
 
-    private val compareLibraryRepository =
-        CompareLibraryRepository(
-            application
-        )
+    private val mediaIndexRepository =
+        MediaIndexRepository(application)
 
     val uiState: StateFlow<AppSettings> =
         repository.observeSettings()
             .stateIn(
                 scope = viewModelScope,
-
                 started =
                     SharingStarted
                         .WhileSubscribed(
                             5_000L
                         ),
-
                 initialValue =
                     repository.getSettings()
             )
@@ -62,16 +92,54 @@ class SettingsViewModel(
         mutableCompareIndexState
             .asStateFlow()
 
-    /*
-     * Chỉ cho phép một lượt quét tồn tại.
-     */
-    private var compareScanJob: Job? =
+    private var compareScanJob:
+        Job? =
         null
 
     init {
-        ensureCompareIndex()
+        refreshStoredIndexState()
     }
 
+    // ========================================================
+    // DOMAIN API - INBOX / LIBRARY
+    // ========================================================
+
+    val libraryIndexState:
+        StateFlow<CompareIndexUiState>
+        get() =
+            compareIndexState
+
+    fun setInboxFolder(
+        treeUri: String,
+        displayName: String
+    ) {
+        setDownloadFolder(
+            treeUri = treeUri,
+            displayName = displayName
+        )
+    }
+
+    fun useDefaultInboxFolder() {
+        useDefaultFolder()
+    }
+
+    fun setLibraryFolder(
+        treeUri: String,
+        displayName: String
+    ) {
+        setCompareFolder(
+            treeUri = treeUri,
+            displayName = displayName
+        )
+    }
+
+    fun clearLibraryFolder() {
+        clearCompareFolder()
+    }
+
+    fun rebuildLibraryIndex() {
+        rebuildCompareIndex()
+    }
     fun setBitrate(
         bitrateKbps: Int
     ) {
@@ -83,10 +151,20 @@ class SettingsViewModel(
     fun setThemeMode(
         mode: AppThemeMode
     ) {
-        repository.setThemeMode(mode)
+        repository.setThemeMode(
+            mode
+        )
+    }
+    fun setUiStyle(
+        style: AppUiStyle
+    ) {
+        repository
+            .setUiStyle(
+                style
+            )
     }
 
-    fun setDownloadFolder(
+fun setDownloadFolder(
         treeUri: String,
         displayName: String
     ) {
@@ -104,10 +182,11 @@ class SettingsViewModel(
         treeUri: String,
         displayName: String
     ) {
-        /*
-         * Người dùng chọn thư mục khác thì dừng ngay
-         * lượt quét cũ.
-         */
+        val oldUri =
+            repository
+                .getSettings()
+                .compareTreeUri
+
         compareScanJob?.cancel()
         compareScanJob = null
 
@@ -116,13 +195,21 @@ class SettingsViewModel(
             displayName = displayName
         )
 
-        mutableCompareIndexState.value =
-            CompareIndexUiState(
-                message =
-                    "Đã chọn thư mục. Đang chuẩn bị quét..."
-            )
+        if (oldUri != treeUri) {
+            viewModelScope.launch {
+                mediaIndexRepository
+                    .clearReferenceLibrary()
 
-        rebuildCompareIndex()
+                mutableCompareIndexState.value =
+                    CompareIndexUiState(
+                        sourceUri = treeUri,
+                        message =
+                            "Đã chọn thư mục. Nhấn Cài & đồng bộ để lập chỉ mục."
+                    )
+            }
+        } else {
+            refreshStoredIndexState()
+        }
     }
 
     fun clearCompareFolder() {
@@ -131,11 +218,16 @@ class SettingsViewModel(
 
         repository.clearCompareFolder()
 
-        mutableCompareIndexState.value =
-            CompareIndexUiState(
-                message =
-                    "Đã bỏ thư mục đối chiếu"
-            )
+        viewModelScope.launch {
+            mediaIndexRepository
+                .clearReferenceLibrary()
+
+            mutableCompareIndexState.value =
+                CompareIndexUiState(
+                    message =
+                        "Đã bỏ Library"
+                )
+        }
     }
 
     fun setTitleFilters(
@@ -148,6 +240,12 @@ class SettingsViewModel(
         )
     }
 
+    /**
+     * Incremental scan:
+     * - inventory is always checked;
+     * - unchanged files reuse Room data;
+     * - metadata/cover are read only for new or changed files.
+     */
     fun rebuildCompareIndex() {
         val settings =
             repository.getSettings()
@@ -159,125 +257,194 @@ class SettingsViewModel(
             mutableCompareIndexState.value =
                 CompareIndexUiState(
                     errorMessage =
-                        "Chưa chọn thư mục đối chiếu"
+                        "Chưa chọn Library"
                 )
 
             return
         }
 
-        /*
-         * Nhấn Quét lại thì hủy lượt cũ và chạy
-         * lượt mới, không để hai tác vụ tranh nhau.
-         */
         compareScanJob?.cancel()
 
         compareScanJob =
             viewModelScope.launch {
                 mutableCompareIndexState.value =
-                    CompareIndexUiState(
-                        isScanning = true,
-
-                        message =
-                            "Đang đọc file MP3 trực tiếp trong thư mục..."
-                    )
+                    mutableCompareIndexState
+                        .value
+                        .copy(
+                            isScanning = true,
+                            sourceUri = treeUri,
+                            processedFiles = 0,
+                            newFiles = 0,
+                            changedFiles = 0,
+                            skippedFiles = 0,
+                            failedFiles = 0,
+                            currentFileName = "",
+                            message =
+                                "Đang kiểm tra Library...",
+                            errorMessage = null
+                        )
 
                 try {
-                    val result =
-                        compareLibraryRepository.scan(
-                            treeUriText =
-                                treeUri,
-
-                            onProgress = {
-                                mutableCompareIndexState.value =
-                                    CompareIndexUiState(
-                                        isScanning = true,
-
-                                        scannedFiles = it,
-
-                                        message =
-                                            "Đã đọc $it file MP3..."
-                                    )
-                            }
-                        )
+                    val summary =
+                        mediaIndexRepository
+                            .scanReferenceLibrary(
+                                treeUriText = treeUri,
+                                forceReadMetadata = false,
+                                onProgress =
+                                    ::onIndexProgress
+                            )
 
                     /*
-                     * Lưu JSON lớn ra SharedPreferences
-                     * trên IO, không chặn UI.
+                     * Keep only the legacy invalidation timestamp for the
+                     * still-unmigrated Search tab. Artist/Album data itself
+                     * lives exclusively in Room.
                      */
-                    withContext(
-                        Dispatchers.IO
-                    ) {
-                        repository.saveCompareIndex(
-                            sourceUri =
-                                treeUri,
-
-                            artists =
-                                result.artists,
-
-                            albums =
-                                result.albums
-                        )
-                    }
+                    repository.saveCompareIndex(
+                        sourceUri = treeUri,
+                        artists = emptyList(),
+                        albums = emptyList()
+                    )
 
                     mutableCompareIndexState.value =
-                        CompareIndexUiState(
-                            isScanning = false,
-
-                            scannedFiles =
-                                result.scannedFiles,
-
-                            message =
-                                "Hoàn tất • " +
-                                    "${result.scannedFiles} file • " +
-                                    "${result.artists.size} Artist"
-                        )
+                        mutableCompareIndexState
+                            .value
+                            .copy(
+                                isScanning = false,
+                                totalFiles =
+                                    summary.totalFiles,
+                                processedFiles =
+                                    summary.totalFiles,
+                                failedFiles =
+                                    summary.failedFiles,
+                                coverFiles =
+                                    summary.coverFiles,
+                                artistCount =
+                                    summary.artistCount,
+                                albumCount =
+                                    summary.albumCount,
+                                updatedAt =
+                                    summary.updatedAt,
+                                sourceUri =
+                                    summary.treeUri,
+                                currentFileName = "",
+                                message =
+                                    "Hoàn tất • ${summary.totalFiles} bài • " +
+                                        "${summary.artistCount} Artist • " +
+                                        "${summary.albumCount} Album • " +
+                                        "${summary.coverFiles} cover",
+                                errorMessage = null
+                            )
                 } catch (
-                    exception: CancellationException
+                    exception:
+                        CancellationException
                 ) {
-                    /*
-                     * Hủy lượt cũ là hành vi bình thường.
-                     * Không biến nó thành thông báo lỗi.
-                     */
                     throw exception
                 } catch (
                     exception: Exception
                 ) {
                     mutableCompareIndexState.value =
-                        CompareIndexUiState(
-                            isScanning = false,
-
-                            errorMessage =
-                                exception.message
-                                    ?.takeIf {
-                                        it.isNotBlank()
-                                    }
-                                    ?: "Không quét được thư mục đối chiếu"
-                        )
+                        mutableCompareIndexState
+                            .value
+                            .copy(
+                                isScanning = false,
+                                currentFileName = "",
+                                errorMessage =
+                                    exception.message
+                                        ?.takeIf {
+                                            it.isNotBlank()
+                                        }
+                                        ?: "Không chuẩn bị được dữ liệu thư viện"
+                            )
                 }
             }
     }
 
-    private fun ensureCompareIndex() {
-        val settings =
-            repository.getSettings()
+    private fun onIndexProgress(
+        progress: MediaIndexProgress
+    ) {
+        mutableCompareIndexState.value =
+            mutableCompareIndexState
+                .value
+                .copy(
+                    isScanning = true,
+                    totalFiles =
+                        progress.totalFiles,
+                    processedFiles =
+                        progress.processedFiles,
+                    newFiles =
+                        progress.newFiles,
+                    changedFiles =
+                        progress.changedFiles,
+                    skippedFiles =
+                        progress.skippedFiles,
+                    failedFiles =
+                        progress.failedFiles,
+                    currentFileName =
+                        progress.currentFileName,
+                    message =
+                        if (
+                            progress.totalFiles > 0
+                        ) {
+                            "${progress.processedFiles}/${progress.totalFiles} • " +
+                                "mới ${progress.newFiles} • " +
+                                "đổi ${progress.changedFiles} • " +
+                                "bỏ qua ${progress.skippedFiles}"
+                        } else {
+                            "Đang đọc danh sách file..."
+                        },
+                    errorMessage = null
+                )
+    }
 
-        val compareUri =
-            settings.compareTreeUri
+    private fun refreshStoredIndexState() {
+        viewModelScope.launch {
+            val settings =
+                repository.getSettings()
 
-        if (compareUri.isNullOrBlank()) {
-            return
-        }
+            val summary =
+                mediaIndexRepository
+                    .referenceSummary()
 
-        val hasValidIndex =
-            settings.compareIndexSourceUri ==
-                compareUri &&
-                settings.compareIndexGeneratedAt >
-                0L &&
-                settings.indexedArtists
-                    .isNotEmpty()
-
-        if (!hasValidIndex) {
-            rebuildCompareIndex()
+            mutableCompareIndexState.value =
+                if (
+                    summary != null &&
+                    summary.treeUri ==
+                    settings.compareTreeUri
+                ) {
+                    CompareIndexUiState(
+                        totalFiles =
+                            summary.totalFiles,
+                        processedFiles =
+                            summary.totalFiles,
+                        failedFiles =
+                            summary.failedFiles,
+                        coverFiles =
+                            summary.coverFiles,
+                        artistCount =
+                            summary.artistCount,
+                        albumCount =
+                            summary.albumCount,
+                        updatedAt =
+                            summary.updatedAt,
+                        sourceUri =
+                            summary.treeUri,
+                        message =
+                            "${summary.totalFiles} bài đã có dữ liệu"
+                    )
+                } else {
+                    CompareIndexUiState(
+                        sourceUri =
+                            settings.compareTreeUri,
+                        message =
+                            if (
+                                settings.hasLibraryFolder
+                            ) {
+                                "Chưa có dữ liệu cho thư mục này"
+                            } else {
+                                null
+                            }
+                    )
+                }
         }
     }
 

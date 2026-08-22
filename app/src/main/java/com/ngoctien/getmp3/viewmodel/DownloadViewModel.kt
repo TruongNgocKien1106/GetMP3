@@ -103,21 +103,32 @@ class DownloadViewModel(
             return
         }
 
-        val url = clipboardText
-            ?.toString()
-            ?.trim()
-            .orEmpty()
+        val rawClipboardText =
+            clipboardText
+                ?.toString()
+                ?.trim()
+                .orEmpty()
 
-        val validationError =
-            validateUrl(url)
+        val normalizedUrl =
+            try {
+                normalizeYouTubeVideoUrl(
+                    rawClipboardText
+                )
+            } catch (
+                exception: Exception
+            ) {
+                mutableEvents.tryEmit(
+                    UiEvent(
+                        exception.message
+                            ?.takeIf {
+                                it.isNotBlank()
+                            }
+                            ?: "Clipboard không chứa liên kết YouTube hợp lệ"
+                    )
+                )
 
-        if (validationError != null) {
-            mutableEvents.tryEmit(
-                UiEvent(validationError)
-            )
-
-            return
-        }
+                return
+            }
 
         if (
             mutableUiState.value.ffmpegState !=
@@ -135,7 +146,9 @@ class DownloadViewModel(
         viewModelScope.launch {
             mutableUiState.update {
                 it.copy(
-                    isPreparingDownload = true,
+                    isPreparingDownload =
+                        true,
+
                     preparingMessage =
                         "Đang đọc thông tin bài hát..."
                 )
@@ -143,15 +156,19 @@ class DownloadViewModel(
 
             try {
                 val duplicated =
-                    withContext(Dispatchers.IO) {
+                    withContext(
+                        Dispatchers.IO
+                    ) {
                         repository
-                            .hasActiveJobForUrl(url)
+                            .hasActiveJobForUrl(
+                                normalizedUrl
+                            )
                     }
 
                 if (duplicated) {
                     mutableEvents.emit(
                         UiEvent(
-                            "Liên kết này đã có trong hàng đợi"
+                            "Video này đã có trong hàng đợi"
                         )
                     )
 
@@ -159,8 +176,12 @@ class DownloadViewModel(
                 }
 
                 val infoResult =
-                    withContext(Dispatchers.IO) {
-                        bridge.extractVideoInfo(url)
+                    withContext(
+                        Dispatchers.IO
+                    ) {
+                        bridge.extractVideoInfo(
+                            normalizedUrl
+                        )
                     }
 
                 val videoInfo =
@@ -192,52 +213,68 @@ class DownloadViewModel(
                 val now =
                     System.currentTimeMillis()
 
-                val job = DownloadJobEntity(
-                    id = UUID.randomUUID()
-                        .toString(),
+                val job =
+                    DownloadJobEntity(
+                        id =
+                            UUID.randomUUID()
+                                .toString(),
 
-                    url = videoInfo.sourceUrl,
+                        /*
+                         * Luôn lưu URL chuẩn để:
+                         * - loại tham số playlist;
+                         * - tránh một video bị thêm nhiều lần;
+                         * - bảo đảm yt-dlp chỉ nhận video đơn.
+                         */
+                        url =
+                            normalizedUrl,
 
-                    title = videoInfo.title,
-                    artist = videoInfo.artist,
+                        title =
+                            videoInfo.title,
 
-                    thumbnailUrl =
-                        videoInfo.thumbnailUrl,
+                        artist =
+                            videoInfo.artist,
 
-                    status =
-                        DownloadStatus.QUEUED,
+                        thumbnailUrl =
+                            videoInfo.thumbnailUrl,
 
-                    stageProgress = 0,
-                    overallProgress = 0,
+                        status =
+                            DownloadStatus.QUEUED,
 
-                    downloadedBytes = 0L,
-                    totalBytes = 0L,
-                    speedBytesPerSecond = 0L,
-                    etaSeconds = 0L,
+                        stageProgress = 0,
+                        overallProgress = 0,
 
-                    durationSeconds =
-                        videoInfo.durationSeconds,
+                        downloadedBytes = 0L,
+                        totalBytes = 0L,
+                        speedBytesPerSecond = 0L,
+                        etaSeconds = 0L,
 
-                    processedSeconds = 0L,
-                    ffmpegSpeed = 0f,
+                        durationSeconds =
+                            videoInfo.durationSeconds,
 
-                    stageStartedAt = now,
-                    lastProgressAt = now,
+                        processedSeconds = 0L,
+                        ffmpegSpeed = 0f,
 
-                    statusMessage =
-                        "Đang chờ",
+                        stageStartedAt = now,
+                        lastProgressAt = now,
 
-                    warningMessage = null,
-                    errorMessage = null,
+                        statusMessage =
+                            "Đang chờ",
 
-                    outputUri = null,
+                        warningMessage = null,
+                        errorMessage = null,
 
-                    createdAt = now,
-                    updatedAt = now
-                )
+                        outputUri = null,
 
-                withContext(Dispatchers.IO) {
-                    repository.insertJob(job)
+                        createdAt = now,
+                        updatedAt = now
+                    )
+
+                withContext(
+                    Dispatchers.IO
+                ) {
+                    repository.insertJob(
+                        job
+                    )
                 }
 
                 startDownloadService()
@@ -247,17 +284,30 @@ class DownloadViewModel(
                         "Đã thêm “${videoInfo.title}”"
                     )
                 )
+            } catch (
+                exception: Exception
+            ) {
+                mutableEvents.emit(
+                    UiEvent(
+                        friendlyMetadataError(
+                            exception.message
+                                ?: "Không thể chuẩn bị tải video"
+                        )
+                    )
+                )
             } finally {
                 mutableUiState.update {
                     it.copy(
-                        isPreparingDownload = false,
-                        preparingMessage = null
+                        isPreparingDownload =
+                            false,
+
+                        preparingMessage =
+                            null
                     )
                 }
             }
         }
     }
-
     fun cancelJob(
         jobId: String
     ) {
@@ -472,55 +522,216 @@ class DownloadViewModel(
         )
     }
 
-    private fun validateUrl(
-        value: String
-    ): String? {
-        if (value.isBlank()) {
-            return "Clipboard không có liên kết"
+    private fun normalizeYouTubeVideoUrl(
+        clipboardValue: String
+    ): String {
+        if (clipboardValue.isBlank()) {
+            throw IllegalArgumentException(
+                "Clipboard không có liên kết"
+            )
         }
 
-        return try {
-            val uri = Uri.parse(value)
+        /*
+         * Hỗ trợ clipboard chứa thêm lời giới thiệu,
+         * ví dụ: "Xem video này https://youtu.be/..."
+         */
+        val extractedUrl =
+            Regex(
+                pattern =
+                    """https?://[^\s]+""",
 
-            val scheme = uri.scheme
-                ?.lowercase(Locale.US)
+                option =
+                    RegexOption.IGNORE_CASE
+            )
+                .find(
+                    clipboardValue
+                )
+                ?.value
+                ?.trim()
+                ?.trimEnd(
+                    '.',
+                    ',',
+                    ';',
+                    ')',
+                    ']',
+                    '}',
+                    '>',
+                    '"',
+                    '\''
+                )
+                ?: clipboardValue
+                    .trim()
 
-            if (
-                scheme != "https" &&
-                scheme != "http"
+        val uri =
+            try {
+                Uri.parse(
+                    extractedUrl
+                )
+            } catch (
+                exception: Exception
             ) {
-                return "Clipboard không chứa URL hợp lệ"
+                throw IllegalArgumentException(
+                    "Clipboard không chứa URL hợp lệ",
+
+                    exception
+                )
             }
 
-            val host = uri.host
-                ?.lowercase(Locale.US)
-                ?: return "URL không có tên miền"
+        val scheme =
+            uri.scheme
+                ?.lowercase(
+                    Locale.US
+                )
 
-            val validHost =
-                host == "youtube.com" ||
-                    host == "www.youtube.com" ||
-                    host == "m.youtube.com" ||
-                    host ==
-                    "music.youtube.com" ||
-                    host == "youtu.be"
+        if (
+            scheme != "https" &&
+            scheme != "http"
+        ) {
+            throw IllegalArgumentException(
+                "Clipboard không chứa URL hợp lệ"
+            )
+        }
 
-            if (!validHost) {
-                return "Clipboard không chứa liên kết YouTube"
+        val host =
+            uri.host
+                ?.lowercase(
+                    Locale.US
+                )
+                ?.trimEnd('.')
+                ?: throw IllegalArgumentException(
+                    "URL không có tên miền"
+                )
+
+        val shortHost =
+            host == "youtu.be" ||
+                host == "www.youtu.be"
+
+        val standardHost =
+            host == "youtube.com" ||
+                host == "www.youtube.com" ||
+                host == "m.youtube.com" ||
+                host == "music.youtube.com" ||
+                host == "youtube-nocookie.com" ||
+                host ==
+                    "www.youtube-nocookie.com"
+
+        if (
+            !shortHost &&
+            !standardHost
+        ) {
+            throw IllegalArgumentException(
+                "Clipboard không chứa liên kết YouTube"
+            )
+        }
+
+        val pathSegments =
+            uri.pathSegments
+                .map {
+                    it.trim()
+                }
+                .filter {
+                    it.isNotBlank()
+                }
+
+        val firstSegment =
+            pathSegments
+                .firstOrNull()
+                ?.lowercase(
+                    Locale.US
+                )
+                .orEmpty()
+
+        val playlistId =
+            uri.getQueryParameter(
+                "list"
+            )
+                ?.trim()
+                .orEmpty()
+
+        val rawVideoId =
+            when {
+                shortHost -> {
+                    pathSegments
+                        .firstOrNull()
+                }
+
+                firstSegment == "watch" -> {
+                    uri.getQueryParameter(
+                        "v"
+                    )
+                }
+
+                firstSegment in
+                    setOf(
+                        "shorts",
+                        "live",
+                        "embed",
+                        "v"
+                    ) -> {
+                    pathSegments
+                        .getOrNull(1)
+                }
+
+                else -> {
+                    uri.getQueryParameter(
+                        "v"
+                    )
+                }
             }
+                ?.trim()
+                .orEmpty()
 
+        if (rawVideoId.isBlank()) {
             if (
-                uri.getQueryParameter("list")
-                    ?.isNotBlank() == true
+                firstSegment ==
+                "playlist" ||
+                playlistId.isNotBlank()
             ) {
-                return "Ứng dụng chưa hỗ trợ playlist"
+                throw IllegalArgumentException(
+                    "Ứng dụng chưa hỗ trợ tải toàn bộ playlist"
+                )
             }
 
-            null
-        } catch (_: Exception) {
-            "Clipboard không chứa URL hợp lệ"
+            throw IllegalArgumentException(
+                "Không tìm thấy mã video trong liên kết YouTube"
+            )
+        }
+
+        val videoId =
+            rawVideoId
+                .substringBefore('?')
+                .substringBefore('&')
+                .substringBefore('#')
+                .trim()
+
+        val validVideoId =
+            Regex(
+                """^[A-Za-z0-9_-]{11}$"""
+            ).matches(
+                videoId
+            )
+
+        if (!validVideoId) {
+            throw IllegalArgumentException(
+                "Mã video YouTube không hợp lệ"
+            )
+        }
+
+        /*
+         * Chỉ giữ video ID.
+         * Các tham số list, index, start_radio, si, t,
+         * feature và pp đều được loại bỏ.
+         */
+        return buildString {
+            append(
+                "https://www.youtube.com/watch?v="
+            )
+
+            append(
+                videoId
+            )
         }
     }
-
     private fun friendlyMetadataError(
         rawMessage: String
     ): String {

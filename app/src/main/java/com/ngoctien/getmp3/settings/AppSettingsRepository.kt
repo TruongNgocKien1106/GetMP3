@@ -28,6 +28,9 @@ data class AppSettings(
     val themeMode: AppThemeMode =
         AppThemeMode.SYSTEM,
 
+    val uiStyle: AppUiStyle =
+        AppUiStyle.BENTO,
+
     val compareTreeUri: String? =
         null,
 
@@ -60,14 +63,54 @@ data class AppSettings(
         get() =
             !compareTreeUri.isNullOrBlank()
 
+    /*
+     * Domain naming mới.
+     *
+     * Field persistence cũ vẫn được giữ để không phá cấu hình
+     * của người dùng đã cài app:
+     *
+     * download* -> Inbox
+     * compare*  -> Library
+     */
+    val inboxTreeUri: String?
+        get() =
+            downloadTreeUri
+
+    val inboxFolderName: String
+        get() =
+            downloadFolderName
+
+    val libraryTreeUri: String?
+        get() =
+            compareTreeUri
+
+    val libraryFolderName: String
+        get() =
+            compareFolderName
+
+    val usesCustomInboxFolder: Boolean
+        get() =
+            usesCustomFolder
+
+    val hasLibraryFolder: Boolean
+        get() =
+            hasCompareFolder
+
+    val libraryIndexSourceUri: String?
+        get() =
+            compareIndexSourceUri
+
+    val libraryIndexGeneratedAt: Long
+        get() =
+            compareIndexGeneratedAt
     companion object {
         const val DEFAULT_BITRATE = 128
 
         const val DEFAULT_FOLDER_NAME =
-            "Music/GetMP3"
+            "Music/Inbox"
 
         const val DEFAULT_RELATIVE_PATH =
-            "Music/GetMP3/"
+            "Music/Inbox/"
 
         val SUPPORTED_BITRATES =
             listOf(
@@ -251,6 +294,9 @@ class AppSettingsRepository(
         private const val KEY_THEME_MODE =
             "theme_mode"
 
+        private const val KEY_UI_STYLE =
+            "ui_style"
+
         private const val KEY_COMPARE_TREE_URI =
             "compare_tree_uri"
 
@@ -262,6 +308,7 @@ class AppSettingsRepository(
 
         private const val KEY_FILTER_SYMBOLS =
             "title_filter_symbols"
+
 
 
         private const val KEY_FILTER_TERMS_VERSION =
@@ -321,6 +368,21 @@ class AppSettingsRepository(
                 AppThemeMode.SYSTEM
             )
 
+        val uiStyle =
+            runCatching {
+                AppUiStyle.valueOf(
+                    preferences.getString(
+                        KEY_UI_STYLE,
+                        AppUiStyle
+                            .BENTO
+                            .name
+                    ) ?: AppUiStyle
+                        .BENTO
+                        .name
+                )
+            }.getOrDefault(
+                AppUiStyle.BENTO
+            )
         return AppSettings(
             bitrateKbps = bitrate,
 
@@ -343,6 +405,8 @@ class AppSettingsRepository(
                     .DEFAULT_FOLDER_NAME,
 
             themeMode = themeMode,
+
+            uiStyle = uiStyle,
 
             compareTreeUri =
                 preferences.getString(
@@ -467,6 +531,17 @@ class AppSettingsRepository(
             .apply()
     }
 
+    fun setUiStyle(
+        style: AppUiStyle
+    ) {
+        preferences.edit()
+            .putString(
+                KEY_UI_STYLE,
+                style.name
+            )
+            .apply()
+    }
+
     fun setDownloadFolder(
         treeUri: String,
         displayName: String
@@ -577,6 +652,39 @@ class AppSettingsRepository(
             .apply()
     }
 
+    // ========================================================
+    // DOMAIN API - INBOX / LIBRARY
+    //
+    // Các method cũ vẫn giữ lại làm compatibility layer.
+    // ========================================================
+
+    fun setInboxFolder(
+        treeUri: String,
+        displayName: String
+    ) {
+        setDownloadFolder(
+            treeUri = treeUri,
+            displayName = displayName
+        )
+    }
+
+    fun useDefaultInboxFolder() {
+        useDefaultFolder()
+    }
+
+    fun setLibraryFolder(
+        treeUri: String,
+        displayName: String
+    ) {
+        setCompareFolder(
+            treeUri = treeUri,
+            displayName = displayName
+        )
+    }
+
+    fun clearLibraryFolder() {
+        clearCompareFolder()
+    }
     fun setTitleFilters(
         terms: List<String>,
         symbols: String

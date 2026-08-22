@@ -7,6 +7,13 @@ import com.chaquo.python.android.AndroidPlatform
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import org.json.JSONObject
+
+data class YouTubeSearchPage(
+    val items: List<YouTubeSearchResult>,
+    val nextOffset: Int,
+    val hasMore: Boolean
+)
 
 class YouTubeSearchRepository(
     context: Context
@@ -18,6 +25,18 @@ class YouTubeSearchRepository(
         query: String,
         limit: Int = 10
     ): List<YouTubeSearchResult> {
+        return searchPage(
+            query = query,
+            offset = 0,
+            limit = limit
+        ).items
+    }
+
+    suspend fun searchPage(
+        query: String,
+        offset: Int = 0,
+        limit: Int = 10
+    ): YouTubeSearchPage {
         val cleanQuery =
             query
                 .trim()
@@ -30,10 +49,16 @@ class YouTubeSearchRepository(
             "Hãy nhập nội dung cần tìm."
         }
 
+        val safeOffset =
+            offset.coerceIn(
+                0,
+                199
+            )
+
         val safeLimit =
             limit.coerceIn(
                 1,
-                15
+                20
             )
 
         return withContext(
@@ -52,15 +77,21 @@ class YouTubeSearchRepository(
 
                 val jsonText =
                     module.callAttr(
-                        "search_youtube_json",
+                        "search_youtube_page_json",
                         cleanQuery,
+                        safeOffset,
                         safeLimit
                     ).toString()
 
-                parseResults(
-                    jsonText
+                parsePage(
+                    jsonText = jsonText,
+                    fallbackOffset =
+                        safeOffset +
+                            safeLimit
                 )
-            } catch (exception: PyException) {
+            } catch (
+                exception: PyException
+            ) {
                 throw IllegalStateException(
                     cleanPythonError(
                         exception.message
@@ -81,12 +112,42 @@ class YouTubeSearchRepository(
         }
     }
 
-    private fun parseResults(
-        jsonText: String
-    ): List<YouTubeSearchResult> {
-        val jsonArray =
-            JSONArray(jsonText)
+    private fun parsePage(
+        jsonText: String,
+        fallbackOffset: Int
+    ): YouTubeSearchPage {
+        val root =
+            JSONObject(jsonText)
 
+        val items =
+            parseResults(
+                root.optJSONArray(
+                    "items"
+                ) ?: JSONArray()
+            )
+
+        val nextOffset =
+            root.optInt(
+                "next_offset",
+                fallbackOffset
+            )
+
+        val hasMore =
+            root.optBoolean(
+                "has_more",
+                false
+            )
+
+        return YouTubeSearchPage(
+            items = items,
+            nextOffset = nextOffset,
+            hasMore = hasMore
+        )
+    }
+
+    private fun parseResults(
+        jsonArray: JSONArray
+    ): List<YouTubeSearchResult> {
         val results =
             ArrayList<YouTubeSearchResult>(
                 jsonArray.length()
@@ -135,10 +196,9 @@ class YouTubeSearchRepository(
                     item.optLong(
                         "duration",
                         -1L
-                    )
-                        .takeIf {
-                            it >= 0L
-                        }
+                    ).takeIf {
+                        it >= 0L
+                    }
                 }
 
             results.add(
