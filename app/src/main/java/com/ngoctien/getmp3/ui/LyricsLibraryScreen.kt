@@ -2,7 +2,6 @@ package com.ngoctien.getmp3.ui
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,9 +32,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -94,6 +90,7 @@ internal fun LyricsLibraryScreen(
     LazyColumn(
         modifier =
             Modifier.fillMaxSize(),
+
         contentPadding =
             PaddingValues(
                 bottom =
@@ -101,6 +98,7 @@ internal fun LyricsLibraryScreen(
                         .spacing
                         .extraLarge
             ),
+
         verticalArrangement =
             Arrangement.spacedBy(
                 14.dp
@@ -109,15 +107,19 @@ internal fun LyricsLibraryScreen(
         item(
             key = "lyrics-search"
         ) {
-            LyricsPrototypeSearchBar(
+            LyricsSearchBar(
                 value =
                     state.query,
+
                 loading =
                     state.isSearchingLyrics,
+
                 onValueChange =
                     onQueryChange,
+
                 onClear =
                     onClear,
+
                 onSubmit = {
                     submit()
                 }
@@ -128,11 +130,12 @@ internal fun LyricsLibraryScreen(
             state.isSearchingLyrics -> {
                 item(
                     key =
-                        "lyrics-online-loading"
+                        "lyrics-loading"
                 ) {
                     AppAnimatedStatusText(
                         text =
                             "Đang tìm lời bài hát...",
+
                         color =
                             MaterialTheme
                                 .colorScheme
@@ -146,7 +149,7 @@ internal fun LyricsLibraryScreen(
 
                 item(
                     key =
-                        "lyrics-online-header"
+                        "lyrics-results-header"
                 ) {
                     LyricsResultsHeader(
                         count =
@@ -158,6 +161,7 @@ internal fun LyricsLibraryScreen(
                 itemsIndexed(
                     items =
                         state.searchResults,
+
                     key = {
                             index,
                             result ->
@@ -177,14 +181,13 @@ internal fun LyricsLibraryScreen(
                         }
                     }
                 ) {
-                        index,
+                        _,
                         result ->
 
-                    LyricsOnlineResultCard(
+                    LyricsResultCard(
                         result =
                             result,
-                        index =
-                            index,
+
                         onClick = {
                             onSelectResult(
                                 result
@@ -199,14 +202,16 @@ internal fun LyricsLibraryScreen(
 
                 item(
                     key =
-                        "lyrics-online-error"
+                        "lyrics-error"
                 ) {
                     AppErrorNotice(
                         text =
                             state.errorMessage
                                 .orEmpty(),
+
                         actionText =
                             "Thử lại",
+
                         onAction =
                             onRetry
                     )
@@ -216,7 +221,7 @@ internal fun LyricsLibraryScreen(
             state.query.isBlank() -> {
                 item(
                     key =
-                        "lyrics-start-hint"
+                        "lyrics-start"
                 ) {
                     LyricsStartHint()
                 }
@@ -225,15 +230,17 @@ internal fun LyricsLibraryScreen(
             else -> {
                 item(
                     key =
-                        "lyrics-ready-hint"
+                        "lyrics-ready"
                 ) {
                     Text(
                         text =
                             "Nhấn mũi tên hoặc Search trên bàn phím để tìm lời.",
+
                         style =
                             MaterialTheme
                                 .typography
                                 .bodySmall,
+
                         color =
                             MaterialTheme
                                 .colorScheme
@@ -247,7 +254,7 @@ internal fun LyricsLibraryScreen(
 
 
 @Composable
-private fun LyricsPrototypeSearchBar(
+private fun LyricsSearchBar(
     value: String,
     loading: Boolean,
     onValueChange:
@@ -267,19 +274,23 @@ private fun LyricsPrototypeSearchBar(
                 .heightIn(
                     min = 60.dp
                 ),
+
         shape =
             RoundedCornerShape(
                 18.dp
             ),
+
         color =
             colors
                 .surfaceVariant
                 .copy(
                     alpha = 0.12f
                 ),
+
         border =
             BorderStroke(
                 1.dp,
+
                 colors
                     .primary
                     .copy(
@@ -297,16 +308,22 @@ private fun LyricsPrototypeSearchBar(
                         end = 7.dp,
                         bottom = 6.dp
                     ),
+
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
             Icon(
                 imageVector =
                     Icons.Rounded.Search,
+
                 contentDescription =
                     null,
+
                 modifier =
-                    Modifier.size(22.dp),
+                    Modifier.size(
+                        22.dp
+                    ),
+
                 tint =
                     colors
                         .onSurfaceVariant
@@ -315,8 +332,10 @@ private fun LyricsPrototypeSearchBar(
             BasicTextField(
                 value =
                     value,
+
                 onValueChange =
                     onValueChange,
+
                 modifier =
                     Modifier
                         .weight(1f)
@@ -324,8 +343,10 @@ private fun LyricsPrototypeSearchBar(
                             horizontal = 11.dp,
                             vertical = 10.dp
                         ),
+
                 singleLine =
                     true,
+
                 textStyle =
                     MaterialTheme
                         .typography
@@ -335,21 +356,25 @@ private fun LyricsPrototypeSearchBar(
                                 colors
                                     .onSurface
                         ),
+
                 cursorBrush =
                     SolidColor(
                         colors.primary
                     ),
+
                 keyboardOptions =
                     KeyboardOptions(
                         imeAction =
                             ImeAction.Search
                     ),
+
                 keyboardActions =
                     KeyboardActions(
                         onSearch = {
                             onSubmit()
                         }
                     ),
+
                 decorationBox = {
                         innerTextField ->
 
@@ -361,14 +386,18 @@ private fun LyricsPrototypeSearchBar(
                             Text(
                                 text =
                                     "Tên bài hát hoặc Artist",
+
                                 maxLines =
                                     1,
+
                                 overflow =
                                     TextOverflow.Ellipsis,
+
                                 style =
                                     MaterialTheme
                                         .typography
                                         .bodyLarge,
+
                                 color =
                                     colors
                                         .onSurfaceVariant
@@ -390,6 +419,7 @@ private fun LyricsPrototypeSearchBar(
                             Modifier.size(
                                 21.dp
                             ),
+
                         strokeWidth =
                             2.dp
                     )
@@ -406,10 +436,13 @@ private fun LyricsPrototypeSearchBar(
                     AppIconActionButton(
                         icon =
                             Icons.Rounded.Clear,
+
                         contentDescription =
                             "Xóa tìm kiếm",
+
                         onClick =
                             onClear,
+
                         haptic =
                             false
                     )
@@ -418,14 +451,19 @@ private fun LyricsPrototypeSearchBar(
 
             AppIconActionButton(
                 icon =
-                    Icons.Rounded.ArrowForward,
+                    Icons.Rounded
+                        .ArrowForward,
+
                 contentDescription =
                     "Tìm lyrics",
+
                 onClick =
                     onSubmit,
+
                 enabled =
                     value.isNotBlank() &&
                     !loading,
+
                 haptic =
                     true
             )
@@ -441,14 +479,17 @@ private fun LyricsResultsHeader(
     Row(
         modifier =
             Modifier.fillMaxWidth(),
+
         verticalAlignment =
             Alignment.CenterVertically
     ) {
         Row(
             modifier =
                 Modifier.weight(1f),
+
             verticalAlignment =
                 Alignment.CenterVertically,
+
             horizontalArrangement =
                 Arrangement.spacedBy(
                     8.dp
@@ -459,10 +500,12 @@ private fun LyricsResultsHeader(
                     Modifier.size(
                         7.dp
                     ),
+
                 shape =
                     RoundedCornerShape(
                         99.dp
                     ),
+
                 color =
                     MaterialTheme
                         .colorScheme
@@ -472,10 +515,12 @@ private fun LyricsResultsHeader(
             Text(
                 text =
                     "Kết quả",
+
                 style =
                     MaterialTheme
                         .typography
                         .titleMedium,
+
                 fontWeight =
                     FontWeight.Black
             )
@@ -486,6 +531,7 @@ private fun LyricsResultsHeader(
                 RoundedCornerShape(
                     99.dp
                 ),
+
             color =
                 MaterialTheme
                     .colorScheme
@@ -493,9 +539,11 @@ private fun LyricsResultsHeader(
                     .copy(
                         alpha = 0.12f
                     ),
+
             border =
                 BorderStroke(
                     1.dp,
+
                     MaterialTheme
                         .colorScheme
                         .primary
@@ -507,17 +555,21 @@ private fun LyricsResultsHeader(
             Text(
                 text =
                     "$count kết quả",
+
                 modifier =
                     Modifier.padding(
                         horizontal = 9.dp,
                         vertical = 5.dp
                     ),
+
                 style =
                     MaterialTheme
                         .typography
                         .labelSmall,
+
                 fontWeight =
                     FontWeight.Bold,
+
                 color =
                     MaterialTheme
                         .colorScheme
@@ -529,12 +581,9 @@ private fun LyricsResultsHeader(
 
 
 @Composable
-private fun LyricsOnlineResultCard(
-    result:
-        LyricsSearchResult,
-    index: Int,
-    onClick:
-        () -> Unit
+private fun LyricsResultCard(
+    result: LyricsSearchResult,
+    onClick: () -> Unit
 ) {
     val colors =
         MaterialTheme.colorScheme
@@ -553,55 +602,11 @@ private fun LyricsOnlineResultCard(
                     .isNotBlank()
             ) {
                 append(" · ")
+
                 append(
                     result.albumName
                 )
             }
-        }
-
-    val coverBrush =
-        when (index % 3) {
-            0 ->
-                Brush.linearGradient(
-                    listOf(
-                        colors.primary
-                            .copy(
-                                alpha = 0.80f
-                            ),
-                        colors.secondary
-                            .copy(
-                                alpha = 0.48f
-                            )
-                    )
-                )
-
-            1 ->
-                Brush.linearGradient(
-                    listOf(
-                        colors.secondary
-                            .copy(
-                                alpha = 0.72f
-                            ),
-                        colors.tertiary
-                            .copy(
-                                alpha = 0.50f
-                            )
-                    )
-                )
-
-            else ->
-                Brush.linearGradient(
-                    listOf(
-                        colors.tertiary
-                            .copy(
-                                alpha = 0.72f
-                            ),
-                        colors.primary
-                            .copy(
-                                alpha = 0.44f
-                            )
-                    )
-                )
         }
 
     Surface(
@@ -613,21 +618,26 @@ private fun LyricsOnlineResultCard(
                     onClick =
                         onClick
                 ),
+
         shape =
             RoundedCornerShape(
                 20.dp
             ),
+
         color =
             colors
                 .surface
                 .copy(
                     alpha = 0.74f
                 ),
+
         contentColor =
             colors.onSurface,
+
         border =
             BorderStroke(
                 1.dp,
+
                 colors
                     .primary
                     .copy(
@@ -640,42 +650,17 @@ private fun LyricsOnlineResultCard(
                 Modifier.padding(
                     11.dp
                 ),
+
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(
-                            64.dp
-                        )
-                        .clip(
-                            RoundedCornerShape(
-                                17.dp
-                            )
-                        )
-                        .background(
-                            coverBrush
-                        ),
-                contentAlignment =
-                    Alignment.Center
-            ) {
-                Text(
-                    text =
-                        "COVER",
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelSmall,
-                    fontWeight =
-                        FontWeight.Black,
-                    color =
-                        Color.White
-                            .copy(
-                                alpha = 0.78f
-                            )
-                )
-            }
+            LyricsArtwork(
+                result =
+                    result,
+
+                size =
+                    64
+            )
 
             Spacer(
                 modifier =
@@ -687,6 +672,7 @@ private fun LyricsOnlineResultCard(
             Column(
                 modifier =
                     Modifier.weight(1f),
+
                 verticalArrangement =
                     Arrangement.spacedBy(
                         4.dp
@@ -695,14 +681,18 @@ private fun LyricsOnlineResultCard(
                 Text(
                     text =
                         result.trackName,
+
                     maxLines =
                         2,
+
                     overflow =
                         TextOverflow.Ellipsis,
+
                     style =
                         MaterialTheme
                             .typography
                             .titleSmall,
+
                     fontWeight =
                         FontWeight.Black
                 )
@@ -710,14 +700,18 @@ private fun LyricsOnlineResultCard(
                 Text(
                     text =
                         metadata,
+
                     maxLines =
                         1,
+
                     overflow =
                         TextOverflow.Ellipsis,
+
                     style =
                         MaterialTheme
                             .typography
                             .bodySmall,
+
                     color =
                         colors
                             .onSurfaceVariant
@@ -733,11 +727,15 @@ private fun LyricsOnlineResultCard(
 
             AppIconActionButton(
                 icon =
-                    Icons.Rounded.ArrowForward,
+                    Icons.Rounded
+                        .ArrowForward,
+
                 contentDescription =
                     "Mở lyrics",
+
                 onClick =
                     onClick,
+
                 haptic =
                     true
             )
@@ -755,8 +753,10 @@ private fun LyricsStartHint() {
                 .padding(
                     top = 150.dp
                 ),
+
         horizontalAlignment =
             Alignment.CenterHorizontally,
+
         verticalArrangement =
             Arrangement.spacedBy(
                 9.dp
@@ -767,10 +767,12 @@ private fun LyricsStartHint() {
                 Modifier.size(
                     56.dp
                 ),
+
             shape =
                 RoundedCornerShape(
                     17.dp
                 ),
+
             color =
                 MaterialTheme
                     .colorScheme
@@ -778,9 +780,11 @@ private fun LyricsStartHint() {
                     .copy(
                         alpha = 0.15f
                     ),
+
             border =
                 BorderStroke(
                     1.dp,
+
                     MaterialTheme
                         .colorScheme
                         .primary
@@ -792,18 +796,22 @@ private fun LyricsStartHint() {
             Box(
                 modifier =
                     Modifier.fillMaxSize(),
+
                 contentAlignment =
                     Alignment.Center
             ) {
                 Icon(
                     imageVector =
                         Icons.Rounded.Search,
+
                     contentDescription =
                         null,
+
                     modifier =
                         Modifier.size(
                             29.dp
                         ),
+
                     tint =
                         MaterialTheme
                             .colorScheme
@@ -815,10 +823,12 @@ private fun LyricsStartHint() {
         Text(
             text =
                 "Tìm lời bài hát",
+
             style =
                 MaterialTheme
                     .typography
                     .titleMedium,
+
             fontWeight =
                 FontWeight.Bold
         )
@@ -826,10 +836,12 @@ private fun LyricsStartHint() {
         Text(
             text =
                 "Nhập tên bài hoặc Artist để bắt đầu",
+
             style =
                 MaterialTheme
                     .typography
                     .bodySmall,
+
             color =
                 MaterialTheme
                     .colorScheme
