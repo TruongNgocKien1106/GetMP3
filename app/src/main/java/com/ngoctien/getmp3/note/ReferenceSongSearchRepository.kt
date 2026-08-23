@@ -61,7 +61,7 @@ class ReferenceSongSearchRepository(
 ) {
 
     companion object {
-        internal const val SEARCH_THRESHOLD = 0.55
+        internal const val SEARCH_THRESHOLD = 0.90
         private const val MP3_MIME_TYPE = "audio/mpeg"
         private const val YIELD_EVERY = 250
         private const val MAX_CACHED_COVERS = 64
