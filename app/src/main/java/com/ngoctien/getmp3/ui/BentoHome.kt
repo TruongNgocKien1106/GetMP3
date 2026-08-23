@@ -1289,7 +1289,7 @@ private fun PrototypeCardSheen(
                     animation =
                         tween(
                             durationMillis =
-                                860,
+                                2_200,
                             delayMillis =
                                 delayMillis,
                             easing =

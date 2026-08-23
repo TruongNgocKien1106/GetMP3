@@ -1,64 +1,30 @@
 package com.ngoctien.getmp3.ui
 
-import androidx.compose.material.icons.automirrored.rounded.List
-
-import com.ngoctien.getmp3.ui.design.LocalAppDesign
-
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.DeleteSweep
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.ErrorOutline
-import androidx.compose.material.icons.rounded.List
-import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.OpenInNew
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -71,33 +37,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import androidx.compose.ui.unit.sp
 import com.ngoctien.getmp3.data.DownloadJobEntity
-import com.ngoctien.getmp3.model.DownloadStatus
 import com.ngoctien.getmp3.note.ReferenceSongMatch
 import com.ngoctien.getmp3.settings.AppSettings
-import com.ngoctien.getmp3.ui.theme.BrandBlue
-import com.ngoctien.getmp3.ui.theme.BrandCyan
-import com.ngoctien.getmp3.ui.theme.BrandViolet
+import com.ngoctien.getmp3.ui.design.appPressable
 import com.ngoctien.getmp3.viewmodel.DownloadScreenUiState
 import com.ngoctien.getmp3.viewmodel.FfmpegReadyState
 import com.ngoctien.getmp3.viewmodel.SearchDownloadSection
 import com.ngoctien.getmp3.viewmodel.YouTubeSearchUiState
 import com.ngoctien.getmp3.youtube.YouTubeSearchResult
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun BentoSearchDownloadScreen(
     searchState: YouTubeSearchUiState,
@@ -122,9 +80,6 @@ internal fun BentoSearchDownloadScreen(
     onClearHistory: () -> Unit,
     onRetryFfmpeg: () -> Unit
 ) {
-    val design =
-        LocalAppDesign.current
-
     val downloadEnabled =
         downloadState.ffmpegState ==
             FfmpegReadyState.READY &&
@@ -136,298 +91,243 @@ internal fun BentoSearchDownloadScreen(
             mutableStateOf(false)
         }
 
-    LaunchedEffect(searchState.query) {
-        showReferenceMatches = false
+    LaunchedEffect(
+        searchState.query
+    ) {
+        showReferenceMatches =
+            false
     }
 
+    val historyCount =
+        downloadState.activeJobs.size +
+            downloadState.recentJobs.size
+
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(
-                start =
-                    design
-                        .spacing
-                        .screenHorizontal,
-                top =
-                    design
-                        .spacing
-                        .screenVertical,
-                end =
-                    design
-                        .spacing
-                        .screenHorizontal
-            )
+        modifier =
+            modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(
+                    start = 18.dp,
+                    top = 14.dp,
+                    end = 18.dp
+                )
     ) {
-        AppPageHeader(
-            title = "Inbox",
-
-            subtitle =
-                "Tìm, tải và xử lý nhạc mới • ${settings.bitrateKbps} kbps",
-
-            icon =
-                Icons.Rounded.Download
-        )
+        InboxHeader()
 
         Spacer(
             modifier =
-                Modifier.height(12.dp)
+                Modifier.height(20.dp)
         )
 
-        SearchHeroPanel(
-            searchState =
-                searchState,
-
-            downloadState =
-                downloadState,
-
+        PrototypeInboxSearchField(
+            query =
+                searchState.query,
+            isSearching =
+                searchState.isSearching ||
+                    searchState
+                        .isSearchingReference,
             onQueryChange =
                 onQueryChange,
-
             onSearch =
                 onSearch,
-
-
-            onClearSearch =
-                onClearSearch,
-
-            onSelectSection =
-                onSelectSection,
-
-            onOpenReferenceMatches = {
-                showReferenceMatches = true
-            },
-
-            onRetryFfmpeg =
-                onRetryFfmpeg
+            onClear =
+                onClearSearch
         )
 
         Spacer(
             modifier =
-                Modifier.height(12.dp)
+                Modifier.height(14.dp)
         )
 
-        when (
-            searchState
-                .selectedSection
-        ) {
-            SearchDownloadSection.RESULTS -> {
-                SearchResultsContent(
-                    state =
-                        searchState,
+        PrototypeInboxTabs(
+            selectedSection =
+                searchState.selectedSection,
+            duplicateSelected =
+                showReferenceMatches,
+            resultCount =
+                searchState.results.size,
+            duplicateCount =
+                searchState
+                    .referenceMatches
+                    .size,
+            historyCount =
+                historyCount,
+            onResults = {
+                showReferenceMatches =
+                    false
 
-                    downloadEnabled =
-                        downloadEnabled,
+                onSelectSection(
+                    SearchDownloadSection.RESULTS
+                )
+            },
+            onDuplicates = {
+                if (
+                    searchState
+                        .referenceMatches
+                        .isNotEmpty()
+                ) {
+                    showReferenceMatches =
+                        true
+                }
+            },
+            onHistory = {
+                showReferenceMatches =
+                    false
 
-                    onSearch =
-                        onSearch,
-
-                    onLoadMore =
-                        onLoadMore,
-
-                    onDownload =
-                        onDownloadResult
+                onSelectSection(
+                    SearchDownloadSection.QUEUE
                 )
             }
+        )
 
-            SearchDownloadSection.QUEUE -> {
-                DownloadQueueContent(
-                    state =
-                        downloadState,
+        if (
+            downloadState
+                .isPreparingDownload
+        ) {
+            Spacer(
+                modifier =
+                    Modifier.height(10.dp)
+            )
 
-                    onCancelJob =
-                        onCancelJob,
+            PreparingDownloadNotice(
+                message =
+                    downloadState
+                        .preparingMessage
+                        ?: "Đang chuẩn bị tải..."
+            )
+        }
 
-                    onRetryJob =
-                        onRetryJob,
+        if (
+            downloadState.ffmpegState ==
+            FfmpegReadyState.FAILED
+        ) {
+            Spacer(
+                modifier =
+                    Modifier.height(10.dp)
+            )
 
-                    onClearHistory =
-                        onClearHistory
-                )
+            FfmpegErrorNotice(
+                message =
+                    downloadState.ffmpegMessage,
+                onRetry =
+                    onRetryFfmpeg
+            )
+        }
+
+        Spacer(
+            modifier =
+                Modifier.height(18.dp)
+        )
+
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+        ) {
+            when (
+                searchState.selectedSection
+            ) {
+                SearchDownloadSection.RESULTS -> {
+                    SearchResultsContent(
+                        state =
+                            searchState,
+                        downloadEnabled =
+                            downloadEnabled,
+                        onSearch =
+                            onSearch,
+                        onLoadMore =
+                            onLoadMore,
+                        onDownload =
+                            onDownloadResult
+                    )
+                }
+
+                SearchDownloadSection.QUEUE -> {
+                    DownloadQueueContent(
+                        state =
+                            downloadState,
+                        onCancelJob =
+                            onCancelJob,
+                        onRetryJob =
+                            onRetryJob,
+                        onClearHistory =
+                            onClearHistory
+                    )
+                }
             }
         }
     }
 
     if (
         showReferenceMatches &&
-        searchState.referenceMatches.isNotEmpty()
+        searchState
+            .referenceMatches
+            .isNotEmpty()
     ) {
         ReferenceMatchesSheet(
             query =
                 searchState.query,
-
             matches =
                 searchState.referenceMatches,
-
             onDismiss = {
-                showReferenceMatches = false
+                showReferenceMatches =
+                    false
             },
-
             onOpenReferenceSong =
                 onOpenReferenceSong
         )
     }
 }
 
+
 @Composable
-private fun SearchHeroPanel(
-    searchState:
-        YouTubeSearchUiState,
-
-    downloadState:
-        DownloadScreenUiState,
-
-    onQueryChange: (String) -> Unit,
-
-    onSearch: () -> Unit,
-
-    onClearSearch: () -> Unit,
-
-    onSelectSection:
-        (SearchDownloadSection) -> Unit,
-
-    onOpenReferenceMatches: () -> Unit,
-
-    onRetryFfmpeg: () -> Unit
-) {
-    val shape =
-        RoundedCornerShape(28.dp)
-
-    Surface(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .shadow(
-                    elevation = 12.dp,
-                    shape = shape,
-                    clip = false
-                ),
-
-        shape =
-            shape,
-
-        color =
-            MaterialTheme
-                .colorScheme
-                .surface
-                .copy(alpha = 0.96f),
-
-        contentColor =
-            MaterialTheme
-                .colorScheme
-                .onSurface,
-
-        tonalElevation = 5.dp,
-        shadowElevation = 5.dp,
-
-        border =
-            BorderStroke(
-                width = 1.dp,
-
-                color =
-                    MaterialTheme
-                        .colorScheme
-                        .primary
-                        .copy(alpha = 0.24f)
-            )
+private fun InboxHeader() {
+    Column(
+        verticalArrangement =
+            Arrangement.spacedBy(3.dp)
     ) {
-        Column(
-            modifier =
-                Modifier.padding(14.dp)
-        ) {
-            SearchField(
-                query =
-                    searchState.query,
+        Text(
+            text =
+                "SEARCH & DOWNLOAD",
+            style =
+                MaterialTheme
+                    .typography
+                    .labelSmall,
+            fontWeight =
+                FontWeight.Black,
+            letterSpacing =
+                1.35.sp,
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .primary
+        )
 
-                isSearching =
-                    searchState.isSearching ||
-                        searchState
-                            .isSearchingReference,
-
-                onQueryChange =
-                    onQueryChange,
-
-                onSearch =
-                    onSearch,
-
-                onClear =
-                    onClearSearch
-            )
-
-
-            Spacer(
-                modifier =
-                    Modifier.height(10.dp)
-            )
-
-            SearchSectionSelector(
-                selected =
-                    searchState
-                        .selectedSection,
-
-                resultCount =
-                    searchState.results.size,
-
-                queueCount =
-                    downloadState
-                        .activeJobs
-                        .size,
-
-                referenceMatches =
-                    searchState
-                        .referenceMatches,
-
-                onSelected =
-                    onSelectSection,
-
-                onOpenReferenceMatches =
-                    onOpenReferenceMatches
-            )
-
-            if (
-                downloadState
-                    .isPreparingDownload
-            ) {
-                Spacer(
-                    modifier =
-                        Modifier.height(10.dp)
-                )
-
-                PreparingDownloadNotice(
-                    message =
-                        downloadState
-                            .preparingMessage
-                            ?: "Đang chuẩn bị tải..."
-                )
-            }
-
-            if (
-                downloadState.ffmpegState ==
-                FfmpegReadyState.FAILED
-            ) {
-                Spacer(
-                    modifier =
-                        Modifier.height(10.dp)
-                )
-
-                FfmpegErrorNotice(
-                    message =
-                        downloadState
-                            .ffmpegMessage,
-
-                    onRetry =
-                        onRetryFfmpeg
-                )
-            }
-        }
+        Text(
+            text =
+                "Inbox",
+            style =
+                MaterialTheme
+                    .typography
+                    .headlineLarge,
+            fontWeight =
+                FontWeight.Black,
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onBackground
+        )
     }
 }
+
+
 @Composable
-private fun SearchField(
+private fun PrototypeInboxSearchField(
     query: String,
     isSearching: Boolean,
-    onQueryChange:
-        (String) -> Unit,
+    onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
     onClear: () -> Unit
 ) {
@@ -435,10 +335,9 @@ private fun SearchField(
         LocalFocusManager.current
 
     val keyboardController =
-        LocalSoftwareKeyboardController
-            .current
+        LocalSoftwareKeyboardController.current
 
-    fun submitSearch() {
+    fun submit() {
         if (
             query.isBlank() ||
             isSearching
@@ -458,254 +357,376 @@ private fun SearchField(
     StableOutlinedTextField(
         value =
             query,
-
         onValueChange =
             onQueryChange,
-
         modifier =
-            Modifier.fillMaxWidth(),
-
-        singleLine = true,
-
+            Modifier
+                .fillMaxWidth()
+                .height(58.dp),
+        singleLine =
+            true,
         shape =
             RoundedCornerShape(18.dp),
-
-        label = {
-            Text(
-                "Tên bài hát hoặc Artist"
-            )
-        },
-
         placeholder = {
             Text(
-                "Ví dụ: Nơi Này Có Anh Sơn Tùng M-TP"
+                text =
+                    "Tìm trên YouTube hoặc dán link",
+                maxLines =
+                    1,
+                overflow =
+                    TextOverflow.Ellipsis
             )
         },
-
         leadingIcon = {
             Icon(
                 imageVector =
                     Icons.Rounded.Search,
-
                 contentDescription =
                     null
             )
         },
-
         trailingIcon = {
             when {
                 isSearching -> {
                     CircularProgressIndicator(
                         modifier =
-                            Modifier.size(22.dp),
-
-                        strokeWidth = 2.dp
+                            Modifier.size(20.dp),
+                        strokeWidth =
+                            2.dp
                     )
                 }
 
                 query.isNotEmpty() -> {
                     IconButton(
-                        onClick = {
-                            onClear()
-                        }
+                        onClick =
+                            onClear
                     ) {
                         Icon(
                             imageVector =
                                 Icons.Rounded.Close,
-
                             contentDescription =
-                                "Xóa nội dung tìm kiếm"
+                                "Xóa tìm kiếm"
                         )
                     }
                 }
             }
         },
-
         keyboardOptions =
             KeyboardOptions(
                 imeAction =
                     ImeAction.Search
             ),
-
         keyboardActions =
             KeyboardActions(
                 onSearch = {
-                    submitSearch()
+                    submit()
                 }
             ),
-
         colors =
-            OutlinedTextFieldDefaults
-                .colors(
-                    focusedTextColor =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurface,
-
-                    unfocusedTextColor =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurface,
-
-                    cursorColor =
-                        MaterialTheme
-                            .colorScheme
-                            .primary,
-
-                    focusedBorderColor =
-                        MaterialTheme
-                            .colorScheme
-                            .primary,
-
-                    unfocusedBorderColor =
-                        MaterialTheme
-                            .colorScheme
-                            .outline,
-
-                    focusedLabelColor =
-                        MaterialTheme
-                            .colorScheme
-                            .primary,
-
-                    unfocusedLabelColor =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant,
-
-                    focusedPlaceholderColor =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant,
-
-                    unfocusedPlaceholderColor =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant,
-
-                    focusedLeadingIconColor =
-                        MaterialTheme
-                            .colorScheme
-                            .primary,
-
-                    unfocusedLeadingIconColor =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant,
-
-                    focusedTrailingIconColor =
-                        MaterialTheme
-                            .colorScheme
-                            .primary,
-
-                    unfocusedTrailingIconColor =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant
-                )
+            OutlinedTextFieldDefaults.colors(
+                focusedTextColor =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurface,
+                unfocusedTextColor =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurface,
+                cursorColor =
+                    MaterialTheme
+                        .colorScheme
+                        .primary,
+                focusedContainerColor =
+                    MaterialTheme
+                        .colorScheme
+                        .surface
+                        .copy(
+                            alpha = 0.70f
+                        ),
+                unfocusedContainerColor =
+                    MaterialTheme
+                        .colorScheme
+                        .surface
+                        .copy(
+                            alpha = 0.70f
+                        ),
+                focusedBorderColor =
+                    MaterialTheme
+                        .colorScheme
+                        .primary
+                        .copy(
+                            alpha = 0.72f
+                        ),
+                unfocusedBorderColor =
+                    MaterialTheme
+                        .colorScheme
+                        .outline
+                        .copy(
+                            alpha = 0.32f
+                        ),
+                focusedPlaceholderColor =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant,
+                unfocusedPlaceholderColor =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant,
+                focusedLeadingIconColor =
+                    MaterialTheme
+                        .colorScheme
+                        .primary,
+                unfocusedLeadingIconColor =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant,
+                focusedTrailingIconColor =
+                    MaterialTheme
+                        .colorScheme
+                        .primary,
+                unfocusedTrailingIconColor =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant
+            )
     )
 }
+
+
 @Composable
-private fun SearchSectionSelector(
-    selected: SearchDownloadSection,
+private fun PrototypeInboxTabs(
+    selectedSection: SearchDownloadSection,
+    duplicateSelected: Boolean,
     resultCount: Int,
-    queueCount: Int,
-    referenceMatches:
-        List<ReferenceSongMatch>,
-    onSelected:
-        (SearchDownloadSection) -> Unit,
-    onOpenReferenceMatches: () -> Unit
+    duplicateCount: Int,
+    historyCount: Int,
+    onResults: () -> Unit,
+    onDuplicates: () -> Unit,
+    onHistory: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(
-                rememberScrollState()
-            ),
-
-        horizontalArrangement =
-            Arrangement.spacedBy(8.dp)
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+        shape =
+            RoundedCornerShape(18.dp),
+        color =
+            MaterialTheme
+                .colorScheme
+                .surface
+                .copy(
+                    alpha = 0.56f
+                ),
+        border =
+            BorderStroke(
+                1.dp,
+                MaterialTheme
+                    .colorScheme
+                    .outline
+                    .copy(
+                        alpha = 0.24f
+                    )
+            )
     ) {
-        FilterChip(
-            selected =
-                selected ==
-                    SearchDownloadSection
-                        .RESULTS,
-
-            onClick = {
-                onSelected(
-                    SearchDownloadSection
-                        .RESULTS
-                )
-            },
-
-            label = {
-                Text(
-                    if (resultCount > 0) {
-                        "Kết quả $resultCount"
-                    } else {
-                        "Kết quả"
-                    }
-                )
-            },
-
-            leadingIcon = {
-                Icon(
-                    imageVector =
-                        Icons.Rounded.Search,
-
-                    contentDescription = null,
-
-                    modifier =
-                        Modifier.size(18.dp)
-                )
-            }
-        )
-
-        FilterChip(
-            selected =
-                selected ==
-                    SearchDownloadSection
-                        .QUEUE,
-
-            onClick = {
-                onSelected(
-                    SearchDownloadSection
-                        .QUEUE
-                )
-            },
-
-            label = {
-                Text(
-                    if (queueCount > 0) {
-                        "Đang tải $queueCount"
-                    } else {
-                        "Tải xuống"
-                    }
-                )
-            },
-
-            leadingIcon = {
-                Icon(
-                    imageVector =
-                        Icons.AutoMirrored.Rounded.List,
-
-                    contentDescription = null,
-
-                    modifier =
-                        Modifier.size(18.dp)
-                )
-            }
-        )
-
-        if (referenceMatches.isNotEmpty()) {
-            ReferenceMatchChip(
-                matches = referenceMatches,
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(5.dp),
+            horizontalArrangement =
+                Arrangement.spacedBy(4.dp)
+        ) {
+            PrototypeInboxTab(
+                label =
+                    "Kết quả",
+                count =
+                    resultCount,
+                selected =
+                    selectedSection ==
+                        SearchDownloadSection.RESULTS &&
+                        !duplicateSelected,
+                enabled =
+                    true,
+                modifier =
+                    Modifier.weight(1f),
                 onClick =
-                    onOpenReferenceMatches
+                    onResults
+            )
+
+            PrototypeInboxTab(
+                label =
+                    "Trùng",
+                count =
+                    duplicateCount,
+                selected =
+                    duplicateSelected,
+                enabled =
+                    duplicateCount > 0,
+                modifier =
+                    Modifier.weight(1f),
+                onClick =
+                    onDuplicates
+            )
+
+            PrototypeInboxTab(
+                label =
+                    "Lịch sử",
+                count =
+                    historyCount,
+                selected =
+                    selectedSection ==
+                        SearchDownloadSection.QUEUE &&
+                        !duplicateSelected,
+                enabled =
+                    true,
+                modifier =
+                    Modifier.weight(1f),
+                onClick =
+                    onHistory
             )
         }
     }
 }
+
+
+@Composable
+private fun PrototypeInboxTab(
+    label: String,
+    count: Int,
+    selected: Boolean,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val selectedContainer =
+        MaterialTheme
+            .colorScheme
+            .primary
+            .copy(
+                alpha = 0.13f
+            )
+
+    val labelColor =
+        when {
+            !enabled ->
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+                    .copy(
+                        alpha = 0.42f
+                    )
+
+            selected ->
+                MaterialTheme
+                    .colorScheme
+                    .onSurface
+
+            else ->
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        }
+
+    Box(
+        modifier =
+            modifier
+                .fillMaxHeight()
+                .appPressable(
+                    enabled =
+                        enabled,
+                    pressedScale =
+                        0.96f,
+                    haptic =
+                        true,
+                    onClick =
+                        onClick
+                )
+    ) {
+        if (selected) {
+            Surface(
+                modifier =
+                    Modifier.fillMaxSize(),
+                shape =
+                    RoundedCornerShape(13.dp),
+                color =
+                    selectedContainer
+            ) {}
+        }
+
+        Row(
+            modifier =
+                Modifier.align(
+                    Alignment.Center
+                ),
+            horizontalArrangement =
+                Arrangement.spacedBy(6.dp),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            Text(
+                text =
+                    label,
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelMedium,
+                fontWeight =
+                    if (selected) {
+                        FontWeight.Black
+                    } else {
+                        FontWeight.Bold
+                    },
+                color =
+                    labelColor
+            )
+
+            Surface(
+                shape =
+                    CircleShape,
+                color =
+                    if (selected) {
+                        MaterialTheme
+                            .colorScheme
+                            .onSurface
+                    } else {
+                        MaterialTheme
+                            .colorScheme
+                            .surfaceVariant
+                    }
+            ) {
+                Box(
+                    modifier =
+                        Modifier.size(20.dp),
+                    contentAlignment =
+                        Alignment.Center
+                ) {
+                    Text(
+                        text =
+                            count.toString(),
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
+                        fontWeight =
+                            FontWeight.Black,
+                        color =
+                            if (selected) {
+                                MaterialTheme
+                                    .colorScheme
+                                    .surface
+                            } else {
+                                MaterialTheme
+                                    .colorScheme
+                                    .onSurfaceVariant
+                            }
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 private fun PreparingDownloadNotice(
@@ -714,54 +735,51 @@ private fun PreparingDownloadNotice(
     Surface(
         modifier =
             Modifier.fillMaxWidth(),
-
         shape =
-            RoundedCornerShape(16.dp),
-
+            RoundedCornerShape(14.dp),
         color =
             MaterialTheme
                 .colorScheme
                 .primaryContainer
+                .copy(
+                    alpha = 0.72f
+                )
     ) {
-        Column(
+        Row(
             modifier =
-                Modifier.padding(12.dp)
+                Modifier.padding(
+                    horizontal = 12.dp,
+                    vertical = 10.dp
+                ),
+            verticalAlignment =
+                Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment =
-                    Alignment.CenterVertically
-            ) {
-                CircularProgressIndicator(
-                    modifier =
-                        Modifier.size(19.dp),
-
-                    strokeWidth = 2.dp
-                )
-
-                Spacer(
-                    modifier =
-                        Modifier.width(9.dp)
-                )
-
-                Text(
-                    text = message,
-                    fontWeight =
-                        FontWeight.Medium
-                )
-            }
+            CircularProgressIndicator(
+                modifier =
+                    Modifier.size(18.dp),
+                strokeWidth =
+                    2.dp
+            )
 
             Spacer(
                 modifier =
-                    Modifier.height(9.dp)
+                    Modifier.size(9.dp)
             )
 
-            LinearProgressIndicator(
+            Text(
+                text =
+                    message,
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier.weight(1f),
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodySmall
             )
         }
     }
 }
+
 
 @Composable
 private fun FfmpegErrorNotice(
@@ -771,57 +789,63 @@ private fun FfmpegErrorNotice(
     Surface(
         modifier =
             Modifier.fillMaxWidth(),
-
         shape =
-            RoundedCornerShape(16.dp),
-
+            RoundedCornerShape(14.dp),
         color =
             MaterialTheme
                 .colorScheme
                 .errorContainer
+                .copy(
+                    alpha = 0.76f
+                )
     ) {
         Row(
             modifier =
-                Modifier.padding(12.dp),
-
+                Modifier.padding(
+                    start = 12.dp,
+                    top = 6.dp,
+                    end = 4.dp,
+                    bottom = 6.dp
+                ),
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector =
-                    Icons.Rounded
-                        .ErrorOutline,
-
-                contentDescription =
-                    null,
-
-                tint =
-                    MaterialTheme
-                        .colorScheme
-                        .error
-            )
-
-            Spacer(
-                modifier =
-                    Modifier.width(10.dp)
-            )
-
             Text(
-                text = message,
-
+                text =
+                    message,
                 modifier =
                     Modifier.weight(1f),
-
+                maxLines =
+                    2,
+                overflow =
+                    TextOverflow.Ellipsis,
                 style =
                     MaterialTheme
                         .typography
-                        .bodySmall
+                        .bodySmall,
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onErrorContainer
             )
 
             TextButton(
-                onClick = onRetry
+                onClick =
+                    onRetry
             ) {
-                Text("Thử lại")
+                Icon(
+                    imageVector =
+                        Icons.Rounded.Refresh,
+                    contentDescription =
+                        null,
+                    modifier =
+                        Modifier.size(17.dp)
+                )
+
+                Text(
+                    text =
+                        "Thử lại"
+                )
             }
         }
     }

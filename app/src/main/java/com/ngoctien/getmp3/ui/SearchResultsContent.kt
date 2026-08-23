@@ -1,74 +1,33 @@
 package com.ngoctien.getmp3.ui
 
-import com.ngoctien.getmp3.ui.components.AppCard
-
-import com.ngoctien.getmp3.ui.components.AppActionVisualState
-
-import com.ngoctien.getmp3.ui.components.AppActionButton
-
-import com.ngoctien.getmp3.ui.components.AppFeedbackKind
-
-import com.ngoctien.getmp3.ui.components.AppFeedbackBanner
-
-import com.ngoctien.getmp3.ui.components.AppEmptyState
-
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.ContentPaste
-import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.ErrorOutline
-import androidx.compose.material.icons.rounded.List
-import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -81,36 +40,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.ngoctien.getmp3.data.DownloadJobEntity
-import com.ngoctien.getmp3.model.DownloadStatus
-import com.ngoctien.getmp3.note.ReferenceSongMatch
-import com.ngoctien.getmp3.settings.AppSettings
-import com.ngoctien.getmp3.ui.theme.BrandBlue
-import com.ngoctien.getmp3.ui.theme.BrandCyan
-import com.ngoctien.getmp3.ui.theme.BrandViolet
-import com.ngoctien.getmp3.viewmodel.DownloadScreenUiState
-import com.ngoctien.getmp3.viewmodel.FfmpegReadyState
-import com.ngoctien.getmp3.viewmodel.SearchDownloadSection
+import com.ngoctien.getmp3.ui.design.appPressable
 import com.ngoctien.getmp3.viewmodel.YouTubeSearchUiState
 import com.ngoctien.getmp3.youtube.YouTubeSearchResult
 
-/*
- * Shared inner content for Bento and Compact Search/Download screens.
- * Skin-specific chrome stays in each screen implementation.
- */
 @Composable
 internal fun SearchResultsContent(
     state: YouTubeSearchUiState,
@@ -123,14 +65,12 @@ internal fun SearchResultsContent(
     LazyColumn(
         modifier =
             Modifier.fillMaxSize(),
-
         contentPadding =
             PaddingValues(
-                bottom = 26.dp
+                bottom = 28.dp
             ),
-
         verticalArrangement =
-            Arrangement.spacedBy(12.dp)
+            Arrangement.spacedBy(14.dp)
     ) {
         if (
             state.isSearching &&
@@ -148,10 +88,11 @@ internal fun SearchResultsContent(
 
         if (state.query.isNotBlank()) {
             item(
-                key = "youtube-header"
+                key = "result-header"
             ) {
-                YouTubeResultsHeader(
-                    count = state.results.size
+                PrototypeResultsHeader(
+                    count =
+                        state.results.size
                 )
             }
         }
@@ -163,7 +104,14 @@ internal fun SearchResultsContent(
                 item(
                     key = "loading"
                 ) {
-                    SearchLoadingPanel()
+                    PrototypeSearchMessage(
+                        icon =
+                            Icons.Rounded.Search,
+                        title =
+                            "Đang tìm trên YouTube",
+                        description =
+                            "GetMP3 đang lấy các kết quả phù hợp nhất."
+                    )
                 }
             }
 
@@ -171,20 +119,19 @@ internal fun SearchResultsContent(
                 items(
                     items =
                         state.results,
-
                     key = {
                         it.videoId
                     }
                 ) { result ->
-                    YouTubeResultCard(
+                    PrototypeYouTubeResultCard(
                         result =
                             result,
-
                         downloadEnabled =
                             downloadEnabled,
-
                         onDownload = {
-                            onDownload(result)
+                            onDownload(
+                                result
+                            )
                         }
                     )
                 }
@@ -192,57 +139,24 @@ internal fun SearchResultsContent(
                 if (
                     state.hasMore ||
                     state.isLoadingMore ||
-                    state.loadMoreError !=
-                    null
+                    state.loadMoreError != null
                 ) {
                     item(
                         key =
                             "load-more-" +
                                 state.nextOffset
                     ) {
-                        LoadMoreFooter(
+                        PrototypeLoadMoreFooter(
                             triggerKey =
                                 state.nextOffset,
-
                             hasMore =
                                 state.hasMore,
-
                             isLoading =
                                 state.isLoadingMore,
-
                             errorMessage =
                                 state.loadMoreError,
-
                             onLoadMore =
                                 onLoadMore
-                        )
-                    }
-                } else {
-                    item(
-                        key = "end-results"
-                    ) {
-                        Text(
-                            text =
-                                "Đã hiển thị toàn bộ kết quả tìm được",
-
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(
-                                    vertical = 14.dp
-                                ),
-
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .bodySmall,
-
-                            color =
-                                MaterialTheme
-                                    .colorScheme
-                                    .onBackground
-                                    .copy(
-                                        alpha = 0.82f
-                                    )
                         )
                     }
                 }
@@ -252,10 +166,9 @@ internal fun SearchResultsContent(
                 item(
                     key = "error"
                 ) {
-                    SearchErrorPanel(
+                    PrototypeSearchError(
                         message =
                             state.errorMessage,
-
                         onRetry =
                             onSearch
                     )
@@ -266,15 +179,462 @@ internal fun SearchResultsContent(
                 item(
                     key = "empty"
                 ) {
-                    SearchEmptyPanel()
+                    PrototypeSearchMessage(
+                        icon =
+                            Icons.Rounded.Search,
+                        title =
+                            "Tìm bài hát",
+                        description =
+                            "Nhập tên bài hát, Artist hoặc từ khóa để bắt đầu."
+                    )
                 }
             }
         }
     }
 }
 
+
 @Composable
-private fun LoadMoreFooter(
+private fun PrototypeResultsHeader(
+    count: Int
+) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth(),
+        verticalAlignment =
+            Alignment.CenterVertically
+    ) {
+        Text(
+            text =
+                "Kết quả phù hợp nhất",
+            modifier =
+                Modifier.weight(1f),
+            style =
+                MaterialTheme
+                    .typography
+                    .labelMedium,
+            fontWeight =
+                FontWeight.Bold,
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        )
+
+        Text(
+            text =
+                "$count kết quả",
+            style =
+                MaterialTheme
+                    .typography
+                    .labelSmall,
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        )
+    }
+}
+
+
+@Composable
+private fun PrototypeYouTubeResultCard(
+    result: YouTubeSearchResult,
+    downloadEnabled: Boolean,
+    onDownload: () -> Unit
+) {
+    val context =
+        LocalContext.current
+
+    val previewManager =
+        remember(
+            context
+        ) {
+            PreviewAppManager(
+                context
+            )
+        }
+
+    var showPreviewChooser by
+        remember(
+            result.webpageUrl
+        ) {
+            mutableStateOf(false)
+        }
+
+    if (showPreviewChooser) {
+        PreviewAppChooserDialog(
+            url =
+                result.webpageUrl,
+            onDismiss = {
+                showPreviewChooser =
+                    false
+            }
+        )
+    }
+
+    val cardShape =
+        RoundedCornerShape(24.dp)
+
+    Surface(
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape =
+            cardShape,
+        color =
+            MaterialTheme
+                .colorScheme
+                .surface
+                .copy(
+                    alpha = 0.94f
+                ),
+        border =
+            BorderStroke(
+                1.dp,
+                MaterialTheme
+                    .colorScheme
+                    .primary
+                    .copy(
+                        alpha = 0.24f
+                    )
+            )
+    ) {
+        Column {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(174.dp)
+                        .background(
+                            Brush.linearGradient(
+                                listOf(
+                                    Color(0xFF183D72),
+                                    Color(0xFF1A3159),
+                                    Color(0xFF271F58)
+                                )
+                            )
+                        )
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .size(132.dp)
+                            .align(
+                                Alignment.BottomEnd
+                            )
+                            .offset(
+                                x = 42.dp,
+                                y = 48.dp
+                            )
+                            .background(
+                                Color(0xFF7768D7)
+                                    .copy(
+                                        alpha = 0.20f
+                                    ),
+                                CircleShape
+                            )
+                )
+
+                AsyncImage(
+                    model =
+                        result
+                            .effectiveThumbnailUrl,
+                    contentDescription =
+                        "Ảnh ${result.title}",
+                    modifier =
+                        Modifier.fillMaxSize(),
+                    contentScale =
+                        ContentScale.Crop
+                )
+
+                if (
+                    result
+                        .formattedDuration
+                        .isNotBlank()
+                ) {
+                    Surface(
+                        modifier =
+                            Modifier
+                                .align(
+                                    Alignment.BottomEnd
+                                )
+                                .padding(9.dp),
+                        shape =
+                            RoundedCornerShape(8.dp),
+                        color =
+                            Color.Black.copy(
+                                alpha = 0.72f
+                            )
+                    ) {
+                        Text(
+                            text =
+                                result
+                                    .formattedDuration,
+                            modifier =
+                                Modifier.padding(
+                                    horizontal = 7.dp,
+                                    vertical = 4.dp
+                                ),
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelSmall,
+                            fontWeight =
+                                FontWeight.Bold,
+                            color =
+                                Color.White
+                        )
+                    }
+                }
+            }
+
+            Column(
+                modifier =
+                    Modifier.padding(
+                        start = 14.dp,
+                        top = 13.dp,
+                        end = 14.dp,
+                        bottom = 14.dp
+                    ),
+                verticalArrangement =
+                    Arrangement.spacedBy(13.dp)
+            ) {
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier =
+                            Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text =
+                                result.title,
+                            maxLines =
+                                2,
+                            overflow =
+                                TextOverflow.Ellipsis,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .titleMedium,
+                            fontWeight =
+                                FontWeight.Black,
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .onSurface
+                        )
+
+                        Spacer(
+                            modifier =
+                                Modifier.height(3.dp)
+                        )
+
+                        Text(
+                            text =
+                                result.channel
+                                    .ifBlank {
+                                        "Không rõ kênh"
+                                    },
+                            maxLines =
+                                1,
+                            overflow =
+                                TextOverflow.Ellipsis,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodySmall,
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .onSurfaceVariant
+                        )
+                    }
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(12.dp)
+                    )
+
+                    Surface(
+                        modifier =
+                            Modifier
+                                .height(40.dp)
+                                .appPressable(
+                                    pressedScale =
+                                        0.94f,
+                                    haptic =
+                                        true,
+                                    onClick = {
+                                        val opened =
+                                            previewManager
+                                                .openSaved(
+                                                    result
+                                                        .webpageUrl
+                                                )
+
+                                        if (!opened) {
+                                            showPreviewChooser =
+                                                true
+                                        }
+                                    }
+                                ),
+                        shape =
+                            RoundedCornerShape(12.dp),
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .primary
+                                .copy(
+                                    alpha = 0.14f
+                                ),
+                        border =
+                            BorderStroke(
+                                1.dp,
+                                MaterialTheme
+                                    .colorScheme
+                                    .primary
+                                    .copy(
+                                        alpha = 0.42f
+                                    )
+                            )
+                    ) {
+                        Row(
+                            modifier =
+                                Modifier.padding(
+                                    horizontal = 13.dp
+                                ),
+                            horizontalArrangement =
+                                Arrangement.spacedBy(6.dp),
+                            verticalAlignment =
+                                Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector =
+                                    Icons.Rounded.PlayArrow,
+                                contentDescription =
+                                    null,
+                                modifier =
+                                    Modifier.size(17.dp),
+                                tint =
+                                    MaterialTheme
+                                        .colorScheme
+                                        .primary
+                            )
+
+                            Text(
+                                text =
+                                    "Nghe",
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .labelMedium,
+                                fontWeight =
+                                    FontWeight.Bold,
+                                color =
+                                    MaterialTheme
+                                        .colorScheme
+                                        .onSurface
+                            )
+                        }
+                    }
+                }
+
+                PrototypeDownloadButton(
+                    enabled =
+                        downloadEnabled,
+                    onClick =
+                        onDownload
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun PrototypeDownloadButton(
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    val shape =
+        RoundedCornerShape(14.dp)
+
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .graphicsLayer {
+                    alpha =
+                        if (enabled) {
+                            1f
+                        } else {
+                            0.44f
+                        }
+                }
+                .clip(shape)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            Color(0xFF67C9FF),
+                            Color(0xFF72B6FF),
+                            Color(0xFF9A81FF)
+                        )
+                    )
+                )
+                .appPressable(
+                    enabled =
+                        enabled,
+                    pressedScale =
+                        0.985f,
+                    haptic =
+                        true,
+                    onClick =
+                        onClick
+                ),
+        contentAlignment =
+            Alignment.Center
+    ) {
+        Row(
+            horizontalArrangement =
+                Arrangement.spacedBy(8.dp),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector =
+                    Icons.Rounded.Download,
+                contentDescription =
+                    null,
+                modifier =
+                    Modifier.size(19.dp),
+                tint =
+                    Color(0xFF071526)
+            )
+
+            Text(
+                text =
+                    "Tải MP3",
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelLarge,
+                fontWeight =
+                    FontWeight.Black,
+                color =
+                    Color(0xFF071526)
+            )
+        }
+    }
+}
+
+
+@Composable
+private fun PrototypeLoadMoreFooter(
     triggerKey: Int,
     hasMore: Boolean,
     isLoading: Boolean,
@@ -297,34 +657,31 @@ private fun LoadMoreFooter(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(82.dp),
-
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(76.dp),
         contentAlignment =
             Alignment.Center
     ) {
         when {
             isLoading -> {
                 Row(
+                    horizontalArrangement =
+                        Arrangement.spacedBy(9.dp),
                     verticalAlignment =
                         Alignment.CenterVertically
                 ) {
                     CircularProgressIndicator(
                         modifier =
-                            Modifier.size(22.dp),
-
-                        strokeWidth = 2.dp
-                    )
-
-                    Spacer(
-                        modifier =
-                            Modifier.width(10.dp)
+                            Modifier.size(20.dp),
+                        strokeWidth =
+                            2.dp
                     )
 
                     Text(
                         text =
-                            "Đang tải thêm 10 kết quả..."
+                            "Đang tải thêm..."
                     )
                 }
             }
@@ -337,12 +694,10 @@ private fun LoadMoreFooter(
                     Text(
                         text =
                             errorMessage,
-
                         style =
                             MaterialTheme
                                 .typography
                                 .bodySmall,
-
                         color =
                             MaterialTheme
                                 .colorScheme
@@ -355,19 +710,15 @@ private fun LoadMoreFooter(
                     ) {
                         Icon(
                             imageVector =
-                                Icons.Rounded
-                                    .Refresh,
-
+                                Icons.Rounded.Refresh,
                             contentDescription =
                                 null
                         )
 
-                        Spacer(
-                            modifier =
-                                Modifier.width(6.dp)
+                        Text(
+                            text =
+                                "Tải tiếp"
                         )
-
-                        Text("Tải tiếp")
                     }
                 }
             }
@@ -375,365 +726,158 @@ private fun LoadMoreFooter(
     }
 }
 
-@Composable
-private fun SearchLoadingPanel() {
-    AppLoadingSkeleton(
-        text =
-            "Đang tìm video trên YouTube."
-    )
-}
 
 @Composable
-private fun SearchEmptyPanel() {
-
-    AppEmptyState(
-        icon =
-            Icons.Rounded.Search,
-
-        title =
-            "Nhập tên bài hát để bắt đầu tìm",
-
-        description =
-            "Cuộn xuống cuối để tự động tải thêm kết quả."
-    )
-}
-
-@Composable
-private fun SearchErrorPanel(
+private fun PrototypeSearchError(
     message: String,
     onRetry: () -> Unit
 ) {
-
-    AppFeedbackBanner(
-        message =
-            message,
-
-        kind =
-            AppFeedbackKind.ERROR,
-
+    Surface(
         modifier =
-            Modifier.padding(
-                vertical = 12.dp
-            ),
-
-        actionLabel =
-            "Thử lại",
-
-        onAction =
-            onRetry
-    )
-}
-
-@Composable
-private fun YouTubeResultCard(
-    result: YouTubeSearchResult,
-    downloadEnabled: Boolean,
-    onDownload: () -> Unit
-) {
-    val context =
-        LocalContext.current
-
-    val previewManager =
-        remember(
-            context
-        ) {
-            PreviewAppManager(
-                context
+            Modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(20.dp),
+        color =
+            MaterialTheme
+                .colorScheme
+                .errorContainer
+                .copy(
+                    alpha = 0.54f
+                ),
+        border =
+            BorderStroke(
+                1.dp,
+                MaterialTheme
+                    .colorScheme
+                    .error
+                    .copy(
+                        alpha = 0.28f
+                    )
             )
-        }
-
-    var showPreviewChooser by
-        remember(
-            result.webpageUrl
-        ) {
-            mutableStateOf(
-                false
-            )
-        }
-
-    if (showPreviewChooser) {
-        PreviewAppChooserDialog(
-            url =
-                result.webpageUrl,
-
-            onDismiss = {
-                showPreviewChooser =
-                    false
-            }
-        )
-    }
-
-    AppCard(
-        modifier =
-            Modifier.fillMaxWidth()
     ) {
-        Column {
-            Row(
-                verticalAlignment =
-                    Alignment.Top
-            ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .width(
-                                138.dp
-                            )
-                            .aspectRatio(
-                                16f / 9f
-                            )
-                            .clip(
-                                RoundedCornerShape(
-                                    15.dp
-                                )
-                            )
-                            .background(
-                                MaterialTheme
-                                    .colorScheme
-                                    .surfaceVariant
-                            )
-                ) {
-                    AsyncImage(
-                        model =
-                            result
-                                .effectiveThumbnailUrl,
-
-                        contentDescription =
-                            "Thumbnail ${result.title}",
-
-                        modifier =
-                            Modifier.fillMaxSize(),
-
-                        contentScale =
-                            ContentScale.Crop
-                    )
-
-                    Surface(
-                        modifier =
-                            Modifier
-                                .align(
-                                    Alignment.BottomEnd
-                                )
-                                .padding(
-                                    5.dp
-                                ),
-
-                        shape =
-                            RoundedCornerShape(
-                                7.dp
-                            ),
-
-                        color =
-                            Color.Black
-                                .copy(
-                                    alpha =
-                                        0.78f
-                                ),
-
-                        contentColor =
-                            Color.White
-                    ) {
-                        Text(
-                            text =
-                                result
-                                    .formattedDuration,
-
-                            modifier =
-                                Modifier.padding(
-                                    horizontal =
-                                        6.dp,
-
-                                    vertical =
-                                        3.dp
-                                ),
-
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .labelSmall,
-
-                            color =
-                                Color.White
-                        )
-                    }
-                }
-
-                Spacer(
-                    modifier =
-                        Modifier.width(
-                            12.dp
-                        )
-                )
-
-                Column(
-                    modifier =
-                        Modifier.weight(
-                            1f
-                        )
-                ) {
-                    Text(
-                        text =
-                            result.title,
-
-                        maxLines =
-                            3,
-
-                        overflow =
-                            TextOverflow
-                                .Ellipsis,
-
-                        style =
-                            MaterialTheme
-                                .typography
-                                .titleSmall,
-
-                        fontWeight =
-                            FontWeight.Bold,
-
-                        color =
-                            MaterialTheme
-                                .colorScheme
-                                .onSurface
-                    )
-
-                    Spacer(
-                        modifier =
-                            Modifier.height(
-                                6.dp
-                            )
-                    )
-
-                    Text(
-                        text =
-                            result.channel
-                                .ifBlank {
-                                    "Không rõ kênh"
-                                },
-
-                        maxLines =
-                            2,
-
-                        overflow =
-                            TextOverflow
-                                .Ellipsis,
-
-                        style =
-                            MaterialTheme
-                                .typography
-                                .bodySmall,
-
-                        color =
-                            MaterialTheme
-                                .colorScheme
-                                .onSurface
-                                .copy(
-                                    alpha = 0.80f
-                                )
-                    )
-                }
-            }
-
-            Spacer(
-                modifier =
-                    Modifier.height(
-                        10.dp
-                    )
-            )
-
-            HorizontalDivider(
+        Column(
+            modifier =
+                Modifier.padding(16.dp),
+            horizontalAlignment =
+                Alignment.CenterHorizontally,
+            verticalArrangement =
+                Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text =
+                    message,
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodyMedium,
                 color =
                     MaterialTheme
                         .colorScheme
-                        .outline
-                        .copy(
-                            alpha =
-                                0.16f
-                        )
+                        .onErrorContainer
             )
 
-            Spacer(
-                modifier =
-                    Modifier.height(
-                        8.dp
-                    )
-            )
-
-            Row(
-                modifier =
-                    Modifier.fillMaxWidth(),
-
-                horizontalArrangement =
-                    Arrangement.spacedBy(
-                        8.dp
-                    )
+            TextButton(
+                onClick =
+                    onRetry
             ) {
-                OutlinedButton(
-                    onClick = {
+                Icon(
+                    imageVector =
+                        Icons.Rounded.Refresh,
+                    contentDescription =
+                        null
+                )
 
-                        val opened =
-                            previewManager
-                                .openSaved(
-                                    result.webpageUrl
-                                )
-
-                        if (!opened) {
-                            showPreviewChooser =
-                                true
-                        }
-                    },
-
-                    modifier =
-                        Modifier.weight(
-                            1f
-                        )
-                ) {
-                    Icon(
-                        imageVector =
-                            Icons.Rounded
-                                .PlayArrow,
-
-                        contentDescription =
-                            null
-                    )
-
-                    Spacer(
-                        modifier =
-                            Modifier.width(
-                                6.dp
-                            )
-                    )
-
-                    Text(
-                        "Nghe thử"
-                    )
-                }
-
-                AppActionButton(
-                    label =
-                        "Tải",
-
-                    onClick =
-                        onDownload,
-
-                    modifier =
-                        Modifier.weight(
-                            1f
-                        ),
-
-                    enabled =
-                        downloadEnabled,
-
-                    state =
-                        AppActionVisualState
-                            .IDLE,
-
-                    leadingIcon =
-                        Icons.Rounded
-                            .Download,
-
-                    haptic =
-                        true
+                Text(
+                    text =
+                        "Thử lại"
                 )
             }
+        }
+    }
+}
+
+
+@Composable
+private fun PrototypeSearchMessage(
+    icon:
+        androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String
+) {
+    Surface(
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(22.dp),
+        color =
+            MaterialTheme
+                .colorScheme
+                .surface
+                .copy(
+                    alpha = 0.62f
+                ),
+        border =
+            BorderStroke(
+                1.dp,
+                MaterialTheme
+                    .colorScheme
+                    .outline
+                    .copy(
+                        alpha = 0.20f
+                    )
+            )
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(
+                    horizontal = 18.dp,
+                    vertical = 24.dp
+                ),
+            horizontalAlignment =
+                Alignment.CenterHorizontally,
+            verticalArrangement =
+                Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector =
+                    icon,
+                contentDescription =
+                    null,
+                modifier =
+                    Modifier.size(28.dp),
+                tint =
+                    MaterialTheme
+                        .colorScheme
+                        .primary
+            )
+
+            Text(
+                text =
+                    title,
+                style =
+                    MaterialTheme
+                        .typography
+                        .titleMedium,
+                fontWeight =
+                    FontWeight.Black,
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurface
+            )
+
+            Text(
+                text =
+                    description,
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodySmall,
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant
+            )
         }
     }
 }
