@@ -25,10 +25,8 @@ internal fun HomeDestination(
     settingsViewModel: SettingsViewModel,
     uiStyle: UiStyle,
     modifier: Modifier,
-    onQuickDownloadFromClipboard:
-        () -> Unit,
-    onNavigate:
-        (AppDestination) -> Unit
+    onQuickDownloadFromClipboard: () -> Unit,
+    onNavigate: (AppDestination) -> Unit
 ) {
     val downloadState by
         downloadViewModel
@@ -75,8 +73,7 @@ internal fun HomeDestination(
                     .hasLibraryFolder
             ) {
                 AppDestination.LIBRARY
-            }
-            else {
+            } else {
                 AppDestination.SETTINGS
             }
         )
@@ -115,6 +112,18 @@ internal fun HomeDestination(
         )
     }
 
+    val syncLibrary: () -> Unit = {
+        if (
+            settings
+                .hasLibraryFolder
+        ) {
+            settingsViewModel
+                .rebuildLibraryIndex()
+        } else {
+            openSettings()
+        }
+    }
+
     val duplicateCount =
         compareState
             .totalPairCount
@@ -142,6 +151,10 @@ internal fun HomeDestination(
                 duplicateCount =
                     duplicateCount,
 
+                isLibrarySyncing =
+                    libraryIndexState
+                        .isScanning,
+
                 modifier =
                     modifier,
 
@@ -162,6 +175,9 @@ internal fun HomeDestination(
 
                 onOpenSettings =
                     openSettings,
+
+                onSyncLibrary =
+                    syncLibrary,
 
                 onQuickDownloadFromClipboard =
                     onQuickDownloadFromClipboard
