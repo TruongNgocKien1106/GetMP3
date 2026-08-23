@@ -1,5 +1,6 @@
 package com.ngoctien.getmp3.ui
 
+import android.graphics.Paint
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -39,6 +40,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
@@ -69,27 +72,27 @@ private val ReaderSpeedDialLabels =
     listOf(
         ReaderSpeedDialLabel(
             stateValue = 5,
-            label = "0.50×"
+            label = "0.5"
         ),
         ReaderSpeedDialLabel(
             stateValue = 10,
-            label = "1.00×"
+            label = "1"
         ),
         ReaderSpeedDialLabel(
             stateValue = 20,
-            label = "2.00×"
+            label = "2"
         ),
         ReaderSpeedDialLabel(
             stateValue = 30,
-            label = "3.00×"
+            label = "3"
         ),
         ReaderSpeedDialLabel(
             stateValue = 40,
-            label = "4.00×"
+            label = "4"
         ),
         ReaderSpeedDialLabel(
             stateValue = 50,
-            label = "5.00×"
+            label = "5"
         )
     )
 
@@ -990,7 +993,7 @@ private fun CameraStyleSpeedDial(
                     )
             )
 
-            Box(
+            Canvas(
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -998,370 +1001,422 @@ private fun CameraStyleSpeedDial(
                             1f
                         )
             ) {
-                Canvas(
-                    modifier =
-                        Modifier.fillMaxSize()
-                ) {
-                    val startAngle =
-                        200f
+                val startAngle =
+                    200f
 
-                    val sweepAngle =
-                        140f
+                val sweepAngle =
+                    140f
 
-                    val center =
-                        Offset(
-                            x =
-                                size.width /
-                                    2f,
+                val center =
+                    Offset(
+                        x =
+                            size.width /
+                                2f,
 
-                            y =
-                                size.height *
-                                    1.09f
-                        )
-
-                    val radius =
-                        minOf(
-                            size.width *
-                                0.43f,
-
+                        y =
                             size.height *
-                                0.88f
-                        )
-
-                    drawArc(
-                        color =
-                            colors
-                                .outline
-                                .copy(
-                                    alpha = 0.38f
-                                ),
-
-                        startAngle =
-                            startAngle,
-
-                        sweepAngle =
-                            sweepAngle,
-
-                        useCenter =
-                            false,
-
-                        topLeft =
-                            Offset(
-                                x =
-                                    center.x -
-                                        radius,
-
-                                y =
-                                    center.y -
-                                        radius
-                            ),
-
-                        size =
-                            Size(
-                                width =
-                                    radius *
-                                        2f,
-
-                                height =
-                                    radius *
-                                        2f
-                            ),
-
-                        style =
-                            Stroke(
-                                width =
-                                    1.5.dp.toPx(),
-
-                                cap =
-                                    StrokeCap.Round
-                            )
+                                1.08f
                     )
 
-                    val totalTicks =
-                        ReaderSpeedMaxState -
-                            ReaderSpeedMinState
+                val radius =
+                    minOf(
+                        size.width *
+                            0.43f,
 
-                    for (
-                        tick in
-                        0..totalTicks
-                    ) {
-                        val fraction =
-                            tick.toFloat() /
-                                totalTicks.toFloat()
+                        size.height *
+                            0.88f
+                    )
 
-                        val angle =
-                            startAngle +
-                                sweepAngle *
-                                    fraction
+                drawArc(
+                    color =
+                        colors
+                            .outline
+                            .copy(
+                                alpha = 0.38f
+                            ),
 
-                        val radians =
-                            Math.toRadians(
-                                angle.toDouble()
-                            )
+                    startAngle =
+                        startAngle,
 
-                        val major =
-                            tick % 5 ==
-                                0
+                    sweepAngle =
+                        sweepAngle,
 
-                        val outerRadius =
-                            radius
+                    useCenter =
+                        false,
 
-                        val innerRadius =
-                            radius -
-                                if (major) {
-                                    13.dp.toPx()
-                                }
-                                else {
-                                    6.dp.toPx()
-                                }
+                    topLeft =
+                        Offset(
+                            x =
+                                center.x -
+                                    radius,
 
-                        val cosValue =
-                            cos(
-                                radians
-                            ).toFloat()
+                            y =
+                                center.y -
+                                    radius
+                        ),
 
-                        val sinValue =
-                            sin(
-                                radians
-                            ).toFloat()
+                    size =
+                        Size(
+                            width =
+                                radius *
+                                    2f,
 
-                        drawLine(
-                            color =
-                                colors
-                                    .onSurfaceVariant
-                                    .copy(
-                                        alpha =
-                                            if (major) {
-                                                0.72f
-                                            }
-                                            else {
-                                                0.28f
-                                            }
-                                    ),
+                            height =
+                                radius *
+                                    2f
+                        ),
 
-                            start =
-                                Offset(
-                                    x =
-                                        center.x +
-                                            cosValue *
-                                                innerRadius,
-
-                                    y =
-                                        center.y +
-                                            sinValue *
-                                                innerRadius
-                                ),
-
-                            end =
-                                Offset(
-                                    x =
-                                        center.x +
-                                            cosValue *
-                                                outerRadius,
-
-                                    y =
-                                        center.y +
-                                            sinValue *
-                                                outerRadius
-                                ),
-
-                            strokeWidth =
-                                if (major) {
-                                    1.6.dp.toPx()
-                                }
-                                else {
-                                    0.9.dp.toPx()
-                                },
+                    style =
+                        Stroke(
+                            width =
+                                1.5.dp.toPx(),
 
                             cap =
                                 StrokeCap.Round
                         )
-                    }
+                )
 
-                    val markerAngle =
+                val totalTicks =
+                    ReaderSpeedMaxState -
+                        ReaderSpeedMinState
+
+                for (
+                    tick in
+                    0..totalTicks
+                ) {
+                    val tickState =
+                        ReaderSpeedMinState +
+                            tick
+
+                    val fraction =
+                        tick.toFloat() /
+                            totalTicks.toFloat()
+
+                    val angle =
                         startAngle +
                             sweepAngle *
-                                animatedFraction
+                                fraction
 
-                    val markerRadians =
+                    val radians =
                         Math.toRadians(
-                            markerAngle.toDouble()
+                            angle.toDouble()
                         )
 
-                    val markerCos =
+                    val labeled =
+                        ReaderSpeedDialLabels.any {
+                            it.stateValue ==
+                                tickState
+                        }
+
+                    val medium =
+                        !labeled &&
+                            tickState %
+                                5 ==
+                            0
+
+                    val tickLength =
+                        when {
+                            labeled ->
+                                15.dp.toPx()
+
+                            medium ->
+                                10.dp.toPx()
+
+                            else ->
+                                5.dp.toPx()
+                        }
+
+                    val outerRadius =
+                        radius
+
+                    val innerRadius =
+                        radius -
+                            tickLength
+
+                    val cosValue =
                         cos(
-                            markerRadians
+                            radians
                         ).toFloat()
 
-                    val markerSin =
+                    val sinValue =
                         sin(
-                            markerRadians
+                            radians
                         ).toFloat()
 
-                    val markerOuter =
-                        Offset(
-                            x =
-                                center.x +
-                                    markerCos *
-                                        (
-                                            radius +
-                                                2.dp.toPx()
-                                            ),
-
-                            y =
-                                center.y +
-                                    markerSin *
-                                        (
-                                            radius +
-                                                2.dp.toPx()
-                                            )
-                        )
-
-                    val markerInner =
-                        Offset(
-                            x =
-                                center.x +
-                                    markerCos *
-                                        (
-                                            radius -
-                                                20.dp.toPx()
-                                            ),
-
-                            y =
-                                center.y +
-                                    markerSin *
-                                        (
-                                            radius -
-                                                20.dp.toPx()
-                                            )
-                        )
-
                     drawLine(
                         color =
                             colors
-                                .tertiary
+                                .onSurfaceVariant
                                 .copy(
-                                    alpha = 0.18f
+                                    alpha =
+                                        when {
+                                            labeled ->
+                                                0.90f
+
+                                            medium ->
+                                                0.55f
+
+                                            else ->
+                                                0.25f
+                                        }
                                 ),
 
                         start =
-                            markerInner,
+                            Offset(
+                                x =
+                                    center.x +
+                                        cosValue *
+                                            innerRadius,
 
-                        end =
-                            markerOuter,
-
-                        strokeWidth =
-                            10.dp.toPx(),
-
-                        cap =
-                            StrokeCap.Round
-                    )
-
-                    drawLine(
-                        color =
-                            colors.tertiary,
-
-                        start =
-                            markerInner,
-
-                        end =
-                            markerOuter,
-
-                        strokeWidth =
-                            3.2.dp.toPx(),
-
-                        cap =
-                            StrokeCap.Round
-                    )
-
-                    drawCircle(
-                        color =
-                            colors
-                                .tertiary
-                                .copy(
-                                    alpha = 0.20f
-                                ),
-
-                        radius =
-                            7.dp.toPx(),
-
-                        center =
-                            markerOuter
-                    )
-
-                    drawCircle(
-                        color =
-                            colors.tertiary,
-
-                        radius =
-                            2.7.dp.toPx(),
-
-                        center =
-                            markerOuter
-                    )
-                }
-
-                Row(
-                    modifier =
-                        Modifier
-                            .align(
-                                Alignment.BottomCenter
-                            )
-                            .fillMaxWidth()
-                            .padding(
-                                horizontal = 5.dp,
-                                vertical = 2.dp
+                                y =
+                                    center.y +
+                                        sinValue *
+                                            innerRadius
                             ),
 
-                    verticalAlignment =
-                        Alignment.CenterVertically,
+                        end =
+                            Offset(
+                                x =
+                                    center.x +
+                                        cosValue *
+                                            outerRadius,
 
-                    horizontalArrangement =
-                        Arrangement.SpaceBetween
-                ) {
-                    ReaderSpeedDialLabels.forEach {
-                            option ->
+                                y =
+                                    center.y +
+                                        sinValue *
+                                            outerRadius
+                            ),
 
-                        Text(
-                            text =
-                                option.label,
+                        strokeWidth =
+                            when {
+                                labeled ->
+                                    2.dp.toPx()
 
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .labelSmall,
+                                medium ->
+                                    1.35.dp.toPx()
 
-                            fontSize =
-                                7.sp,
+                                else ->
+                                    0.85.dp.toPx()
+                            },
 
-                            fontWeight =
-                                if (
-                                    option.stateValue ==
-                                        safeSpeed
-                                ) {
-                                    FontWeight.Black
-                                }
-                                else {
-                                    FontWeight.Medium
-                                },
-
-                            color =
-                                if (
-                                    option.stateValue ==
-                                        safeSpeed
-                                ) {
-                                    colors.tertiary
-                                }
-                                else {
-                                    colors
-                                        .onSurfaceVariant
-                                        .copy(
-                                            alpha = 0.62f
-                                        )
-                                }
-                        )
-                    }
+                        cap =
+                            StrokeCap.Round
+                    )
                 }
+
+                val labelPaint =
+                    Paint(
+                        Paint.ANTI_ALIAS_FLAG
+                    ).apply {
+                        textAlign =
+                            Paint.Align.CENTER
+
+                        textSize =
+                            8.dp.toPx()
+
+                        isFakeBoldText =
+                            true
+                    }
+
+                ReaderSpeedDialLabels.forEach {
+                        option ->
+
+                    val fraction =
+                        (
+                            option.stateValue -
+                                ReaderSpeedMinState
+                            ).toFloat() /
+                            totalTicks.toFloat()
+
+                    val angle =
+                        startAngle +
+                            sweepAngle *
+                                fraction
+
+                    val radians =
+                        Math.toRadians(
+                            angle.toDouble()
+                        )
+
+                    val labelRadius =
+                        radius -
+                            27.dp.toPx()
+
+                    val labelX =
+                        center.x +
+                            cos(
+                                radians
+                            ).toFloat() *
+                                labelRadius
+
+                    val labelY =
+                        center.y +
+                            sin(
+                                radians
+                            ).toFloat() *
+                                labelRadius
+
+                    labelPaint.color =
+                        if (
+                            option.stateValue ==
+                                safeSpeed
+                        ) {
+                            colors
+                                .tertiary
+                                .toArgb()
+                        }
+                        else {
+                            colors
+                                .onSurfaceVariant
+                                .copy(
+                                    alpha = 0.68f
+                                )
+                                .toArgb()
+                        }
+
+                    val metrics =
+                        labelPaint.fontMetrics
+
+                    val baseline =
+                        labelY -
+                            (
+                                metrics.ascent +
+                                    metrics.descent
+                                ) /
+                                2f
+
+                    drawContext
+                        .canvas
+                        .nativeCanvas
+                        .drawText(
+                            option.label,
+                            labelX,
+                            baseline,
+                            labelPaint
+                        )
+                }
+
+                val markerAngle =
+                    startAngle +
+                        sweepAngle *
+                            animatedFraction
+
+                val markerRadians =
+                    Math.toRadians(
+                        markerAngle.toDouble()
+                    )
+
+                val markerCos =
+                    cos(
+                        markerRadians
+                    ).toFloat()
+
+                val markerSin =
+                    sin(
+                        markerRadians
+                    ).toFloat()
+
+                val markerOuter =
+                    Offset(
+                        x =
+                            center.x +
+                                markerCos *
+                                    (
+                                        radius +
+                                            2.dp.toPx()
+                                        ),
+
+                        y =
+                            center.y +
+                                markerSin *
+                                    (
+                                        radius +
+                                            2.dp.toPx()
+                                        )
+                    )
+
+                val markerInner =
+                    Offset(
+                        x =
+                            center.x +
+                                markerCos *
+                                    (
+                                        radius -
+                                            20.dp.toPx()
+                                        ),
+
+                        y =
+                            center.y +
+                                markerSin *
+                                    (
+                                        radius -
+                                            20.dp.toPx()
+                                        )
+                    )
+
+                drawLine(
+                    color =
+                        colors
+                            .tertiary
+                            .copy(
+                                alpha = 0.18f
+                            ),
+
+                    start =
+                        markerInner,
+
+                    end =
+                        markerOuter,
+
+                    strokeWidth =
+                        10.dp.toPx(),
+
+                    cap =
+                        StrokeCap.Round
+                )
+
+                drawLine(
+                    color =
+                        colors.tertiary,
+
+                    start =
+                        markerInner,
+
+                    end =
+                        markerOuter,
+
+                    strokeWidth =
+                        3.2.dp.toPx(),
+
+                    cap =
+                        StrokeCap.Round
+                )
+
+                drawCircle(
+                    color =
+                        colors
+                            .tertiary
+                            .copy(
+                                alpha = 0.20f
+                            ),
+
+                    radius =
+                        7.dp.toPx(),
+
+                    center =
+                        markerOuter
+                )
+
+                drawCircle(
+                    color =
+                        colors.tertiary,
+
+                    radius =
+                        2.7.dp.toPx(),
+
+                    center =
+                        markerOuter
+                )
             }
 
             Row(
@@ -1436,7 +1491,6 @@ private fun CameraStyleSpeedDial(
         }
     }
 }
-
 private fun readerSpeedText(
     speed: Int
 ): String {

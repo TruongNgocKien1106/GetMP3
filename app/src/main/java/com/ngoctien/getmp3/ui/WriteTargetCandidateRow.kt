@@ -4,19 +4,13 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.LibraryMusic
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
@@ -159,63 +153,19 @@ internal fun WriteTargetCandidateRow(
                     11.dp
                 )
         ) {
-            Surface(
-                modifier =
-                    Modifier.size(
-                        64.dp
-                    ),
+            Mp3CoverThumbnail(
+                uri =
+                    candidate.uri,
 
-                shape =
-                    RoundedCornerShape(
-                        17.dp
-                    ),
+                displayName =
+                    candidate.displayName,
 
-                color =
-                    if (selected) {
-                        colors
-                            .primary
-                            .copy(
-                                alpha = 0.22f
-                            )
-                    }
-                    else {
-                        colors
-                            .surfaceVariant
-                            .copy(
-                                alpha = 0.62f
-                            )
-                    }
-            ) {
-                Box(
-                    modifier =
-                        Modifier.fillMaxSize(),
+                size =
+                    64.dp,
 
-                    contentAlignment =
-                        Alignment.Center
-                ) {
-                    Icon(
-                        imageVector =
-                            Icons.Rounded.LibraryMusic,
-
-                        contentDescription =
-                            null,
-
-                        modifier =
-                            Modifier.size(
-                                27.dp
-                            ),
-
-                        tint =
-                            if (selected) {
-                                colors.primary
-                            }
-                            else {
-                                colors
-                                    .onSurfaceVariant
-                            }
-                    )
-                }
-            }
+                cornerRadius =
+                    17.dp
+            )
 
             Column(
                 modifier =

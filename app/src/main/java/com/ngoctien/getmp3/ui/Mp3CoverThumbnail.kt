@@ -2,6 +2,7 @@ package com.ngoctien.getmp3.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -22,13 +23,7 @@ import com.ngoctien.getmp3.library.MediaIndexRepository
 import com.ngoctien.getmp3.tag.MediaSongFile
 import java.io.File
 
-/**
- * Cover thumbnail backed by the shared media index.
- *
- * The MP3 itself is no longer opened by every visible row. Heavy embedded-art
- * extraction is performed once by MediaIndexRepository and persisted in the
- * app's media-index cover directory.
- */
+
 @Composable
 internal fun Mp3CoverThumbnail(
     file: MediaSongFile,
@@ -36,27 +31,106 @@ internal fun Mp3CoverThumbnail(
     size: Dp = 50.dp,
     cornerRadius: Dp = 16.dp
 ) {
+    IndexedMp3CoverThumbnail(
+        uri =
+            file.uri,
+
+        displayName =
+            file.displayName,
+
+        versionKey =
+            file.dateModifiedSeconds,
+
+        modifier =
+            modifier,
+
+        size =
+            size,
+
+        cornerRadius =
+            cornerRadius
+    )
+}
+
+
+@Composable
+internal fun Mp3CoverThumbnail(
+    uri: String,
+    displayName: String,
+    modifier: Modifier = Modifier,
+    size: Dp = 50.dp,
+    cornerRadius: Dp = 16.dp
+) {
+    IndexedMp3CoverThumbnail(
+        uri =
+            uri,
+
+        displayName =
+            displayName,
+
+        versionKey =
+            null,
+
+        modifier =
+            modifier,
+
+        size =
+            size,
+
+        cornerRadius =
+            cornerRadius
+    )
+}
+
+
+@Composable
+private fun IndexedMp3CoverThumbnail(
+    uri: String,
+    displayName: String,
+    versionKey: Any?,
+    modifier: Modifier,
+    size: Dp,
+    cornerRadius: Dp
+) {
     val context =
         LocalContext.current
 
     val coverPath =
         produceState<String?>(
-            initialValue = null,
-            key1 = file.uri,
-            key2 = file.dateModifiedSeconds
+            initialValue =
+                null,
+
+            key1 =
+                uri,
+
+            key2 =
+                versionKey
         ) {
             value =
-                MediaIndexRepository(
-                    context
-                )
-                    .getByUri(
-                        file.uri
+                runCatching {
+                    MediaIndexRepository(
+                        context
                     )
-                    ?.coverPath
-                    ?.takeIf {
-                        it.isNotBlank()
-                    }
+                        .getByUri(
+                            uri
+                        )
+                        ?.coverPath
+                        ?.trim()
+                        ?.takeIf(
+                            String::isNotBlank
+                        )
+                }
+                    .getOrNull()
         }.value
+
+    val coverFile =
+        coverPath
+            ?.let(
+                ::File
+            )
+            ?.takeIf {
+                it.isFile
+            }
 
     val shape =
         RoundedCornerShape(
@@ -64,43 +138,57 @@ internal fun Mp3CoverThumbnail(
         )
 
     Box(
-        modifier = modifier
-            .size(size)
-            .clip(shape)
-            .background(
-                MaterialTheme
-                    .colorScheme
-                    .surfaceVariant
-            ),
+        modifier =
+            modifier
+                .size(
+                    size
+                )
+                .clip(
+                    shape
+                )
+                .background(
+                    MaterialTheme
+                        .colorScheme
+                        .surfaceVariant
+                ),
+
         contentAlignment =
             Alignment.Center
     ) {
-        if (
-            !coverPath.isNullOrBlank()
-        ) {
+        if (coverFile != null) {
             AsyncImage(
                 model =
-                    File(coverPath),
+                    coverFile,
+
                 contentDescription =
-                    "Ảnh bìa ${file.displayName}",
+                    "Ảnh bìa $displayName",
+
                 modifier =
-                    Modifier.matchParentSize(),
+                    Modifier
+                        .fillMaxSize(),
+
                 contentScale =
                     ContentScale.Crop
             )
-        } else {
+        }
+        else {
             Icon(
                 imageVector =
-                    Icons.Rounded.MusicNote,
+                    Icons.Rounded
+                        .MusicNote,
+
                 contentDescription =
                     null,
+
                 tint =
                     MaterialTheme
                         .colorScheme
                         .primary,
+
                 modifier =
                     Modifier.size(
-                        size * 0.46f
+                        size *
+                            0.46f
                     )
             )
         }
