@@ -870,17 +870,18 @@ private fun LyricsScrollBar(
 private fun autoScrollPixelsPerTick(
     speed: Int
 ): Int {
-    return when (speed) {
-        1 -> 1
-        2 -> 2
-        3 -> 3
+    return when (
+        speed.coerceIn(
+            1,
+            7
+        )
+    ) {
+        1 -> 2
+        2 -> 3
+        3 -> 4
         4 -> 5
-        5 -> 8
-        6 -> 12
-        7 -> 17
-        8 -> 23
-        9 -> 30
-        10 -> 40
-        else -> 3
+        5 -> 6
+        6 -> 7
+        else -> 8
     }
 }
