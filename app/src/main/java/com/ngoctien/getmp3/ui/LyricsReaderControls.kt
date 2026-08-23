@@ -9,8 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,7 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,7 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -44,6 +43,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -107,53 +107,17 @@ internal fun ReaderControlBar(
             .LocalAppDesign
             .current
 
-    Column(
-        verticalArrangement =
-            Arrangement.spacedBy(
-                design.spacing.small
-            )
-    ) {
-        AnimatedVisibility(
-            visible =
-                state.autoScrollEnabled,
-
-            enter =
-                fadeIn(
-                    animationSpec =
-                        tween(
-                            durationMillis = 220
-                        )
-                ) +
-                    expandVertically(
-                        animationSpec =
-                            tween(
-                                durationMillis = 260
-                            )
-                    ),
-
-            exit =
-                fadeOut(
-                    animationSpec =
-                        tween(
-                            durationMillis = 160
-                        )
-                ) +
-                    shrinkVertically(
-                        animationSpec =
-                            tween(
-                                durationMillis = 220
-                            )
-                    )
-        ) {
-            CameraStyleSpeedDial(
-                speed =
-                    state.autoScrollSpeed,
-
-                onSpeedChange =
-                    onScrollSpeedChange
+    var isAdjustingSpeed by
+        remember {
+            mutableStateOf(
+                false
             )
         }
 
+    Box(
+        modifier =
+            Modifier.fillMaxWidth()
+    ) {
         Row(
             modifier =
                 Modifier.fillMaxWidth(),
@@ -167,10 +131,11 @@ internal fun ReaderControlBar(
                 enabled =
                     state.autoScrollEnabled,
 
-                speedLabel =
-                    readerSpeedText(
-                        state.autoScrollSpeed
-                    ),
+                speed =
+                    state.autoScrollSpeed,
+
+                adjusting =
+                    isAdjustingSpeed,
 
                 modifier =
                     Modifier.weight(
@@ -178,7 +143,17 @@ internal fun ReaderControlBar(
                     ),
 
                 onClick =
-                    onToggleAutoScroll
+                    onToggleAutoScroll,
+
+                onSpeedChange =
+                    onScrollSpeedChange,
+
+                onAdjustingChange = {
+                        adjusting ->
+
+                    isAdjustingSpeed =
+                        adjusting
+                }
             )
 
             WriteLyricsAction(
@@ -189,19 +164,65 @@ internal fun ReaderControlBar(
                     onWriteLyrics
             )
         }
+
+        AnimatedVisibility(
+            visible =
+                isAdjustingSpeed,
+
+            modifier =
+                Modifier
+                    .align(
+                        Alignment.BottomStart
+                    )
+                    .offset(
+                        y = (-194).dp
+                    )
+                    .fillMaxWidth(),
+
+            enter =
+                fadeIn(
+                    animationSpec =
+                        tween(
+                            durationMillis = 130
+                        )
+                ),
+
+            exit =
+                fadeOut(
+                    animationSpec =
+                        tween(
+                            durationMillis = 110
+                        )
+                )
+        ) {
+            CameraStyleSpeedDial(
+                speed =
+                    state.autoScrollSpeed
+            )
+        }
     }
 }
-
 
 @Composable
 private fun AutoScrollAction(
     enabled: Boolean,
-    speedLabel: String,
+    speed: Int,
+    adjusting: Boolean,
     modifier: Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onSpeedChange: (Int) -> Unit,
+    onAdjustingChange: (Boolean) -> Unit
 ) {
     val colors =
         MaterialTheme.colorScheme
+
+    val density =
+        LocalDensity.current
+
+    val scrubStepPx =
+        with(density) {
+            30.dp.toPx()
+        }
 
     Surface(
         modifier =
@@ -209,6 +230,93 @@ private fun AutoScrollAction(
                 .height(
                     78.dp
                 )
+                .pointerInput(
+                    speed,
+                    scrubStepPx
+                ) {
+                    var startSpeed =
+                        speed.coerceIn(
+                            1,
+                            7
+                        )
+
+                    var currentGestureSpeed =
+                        startSpeed
+
+                    var totalHorizontalDrag =
+                        0f
+
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = {
+                            startSpeed =
+                                speed.coerceIn(
+                                    1,
+                                    7
+                                )
+
+                            currentGestureSpeed =
+                                startSpeed
+
+                            totalHorizontalDrag =
+                                0f
+
+                            onAdjustingChange(
+                                true
+                            )
+                        },
+
+                        onDragCancel = {
+                            onAdjustingChange(
+                                false
+                            )
+                        },
+
+                        onDragEnd = {
+                            onAdjustingChange(
+                                false
+                            )
+                        },
+
+                        onDrag = {
+                                change,
+                                dragAmount ->
+
+                            change.consume()
+
+                            totalHorizontalDrag +=
+                                dragAmount.x
+
+                            val stepDelta =
+                                (
+                                    totalHorizontalDrag /
+                                        scrubStepPx
+                                )
+                                    .roundToInt()
+
+                            val targetSpeed =
+                                (
+                                    startSpeed +
+                                        stepDelta
+                                )
+                                    .coerceIn(
+                                        1,
+                                        7
+                                    )
+
+                            if (
+                                targetSpeed !=
+                                currentGestureSpeed
+                            ) {
+                                currentGestureSpeed =
+                                    targetSpeed
+
+                                onSpeedChange(
+                                    targetSpeed
+                                )
+                            }
+                        }
+                    )
+                }
                 .bouncyClickable(
                     onClick =
                         onClick
@@ -224,11 +332,15 @@ private fun AutoScrollAction(
                 .primary
                 .copy(
                     alpha =
-                        if (enabled) {
-                            0.31f
-                        }
-                        else {
-                            0.16f
+                        when {
+                            adjusting ->
+                                0.39f
+
+                            enabled ->
+                                0.31f
+
+                            else ->
+                                0.16f
                         }
                 ),
 
@@ -238,36 +350,53 @@ private fun AutoScrollAction(
         border =
             BorderStroke(
                 width =
-                    1.dp,
+                    if (adjusting) {
+                        1.5.dp
+                    }
+                    else {
+                        1.dp
+                    },
 
                 color =
                     colors
                         .primary
                         .copy(
                             alpha =
-                                if (enabled) {
-                                    0.64f
-                                }
-                                else {
-                                    0.34f
+                                when {
+                                    adjusting ->
+                                        0.92f
+
+                                    enabled ->
+                                        0.64f
+
+                                    else ->
+                                        0.34f
                                 }
                         )
             ),
 
         tonalElevation =
-            if (enabled) {
-                8.dp
-            }
-            else {
-                3.dp
+            when {
+                adjusting ->
+                    11.dp
+
+                enabled ->
+                    8.dp
+
+                else ->
+                    3.dp
             },
 
         shadowElevation =
-            if (enabled) {
-                7.dp
-            }
-            else {
-                2.dp
+            when {
+                adjusting ->
+                    10.dp
+
+                enabled ->
+                    7.dp
+
+                else ->
+                    2.dp
             }
     ) {
         Row(
@@ -302,7 +431,13 @@ private fun AutoScrollAction(
                     colors
                         .primary
                         .copy(
-                            alpha = 0.22f
+                            alpha =
+                                if (adjusting) {
+                                    0.34f
+                                }
+                                else {
+                                    0.22f
+                                }
                         )
             ) {
                 Box(
@@ -356,12 +491,19 @@ private fun AutoScrollAction(
 
                 Text(
                     text =
-                        if (enabled) {
-                            "Đang chạy"
-                        }
-                        else {
-                            "Chạm để bắt đầu"
+                        when {
+                            adjusting ->
+                                "Kéo trái / phải"
+
+                            enabled ->
+                                "Đang chạy • giữ để chỉnh"
+
+                            else ->
+                                "Chạm để chạy • giữ để chỉnh"
                         },
+
+                    maxLines =
+                        1,
 
                     style =
                         MaterialTheme
@@ -381,11 +523,14 @@ private fun AutoScrollAction(
                     ),
 
                 color =
-                    if (enabled) {
+                    if (
+                        adjusting ||
+                        enabled
+                    ) {
                         colors
                             .tertiary
                             .copy(
-                                alpha = 0.18f
+                                alpha = 0.20f
                             )
                     }
                     else {
@@ -402,11 +547,14 @@ private fun AutoScrollAction(
                             1.dp,
 
                         color =
-                            if (enabled) {
+                            if (
+                                adjusting ||
+                                enabled
+                            ) {
                                 colors
                                     .tertiary
                                     .copy(
-                                        alpha = 0.38f
+                                        alpha = 0.46f
                                     )
                             }
                             else {
@@ -420,7 +568,9 @@ private fun AutoScrollAction(
             ) {
                 Text(
                     text =
-                        speedLabel,
+                        readerSpeedText(
+                            speed
+                        ),
 
                     modifier =
                         Modifier.padding(
@@ -437,7 +587,10 @@ private fun AutoScrollAction(
                         FontWeight.Black,
 
                     color =
-                        if (enabled) {
+                        if (
+                            adjusting ||
+                            enabled
+                        ) {
                             colors.tertiary
                         }
                         else {
@@ -449,7 +602,6 @@ private fun AutoScrollAction(
         }
     }
 }
-
 
 @Composable
 private fun WriteLyricsAction(
@@ -564,8 +716,7 @@ private fun WriteLyricsAction(
 
 @Composable
 private fun CameraStyleSpeedDial(
-    speed: Int,
-    onSpeedChange: (Int) -> Unit
+    speed: Int
 ) {
     val colors =
         MaterialTheme.colorScheme
@@ -590,55 +741,12 @@ private fun CameraStyleSpeedDial(
 
             animationSpec =
                 tween(
-                    durationMillis = 190
+                    durationMillis = 145
                 ),
 
             label =
                 "lyrics-camera-speed-marker"
         )
-
-    var controlWidthPx by
-        remember {
-            mutableFloatStateOf(
-                1f
-            )
-        }
-
-    fun selectFromX(
-        x: Float
-    ) {
-        if (controlWidthPx <= 1f) {
-            return
-        }
-
-        val normalized =
-            (
-                x /
-                    controlWidthPx
-            )
-                .coerceIn(
-                    0f,
-                    1f
-                )
-
-        val index =
-            (
-                normalized *
-                    ReaderSpeedOptions
-                        .lastIndex
-            )
-                .roundToInt()
-                .coerceIn(
-                    0,
-                    ReaderSpeedOptions
-                        .lastIndex
-                )
-
-        onSpeedChange(
-            ReaderSpeedOptions[index]
-                .stateValue
-        )
-    }
 
     Surface(
         modifier =
@@ -657,7 +765,7 @@ private fun CameraStyleSpeedDial(
             colors
                 .surface
                 .copy(
-                    alpha = 0.96f
+                    alpha = 0.98f
                 ),
 
         contentColor =
@@ -672,15 +780,15 @@ private fun CameraStyleSpeedDial(
                     colors
                         .primary
                         .copy(
-                            alpha = 0.25f
+                            alpha = 0.32f
                         )
             ),
 
         tonalElevation =
-            7.dp,
+            10.dp,
 
         shadowElevation =
-            8.dp
+            12.dp
     ) {
         Column(
             modifier =
@@ -719,7 +827,7 @@ private fun CameraStyleSpeedDial(
 
             Text(
                 text =
-                    "Tốc độ tự cuộn",
+                    "Giữ nút Tự cuộn và kéo trái / phải",
 
                 style =
                     MaterialTheme
@@ -745,50 +853,6 @@ private fun CameraStyleSpeedDial(
                         .weight(
                             1f
                         )
-                        .onSizeChanged {
-                                size ->
-
-                            controlWidthPx =
-                                size.width
-                                    .toFloat()
-                        }
-                        .pointerInput(
-                            controlWidthPx
-                        ) {
-                            detectTapGestures {
-                                    offset ->
-
-                                selectFromX(
-                                    offset.x
-                                )
-                            }
-                        }
-                        .pointerInput(
-                            controlWidthPx
-                        ) {
-                            detectDragGestures(
-                                onDragStart = {
-                                        offset ->
-
-                                    selectFromX(
-                                        offset.x
-                                    )
-                                },
-
-                                onDrag = {
-                                        change,
-                                        _ ->
-
-                                    change.consume()
-
-                                    selectFromX(
-                                        change
-                                            .position
-                                            .x
-                                    )
-                                }
-                            )
-                        }
             ) {
                 Canvas(
                     modifier =
@@ -1210,7 +1274,7 @@ private fun CameraStyleSpeedDial(
 
                 Text(
                     text =
-                        "Kéo trái / phải",
+                        "Giữ + kéo",
 
                     style =
                         MaterialTheme
@@ -1222,7 +1286,7 @@ private fun CameraStyleSpeedDial(
 
                     color =
                         colors
-                            .onSurfaceVariant
+                            .tertiary
                 )
 
                 Spacer(
@@ -1249,7 +1313,6 @@ private fun CameraStyleSpeedDial(
         }
     }
 }
-
 
 private fun readerSpeedText(
     speed: Int
