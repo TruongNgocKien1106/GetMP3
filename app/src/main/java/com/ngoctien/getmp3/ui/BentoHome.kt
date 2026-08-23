@@ -2,6 +2,7 @@ package com.ngoctien.getmp3.ui
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -12,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -52,9 +55,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ngoctien.getmp3.ui.design.appPressable
-import com.ngoctien.getmp3.ui.theme.BrandBlue
-import com.ngoctien.getmp3.ui.theme.BrandCyan
-import com.ngoctien.getmp3.ui.theme.BrandViolet
 import java.time.LocalTime
 
 private val HomeTextPrimary =
@@ -111,8 +111,10 @@ internal fun BentoHome(
 
         item {
             DownloadHero(
-                inboxFolderName = inboxFolderName,
-                onOpenInbox = onOpenInbox,
+                inboxFolderName =
+                    inboxFolderName,
+                onOpenInbox =
+                    onOpenInbox,
                 onQuickDownloadFromClipboard =
                     onQuickDownloadFromClipboard
             )
@@ -151,6 +153,8 @@ internal fun BentoHome(
                                 Color(0xFF11345F),
                                 Color(0xFF102846)
                             ),
+                        motion =
+                            ExploreMotion.LIBRARY,
                         modifier =
                             Modifier.weight(1f),
                         onClick =
@@ -171,6 +175,8 @@ internal fun BentoHome(
                                 Color(0xFF3C1E60),
                                 Color(0xFF2C183F)
                             ),
+                        motion =
+                            ExploreMotion.LYRICS,
                         modifier =
                             Modifier.weight(1f),
                         onClick =
@@ -200,6 +206,8 @@ internal fun BentoHome(
                                 Color(0xFF17283F),
                                 Color(0xFF142235)
                             ),
+                        motion =
+                            ExploreMotion.TAGS,
                         modifier =
                             Modifier.weight(1f),
                         onClick =
@@ -224,6 +232,8 @@ internal fun BentoHome(
                                 Color(0xFF3A1D47),
                                 Color(0xFF2D1738)
                             ),
+                        motion =
+                            ExploreMotion.DUPLICATES,
                         modifier =
                             Modifier.weight(1f),
                         onClick =
@@ -262,7 +272,7 @@ internal fun BentoHome(
                     icon =
                         Icons.Rounded.Sync,
                     accent =
-                        BrandBlue,
+                        Color(0xFF6495FF),
                     enabled =
                         !isLibrarySyncing,
                     modifier =
@@ -279,7 +289,7 @@ internal fun BentoHome(
                     icon =
                         Icons.Rounded.Settings,
                     accent =
-                        Color(0xFFFFA95C),
+                        Color(0xFFFFA75B),
                     enabled =
                         true,
                     modifier =
@@ -310,7 +320,8 @@ private fun HomeHeader(
                 Arrangement.spacedBy(1.dp)
         ) {
             Text(
-                text = greeting,
+                text =
+                    greeting,
                 style =
                     MaterialTheme
                         .typography
@@ -322,7 +333,8 @@ private fun HomeHeader(
             )
 
             Text(
-                text = "GetMP3",
+                text =
+                    "GetMP3",
                 style =
                     MaterialTheme
                         .typography
@@ -341,7 +353,8 @@ private fun HomeHeader(
                     .appPressable(
                         pressedScale = 0.94f,
                         haptic = true,
-                        onClick = onOpenSettings
+                        onClick =
+                            onOpenSettings
                     ),
             shape =
                 RoundedCornerShape(15.dp),
@@ -376,6 +389,7 @@ private fun HomeHeader(
         }
     }
 }
+
 @Composable
 private fun DownloadHero(
     inboxFolderName: String,
@@ -399,7 +413,8 @@ private fun DownloadHero(
                 .appPressable(
                     pressedScale = 0.982f,
                     haptic = true,
-                    onClick = onOpenInbox
+                    onClick =
+                        onOpenInbox
                 ),
         shape =
             shape,
@@ -481,7 +496,7 @@ private fun DownloadHero(
                 )
             }
 
-            HomeHeroWave(
+            HeroWave(
                 modifier =
                     Modifier
                         .align(
@@ -540,45 +555,44 @@ private fun DownloadHero(
         }
     }
 }
+
 @Composable
-private fun HomeHeroWave(
+private fun HeroWave(
     modifier: Modifier = Modifier
 ) {
     val transition =
         rememberInfiniteTransition(
             label =
-                "home-prototype-wave"
+                "hero-wave"
         )
 
-    val minScales =
+    val barScales =
         listOf(
-            0.30f,
-            0.52f,
-            0.72f,
-            0.44f,
+            0.36f,
+            0.58f,
             0.82f,
-            0.58f
+            0.48f,
+            0.70f,
+            0.43f,
+            0.64f
         )
 
     Row(
         modifier =
-            modifier.graphicsLayer {
-                alpha =
-                    0.56f
-            },
+            modifier,
         horizontalArrangement =
-            Arrangement.spacedBy(4.dp),
+            Arrangement.spacedBy(3.dp),
         verticalAlignment =
             Alignment.CenterVertically
     ) {
-        minScales.forEachIndexed {
+        barScales.forEachIndexed {
                 index,
-                minScale ->
+                minimumScale ->
 
             val scale by
                 transition.animateFloat(
                     initialValue =
-                        minScale,
+                        minimumScale,
                     targetValue =
                         1f,
                     animationSpec =
@@ -587,7 +601,7 @@ private fun HomeHeroWave(
                                 tween(
                                     durationMillis =
                                         560 +
-                                            index * 90,
+                                            index * 70,
                                     easing =
                                         FastOutSlowInEasing
                                 ),
@@ -595,14 +609,14 @@ private fun HomeHeroWave(
                                 RepeatMode.Reverse
                         ),
                     label =
-                        "home-wave-$index"
+                        "hero-bar-$index"
                 )
 
             Box(
                 modifier =
                     Modifier
-                        .width(4.dp)
-                        .height(42.dp)
+                        .width(3.dp)
+                        .height(31.dp)
                         .graphicsLayer {
                             scaleY =
                                 scale
@@ -610,15 +624,15 @@ private fun HomeHeroWave(
                             transformOrigin =
                                 TransformOrigin(
                                     0.5f,
-                                    0.5f
+                                    1f
                                 )
                         }
                         .background(
                             Brush.verticalGradient(
                                 listOf(
-                                    BrandCyan,
-                                    BrandBlue,
-                                    BrandViolet
+                                    Color(0xFF6DDCFF),
+                                    Color(0xFF6495FF),
+                                    Color(0xFF9A76FF)
                                 )
                             ),
                             CircleShape
@@ -633,7 +647,8 @@ private fun HomeSectionTitle(
     text: String
 ) {
     Text(
-        text = text,
+        text =
+            text,
         style =
             MaterialTheme
                 .typography
@@ -644,6 +659,14 @@ private fun HomeSectionTitle(
             HomeTextPrimary
     )
 }
+
+private enum class ExploreMotion {
+    LIBRARY,
+    LYRICS,
+    TAGS,
+    DUPLICATES
+}
+
 @Composable
 private fun ExploreCard(
     title: String,
@@ -652,32 +675,96 @@ private fun ExploreCard(
     icon: ImageVector,
     accent: Color,
     background: List<Color>,
+    motion: ExploreMotion,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     val shape =
-        RoundedCornerShape(22.dp)
+        RoundedCornerShape(21.dp)
 
     val metricColor =
-        when (title) {
-            "TAGS" ->
+        when (motion) {
+            ExploreMotion.TAGS ->
                 Color(0xFFFFC84C)
 
-            "DUPLICATES" ->
-                Color(0xFFFF77A8)
+            ExploreMotion.DUPLICATES ->
+                Color(0xFFFF86A6)
 
             else ->
                 HomeTextPrimary
         }
 
+    val ambientTransition =
+        rememberInfiniteTransition(
+            label =
+                "ambient-$title"
+        )
+
+    val ambientScale by
+        ambientTransition.animateFloat(
+            initialValue =
+                0.94f,
+            targetValue =
+                1.04f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation =
+                        tween(
+                            durationMillis =
+                                when (motion) {
+                                    ExploreMotion.LIBRARY ->
+                                        5200
+
+                                    ExploreMotion.LYRICS ->
+                                        6100
+
+                                    ExploreMotion.TAGS ->
+                                        5700
+
+                                    ExploreMotion.DUPLICATES ->
+                                        6500
+                                },
+                            easing =
+                                FastOutSlowInEasing
+                        ),
+                    repeatMode =
+                        RepeatMode.Reverse
+                ),
+            label =
+                "ambient-scale-$title"
+        )
+
+    val ambientAlpha by
+        ambientTransition.animateFloat(
+            initialValue =
+                0.15f,
+            targetValue =
+                0.25f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation =
+                        tween(
+                            durationMillis =
+                                4300,
+                            easing =
+                                FastOutSlowInEasing
+                        ),
+                    repeatMode =
+                        RepeatMode.Reverse
+                ),
+            label =
+                "ambient-alpha-$title"
+        )
+
     Surface(
         modifier =
             modifier
-                .height(170.dp)
+                .height(174.dp)
                 .appPressable(
-                    pressedScale = 0.965f,
+                    pressedScale = 0.975f,
                     haptic = true,
-                    onClick = onClick
+                    onClick =
+                        onClick
                 ),
         shape =
             shape,
@@ -701,19 +788,36 @@ private fun ExploreCard(
                         ),
                         shape
                     )
-                    .padding(14.dp)
         ) {
+            /*
+             * Prototype geometry:
+             * 108 x 108
+             * top = -53
+             * right = -35
+             *
+             * Keep this outside the card content padding so the
+             * circle remains clipped into the top-right corner.
+             */
             Box(
                 modifier =
                     Modifier
-                        .size(80.dp)
+                        .size(108.dp)
                         .align(
                             Alignment.TopEnd
                         )
+                        .offset(
+                            x = 35.dp,
+                            y = (-53).dp
+                        )
                         .graphicsLayer {
-                            translationX = 27f
-                            translationY = -35f
-                            alpha = 0.14f
+                            scaleX =
+                                ambientScale
+
+                            scaleY =
+                                ambientScale
+
+                            alpha =
+                                ambientAlpha
                         }
                         .background(
                             accent,
@@ -721,15 +825,19 @@ private fun ExploreCard(
                         )
             )
 
-            Column(
+            Box(
                 modifier =
-                    Modifier.fillMaxSize(),
-                verticalArrangement =
-                    Arrangement.SpaceBetween
+                    Modifier
+                        .fillMaxSize()
+                        .padding(14.dp)
             ) {
                 Row(
                     modifier =
-                        Modifier.fillMaxWidth(),
+                        Modifier
+                            .fillMaxWidth()
+                            .align(
+                                Alignment.TopStart
+                            ),
                     horizontalArrangement =
                         Arrangement.SpaceBetween,
                     verticalAlignment =
@@ -737,7 +845,7 @@ private fun ExploreCard(
                 ) {
                     Surface(
                         modifier =
-                            Modifier.size(39.dp),
+                            Modifier.size(41.dp),
                         shape =
                             RoundedCornerShape(13.dp),
                         color =
@@ -780,33 +888,54 @@ private fun ExploreCard(
                                 .titleLarge,
                         color =
                             Color.White.copy(
-                                alpha = 0.74f
+                                alpha = 0.78f
                             )
                     )
                 }
 
-                Column(
-                    verticalArrangement =
-                        Arrangement.spacedBy(3.dp)
-                ) {
-                    Text(
-                        text =
-                            title,
-                        style =
-                            MaterialTheme
-                                .typography
-                                .labelLarge,
-                        fontWeight =
-                            FontWeight.Black,
-                        color =
-                            HomeTextPrimary,
-                        maxLines =
-                            1,
-                        overflow =
-                            TextOverflow.Ellipsis
-                    )
+                /*
+                 * Fixed title slot.
+                 *
+                 * Lyrics has no metric, but its title must remain
+                 * at exactly the same vertical position as the
+                 * other three cards.
+                 */
+                Text(
+                    text =
+                        title,
+                    modifier =
+                        Modifier
+                            .align(
+                                Alignment.TopStart
+                            )
+                            .padding(
+                                top = 68.dp
+                            ),
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelLarge,
+                    fontWeight =
+                        FontWeight.Black,
+                    color =
+                        HomeTextPrimary,
+                    maxLines =
+                        1,
+                    overflow =
+                        TextOverflow.Ellipsis
+                )
 
-                    if (metric != null) {
+                if (metric != null) {
+                    Row(
+                        modifier =
+                            Modifier.align(
+                                Alignment.BottomStart
+                            ),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(5.dp),
+                        verticalAlignment =
+                            Alignment.Bottom
+                    ) {
                         AnimatedContent(
                             targetState =
                                 metric,
@@ -829,39 +958,410 @@ private fun ExploreCard(
                                 style =
                                     MaterialTheme
                                         .typography
-                                        .headlineMedium,
+                                        .headlineSmall,
                                 fontWeight =
                                     FontWeight.Black,
                                 color =
                                     metricColor
                             )
                         }
-                    }
 
-                    if (
-                        !metricLabel
-                            .isNullOrBlank()
-                    ) {
-                        Text(
-                            text =
-                                metricLabel,
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .bodySmall,
-                            color =
-                                HomeTextSecondary,
-                            maxLines =
-                                1,
-                            overflow =
-                                TextOverflow.Ellipsis
-                        )
+                        if (
+                            !metricLabel
+                                .isNullOrBlank()
+                        ) {
+                            Text(
+                                text =
+                                    metricLabel,
+                                modifier =
+                                    Modifier.padding(
+                                        bottom = 3.dp
+                                    ),
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .labelSmall,
+                                fontWeight =
+                                    FontWeight.Bold,
+                                color =
+                                    HomeTextSecondary,
+                                maxLines =
+                                    1
+                            )
+                        }
                     }
                 }
+
+                ExploreCardMotion(
+                    motion =
+                        motion,
+                    accent =
+                        accent,
+                    modifier =
+                        Modifier
+                            .align(
+                                Alignment.BottomEnd
+                            )
+                            .size(
+                                width = 44.dp,
+                                height = 28.dp
+                            )
+                )
             }
         }
     }
 }
+
+@Composable
+private fun ExploreCardMotion(
+    motion: ExploreMotion,
+    accent: Color,
+    modifier: Modifier = Modifier
+) {
+    val transition =
+        rememberInfiniteTransition(
+            label =
+                "card-motion-$motion"
+        )
+
+    when (motion) {
+        ExploreMotion.LIBRARY -> {
+            val heights =
+                listOf(
+                    8.dp,
+                    16.dp,
+                    11.dp,
+                    22.dp,
+                    14.dp
+                )
+
+            Row(
+                modifier =
+                    modifier,
+                horizontalArrangement =
+                    Arrangement.spacedBy(3.dp),
+                verticalAlignment =
+                    Alignment.Bottom
+            ) {
+                heights.forEachIndexed {
+                        index,
+                        barHeight ->
+
+                    val scale by
+                        transition.animateFloat(
+                            initialValue =
+                                0.42f +
+                                    index * 0.07f,
+                            targetValue =
+                                1f,
+                            animationSpec =
+                                infiniteRepeatable(
+                                    animation =
+                                        tween(
+                                            durationMillis =
+                                                620 +
+                                                    index * 110,
+                                            easing =
+                                                FastOutSlowInEasing
+                                        ),
+                                    repeatMode =
+                                        RepeatMode.Reverse
+                                ),
+                            label =
+                                "library-motion-$index"
+                        )
+
+                    Box(
+                        modifier =
+                            Modifier
+                                .width(3.dp)
+                                .height(
+                                    barHeight
+                                )
+                                .graphicsLayer {
+                                    scaleY =
+                                        scale
+
+                                    transformOrigin =
+                                        TransformOrigin(
+                                            0.5f,
+                                            1f
+                                        )
+                                }
+                                .background(
+                                    accent.copy(
+                                        alpha = 0.82f
+                                    ),
+                                    CircleShape
+                                )
+                    )
+                }
+            }
+        }
+
+        ExploreMotion.LYRICS -> {
+            val lineScales =
+                listOf(
+                    0.74f,
+                    0.52f,
+                    0.88f,
+                    0.62f
+                )
+
+            Column(
+                modifier =
+                    modifier,
+                horizontalAlignment =
+                    Alignment.End,
+                verticalArrangement =
+                    Arrangement.spacedBy(3.dp)
+            ) {
+                lineScales.forEachIndexed {
+                        index,
+                        minimumScale ->
+
+                    val scale by
+                        transition.animateFloat(
+                            initialValue =
+                                minimumScale,
+                            targetValue =
+                                1f,
+                            animationSpec =
+                                infiniteRepeatable(
+                                    animation =
+                                        tween(
+                                            durationMillis =
+                                                880 +
+                                                    index * 130,
+                                            easing =
+                                                FastOutSlowInEasing
+                                        ),
+                                    repeatMode =
+                                        RepeatMode.Reverse
+                                ),
+                            label =
+                                "lyrics-motion-$index"
+                        )
+
+                    Box(
+                        modifier =
+                            Modifier
+                                .width(
+                                    when (index) {
+                                        0 -> 22.dp
+                                        1 -> 17.dp
+                                        2 -> 25.dp
+                                        else -> 19.dp
+                                    }
+                                )
+                                .height(2.dp)
+                                .graphicsLayer {
+                                    scaleX =
+                                        scale
+
+                                    transformOrigin =
+                                        TransformOrigin(
+                                            1f,
+                                            0.5f
+                                        )
+                                }
+                                .background(
+                                    accent.copy(
+                                        alpha = 0.82f
+                                    ),
+                                    CircleShape
+                                )
+                    )
+                }
+            }
+        }
+
+        ExploreMotion.TAGS -> {
+            val rotation by
+                transition.animateFloat(
+                    initialValue =
+                        -4f,
+                    targetValue =
+                        4f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation =
+                                tween(
+                                    durationMillis =
+                                        1800,
+                                    easing =
+                                        FastOutSlowInEasing
+                                ),
+                            repeatMode =
+                                RepeatMode.Reverse
+                        ),
+                    label =
+                        "tag-wobble"
+                )
+
+            val sparkleRotation by
+                transition.animateFloat(
+                    initialValue =
+                        0f,
+                    targetValue =
+                        360f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation =
+                                tween(
+                                    durationMillis =
+                                        4800,
+                                    easing =
+                                        LinearEasing
+                                ),
+                            repeatMode =
+                                RepeatMode.Restart
+                        ),
+                    label =
+                        "tag-sparkle"
+                )
+
+            Box(
+                modifier =
+                    modifier
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .width(23.dp)
+                            .height(13.dp)
+                            .align(
+                                Alignment.BottomEnd
+                            )
+                            .offset(
+                                x = (-3).dp,
+                                y = (-2).dp
+                            )
+                            .graphicsLayer {
+                                rotationZ =
+                                    rotation
+                            }
+                            .background(
+                                accent.copy(
+                                    alpha = 0.28f
+                                ),
+                                RoundedCornerShape(
+                                    topStart = 4.dp,
+                                    topEnd = 7.dp,
+                                    bottomEnd = 7.dp,
+                                    bottomStart = 4.dp
+                                )
+                            )
+                            .border(
+                                1.dp,
+                                accent.copy(
+                                    alpha = 0.72f
+                                ),
+                                RoundedCornerShape(
+                                    topStart = 4.dp,
+                                    topEnd = 7.dp,
+                                    bottomEnd = 7.dp,
+                                    bottomStart = 4.dp
+                                )
+                            )
+                )
+
+                Box(
+                    modifier =
+                        Modifier
+                            .size(5.dp)
+                            .align(
+                                Alignment.TopEnd
+                            )
+                            .graphicsLayer {
+                                rotationZ =
+                                    sparkleRotation
+                            }
+                            .background(
+                                accent,
+                                CircleShape
+                            )
+                )
+            }
+        }
+
+        ExploreMotion.DUPLICATES -> {
+            val shift by
+                transition.animateFloat(
+                    initialValue =
+                        -1.5f,
+                    targetValue =
+                        1.5f,
+                    animationSpec =
+                        infiniteRepeatable(
+                            animation =
+                                tween(
+                                    durationMillis =
+                                        1400,
+                                    easing =
+                                        FastOutSlowInEasing
+                                ),
+                            repeatMode =
+                                RepeatMode.Reverse
+                        ),
+                    label =
+                        "duplicate-shift"
+                )
+
+            Box(
+                modifier =
+                    modifier
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .size(15.dp)
+                            .align(
+                                Alignment.CenterEnd
+                            )
+                            .offset(
+                                x = (-12).dp
+                            )
+                            .graphicsLayer {
+                                translationX =
+                                    shift
+                            }
+                            .border(
+                                2.dp,
+                                accent.copy(
+                                    alpha = 0.82f
+                                ),
+                                CircleShape
+                            )
+                )
+
+                Box(
+                    modifier =
+                        Modifier
+                            .size(15.dp)
+                            .align(
+                                Alignment.CenterEnd
+                            )
+                            .offset(
+                                x = (-1).dp
+                            )
+                            .graphicsLayer {
+                                translationX =
+                                    -shift
+                            }
+                            .border(
+                                2.dp,
+                                accent.copy(
+                                    alpha = 0.82f
+                                ),
+                                CircleShape
+                            )
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun QuickToolCard(
     title: String,
@@ -880,10 +1380,14 @@ private fun QuickToolCard(
             modifier
                 .height(108.dp)
                 .appPressable(
-                    enabled = enabled,
-                    pressedScale = 0.965f,
-                    haptic = true,
-                    onClick = onClick
+                    enabled =
+                        enabled,
+                    pressedScale =
+                        0.965f,
+                    haptic =
+                        true,
+                    onClick =
+                        onClick
                 ),
         shape =
             shape,
@@ -998,6 +1502,7 @@ private fun QuickToolCard(
         }
     }
 }
+
 private fun greetingForHour(
     hour: Int
 ): String =

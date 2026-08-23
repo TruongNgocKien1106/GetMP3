@@ -32,7 +32,7 @@ val generatedDevRevision =
         ?: 1
 
 val generatedVersionName =
-    "1.0.$generatedDevRevision-dev"
+    "1.0.$generatedDevRevision"
 
 android {
     namespace = "com.ngoctien.getmp3"
