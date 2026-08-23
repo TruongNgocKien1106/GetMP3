@@ -80,7 +80,7 @@ data class LyricsUiState(
     val fontSizeSp: Float = 22f,
     val autoScrollEnabled:
         Boolean = false,
-    val autoScrollSpeed: Int = 3,
+    val autoScrollSpeed: Int = 10,
     val successMessage:
         String? = null,
     val errorMessage:
@@ -893,8 +893,8 @@ class LyricsViewModel(
             it.copy(
                 autoScrollSpeed =
                     speed.coerceIn(
-                        minimumValue = 1,
-                        maximumValue = 10
+                        5,
+                        50
                     )
             )
         }

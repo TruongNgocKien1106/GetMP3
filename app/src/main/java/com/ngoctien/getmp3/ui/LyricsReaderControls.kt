@@ -52,44 +52,46 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 
-private data class ReaderSpeedOption(
+private const val ReaderSpeedMinState =
+    5
+
+private const val ReaderSpeedMaxState =
+    50
+
+
+private data class ReaderSpeedDialLabel(
     val stateValue: Int,
     val label: String
 )
 
 
-private val ReaderSpeedOptions =
+private val ReaderSpeedDialLabels =
     listOf(
-        ReaderSpeedOption(
-            stateValue = 1,
+        ReaderSpeedDialLabel(
+            stateValue = 5,
             label = "0.50×"
         ),
-        ReaderSpeedOption(
-            stateValue = 2,
-            label = "0.75×"
-        ),
-        ReaderSpeedOption(
-            stateValue = 3,
+        ReaderSpeedDialLabel(
+            stateValue = 10,
             label = "1.00×"
         ),
-        ReaderSpeedOption(
-            stateValue = 4,
-            label = "1.25×"
-        ),
-        ReaderSpeedOption(
-            stateValue = 5,
-            label = "1.50×"
-        ),
-        ReaderSpeedOption(
-            stateValue = 6,
-            label = "1.75×"
-        ),
-        ReaderSpeedOption(
-            stateValue = 7,
+        ReaderSpeedDialLabel(
+            stateValue = 20,
             label = "2.00×"
+        ),
+        ReaderSpeedDialLabel(
+            stateValue = 30,
+            label = "3.00×"
+        ),
+        ReaderSpeedDialLabel(
+            stateValue = 40,
+            label = "4.00×"
+        ),
+        ReaderSpeedDialLabel(
+            stateValue = 50,
+            label = "5.00×"
         )
     )
-
 
 @Suppress("UNUSED_PARAMETER")
 @Composable
@@ -331,17 +333,25 @@ private fun AutoScrollAction(
     val density =
         LocalDensity.current
 
+    /*
+     * 4dp horizontal movement = 0.10x.
+     *
+     * The speed state uses tenths:
+     *
+     *  5 = 0.50x
+     * 10 = 1.00x
+     * 50 = 5.00x
+     */
     val scrubStepPx =
         with(density) {
-            30.dp.toPx()
+            4.dp.toPx()
         }
 
     /*
-     * Keep gesture inputs fresh without restarting pointerInput.
+     * Gesture keys stay stable while speed changes.
      *
-     * The previous implementation used `speed` as a
-     * pointerInput key. Every speed update therefore cancelled
-     * the active long-press drag gesture.
+     * This prevents Compose from cancelling the active
+     * long-press gesture after each speed update.
      */
     val currentSpeed by
         rememberUpdatedState(
@@ -367,34 +377,24 @@ private fun AutoScrollAction(
                 .pointerInput(
                     scrubStepPx
                 ) {
-                    var startSpeed =
+                    var gestureSpeed =
                         currentSpeed.coerceIn(
-                            1,
-                            7
+                            ReaderSpeedMinState,
+                            ReaderSpeedMaxState
                         )
 
-                    var currentGestureSpeed =
-                        startSpeed
-
-                    var totalHorizontalDrag =
+                    var residualDragPx =
                         0f
 
                     detectDragGesturesAfterLongPress(
                         onDragStart = {
-                            /*
-                             * Capture speed only once when the long press
-                             * officially becomes a scrub gesture.
-                             */
-                            startSpeed =
+                            gestureSpeed =
                                 currentSpeed.coerceIn(
-                                    1,
-                                    7
+                                    ReaderSpeedMinState,
+                                    ReaderSpeedMaxState
                                 )
 
-                            currentGestureSpeed =
-                                startSpeed
-
-                            totalHorizontalDrag =
+                            residualDragPx =
                                 0f
 
                             currentOnAdjustingChange(
@@ -403,12 +403,18 @@ private fun AutoScrollAction(
                         },
 
                         onDragCancel = {
+                            residualDragPx =
+                                0f
+
                             currentOnAdjustingChange(
                                 false
                             )
                         },
 
                         onDragEnd = {
+                            residualDragPx =
+                                0f
+
                             currentOnAdjustingChange(
                                 false
                             )
@@ -420,45 +426,61 @@ private fun AutoScrollAction(
 
                             change.consume()
 
-                            /*
-                             * Total displacement is measured from the
-                             * long-press origin.
-                             *
-                             * This allows:
-                             * right -> faster
-                             * left  -> slower
-                             * reverse direction -> reverse speed
-                             */
-                            totalHorizontalDrag +=
+                            residualDragPx +=
                                 dragAmount.x
 
-                            val stepDelta =
-                                (
-                                    totalHorizontalDrag /
-                                        scrubStepPx
-                                )
-                                    .roundToInt()
-
-                            val targetSpeed =
-                                (
-                                    startSpeed +
-                                        stepDelta
-                                )
-                                    .coerceIn(
-                                        1,
-                                        7
-                                    )
-
-                            if (
-                                targetSpeed !=
-                                currentGestureSpeed
+                            while (
+                                residualDragPx >=
+                                    scrubStepPx &&
+                                gestureSpeed <
+                                    ReaderSpeedMaxState
                             ) {
-                                currentGestureSpeed =
-                                    targetSpeed
+                                gestureSpeed +=
+                                    1
+
+                                residualDragPx -=
+                                    scrubStepPx
 
                                 currentOnSpeedChange(
-                                    targetSpeed
+                                    gestureSpeed
                                 )
+                            }
+
+                            while (
+                                residualDragPx <=
+                                    -scrubStepPx &&
+                                gestureSpeed >
+                                    ReaderSpeedMinState
+                            ) {
+                                gestureSpeed -=
+                                    1
+
+                                residualDragPx +=
+                                    scrubStepPx
+
+                                currentOnSpeedChange(
+                                    gestureSpeed
+                                )
+                            }
+
+                            if (
+                                gestureSpeed ==
+                                    ReaderSpeedMaxState &&
+                                residualDragPx >
+                                    0f
+                            ) {
+                                residualDragPx =
+                                    0f
+                            }
+
+                            if (
+                                gestureSpeed ==
+                                    ReaderSpeedMinState &&
+                                residualDragPx <
+                                    0f
+                            ) {
+                                residualDragPx =
+                                    0f
                             }
                         }
                     )
@@ -616,51 +638,23 @@ private fun AutoScrollAction(
                 }
             }
 
-            Column(
+            Text(
+                text =
+                    "TỰ CUỘN",
+
                 modifier =
                     Modifier.weight(
                         1f
-                    )
-            ) {
-                Text(
-                    text =
-                        "TỰ CUỘN",
+                    ),
 
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelLarge,
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelLarge,
 
-                    fontWeight =
-                        FontWeight.Black
-                )
-
-                Text(
-                    text =
-                        when {
-                            adjusting ->
-                                "Kéo trái / phải"
-
-                            enabled ->
-                                "Đang chạy • giữ để chỉnh"
-
-                            else ->
-                                "Chạm để chạy • giữ để chỉnh"
-                        },
-
-                    maxLines =
-                        1,
-
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodySmall,
-
-                    color =
-                        colors
-                            .onSurfaceVariant
-                )
-            }
+                fontWeight =
+                    FontWeight.Black
+            )
 
             Surface(
                 shape =
@@ -867,27 +861,31 @@ private fun CameraStyleSpeedDial(
     val colors =
         MaterialTheme.colorScheme
 
-    val selectedIndex =
-        ReaderSpeedOptions
-            .indexOfFirst {
-                it.stateValue ==
-                    speed.coerceIn(
-                        1,
-                        7
-                    )
-            }
-            .coerceAtLeast(
-                0
-            )
+    val safeSpeed =
+        speed.coerceIn(
+            ReaderSpeedMinState,
+            ReaderSpeedMaxState
+        )
 
-    val animatedIndex by
+    val selectedFraction =
+        (
+            safeSpeed -
+                ReaderSpeedMinState
+            ).toFloat() /
+            (
+                ReaderSpeedMaxState -
+                    ReaderSpeedMinState
+                ).toFloat()
+
+    val animatedFraction by
         animateFloatAsState(
             targetValue =
-                selectedIndex.toFloat(),
+                selectedFraction,
 
             animationSpec =
                 tween(
-                    durationMillis = 145
+                    durationMillis =
+                        55
                 ),
 
             label =
@@ -953,7 +951,7 @@ private fun CameraStyleSpeedDial(
             Text(
                 text =
                     readerSpeedText(
-                        speed
+                        safeSpeed
                     ),
 
                 style =
@@ -1061,17 +1059,18 @@ private fun CameraStyleSpeedDial(
                         size =
                             Size(
                                 width =
-                                    radius * 2f,
+                                    radius *
+                                        2f,
 
                                 height =
-                                    radius * 2f
+                                    radius *
+                                        2f
                             ),
 
                         style =
                             Stroke(
                                 width =
-                                    1.5.dp
-                                        .toPx(),
+                                    1.5.dp.toPx(),
 
                                 cap =
                                     StrokeCap.Round
@@ -1079,7 +1078,8 @@ private fun CameraStyleSpeedDial(
                     )
 
                     val totalTicks =
-                        24
+                        ReaderSpeedMaxState -
+                            ReaderSpeedMinState
 
                     for (
                         tick in
@@ -1087,8 +1087,7 @@ private fun CameraStyleSpeedDial(
                     ) {
                         val fraction =
                             tick.toFloat() /
-                                totalTicks
-                                    .toFloat()
+                                totalTicks.toFloat()
 
                         val angle =
                             startAngle +
@@ -1101,23 +1100,20 @@ private fun CameraStyleSpeedDial(
                             )
 
                         val major =
-                            tick % 4 ==
+                            tick % 5 ==
                                 0
-
-                        val tickLength =
-                            if (major) {
-                                13.dp.toPx()
-                            }
-                            else {
-                                7.dp.toPx()
-                            }
 
                         val outerRadius =
                             radius
 
                         val innerRadius =
                             radius -
-                                tickLength
+                                if (major) {
+                                    13.dp.toPx()
+                                }
+                                else {
+                                    6.dp.toPx()
+                                }
 
                         val cosValue =
                             cos(
@@ -1129,32 +1125,6 @@ private fun CameraStyleSpeedDial(
                                 radians
                             ).toFloat()
 
-                        val outer =
-                            Offset(
-                                x =
-                                    center.x +
-                                        cosValue *
-                                            outerRadius,
-
-                                y =
-                                    center.y +
-                                        sinValue *
-                                            outerRadius
-                            )
-
-                        val inner =
-                            Offset(
-                                x =
-                                    center.x +
-                                        cosValue *
-                                            innerRadius,
-
-                                y =
-                                    center.y +
-                                        sinValue *
-                                            innerRadius
-                            )
-
                         drawLine(
                             color =
                                 colors
@@ -1165,24 +1135,42 @@ private fun CameraStyleSpeedDial(
                                                 0.72f
                                             }
                                             else {
-                                                0.34f
+                                                0.28f
                                             }
                                     ),
 
                             start =
-                                inner,
+                                Offset(
+                                    x =
+                                        center.x +
+                                            cosValue *
+                                                innerRadius,
+
+                                    y =
+                                        center.y +
+                                            sinValue *
+                                                innerRadius
+                                ),
 
                             end =
-                                outer,
+                                Offset(
+                                    x =
+                                        center.x +
+                                            cosValue *
+                                                outerRadius,
+
+                                    y =
+                                        center.y +
+                                            sinValue *
+                                                outerRadius
+                                ),
 
                             strokeWidth =
                                 if (major) {
-                                    1.7.dp
-                                        .toPx()
+                                    1.6.dp.toPx()
                                 }
                                 else {
-                                    1.dp
-                                        .toPx()
+                                    0.9.dp.toPx()
                                 },
 
                             cap =
@@ -1190,72 +1178,62 @@ private fun CameraStyleSpeedDial(
                         )
                     }
 
-                    val selectedFraction =
-                        animatedIndex /
-                            ReaderSpeedOptions
-                                .lastIndex
-                                .toFloat()
-
-                    val selectedAngle =
+                    val markerAngle =
                         startAngle +
                             sweepAngle *
-                                selectedFraction
+                                animatedFraction
 
-                    val selectedRadians =
+                    val markerRadians =
                         Math.toRadians(
-                            selectedAngle.toDouble()
+                            markerAngle.toDouble()
                         )
 
-                    val selectedCos =
+                    val markerCos =
                         cos(
-                            selectedRadians
+                            markerRadians
                         ).toFloat()
 
-                    val selectedSin =
+                    val markerSin =
                         sin(
-                            selectedRadians
+                            markerRadians
                         ).toFloat()
 
                     val markerOuter =
                         Offset(
                             x =
                                 center.x +
-                                    selectedCos *
+                                    markerCos *
                                         (
                                             radius +
-                                                2.dp
-                                                    .toPx()
-                                        ),
+                                                2.dp.toPx()
+                                            ),
 
                             y =
                                 center.y +
-                                    selectedSin *
+                                    markerSin *
                                         (
                                             radius +
-                                                2.dp
-                                                    .toPx()
-                                        )
+                                                2.dp.toPx()
+                                            )
                         )
 
                     val markerInner =
                         Offset(
                             x =
                                 center.x +
-                                    selectedCos *
+                                    markerCos *
                                         (
                                             radius -
-                                                20.dp
-                                                    .toPx()
-                                        ),
+                                                20.dp.toPx()
+                                            ),
 
                             y =
                                 center.y +
-                                    selectedSin *
+                                    markerSin *
                                         (
                                             radius -
-                                                20.dp
-                                                    .toPx()
-                                        )
+                                                20.dp.toPx()
+                                            )
                         )
 
                     drawLine(
@@ -1331,7 +1309,7 @@ private fun CameraStyleSpeedDial(
                             )
                             .fillMaxWidth()
                             .padding(
-                                horizontal = 8.dp,
+                                horizontal = 5.dp,
                                 vertical = 2.dp
                             ),
 
@@ -1341,48 +1319,48 @@ private fun CameraStyleSpeedDial(
                     horizontalArrangement =
                         Arrangement.SpaceBetween
                 ) {
-                    ReaderSpeedOptions
-                        .forEachIndexed {
-                                index,
-                                option ->
+                    ReaderSpeedDialLabels.forEach {
+                            option ->
 
-                            val selected =
-                                index ==
-                                    selectedIndex
+                        Text(
+                            text =
+                                option.label,
 
-                            Text(
-                                text =
-                                    option.label,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelSmall,
 
-                                style =
-                                    MaterialTheme
-                                        .typography
-                                        .labelSmall,
+                            fontSize =
+                                7.sp,
 
-                                fontSize =
-                                    8.sp,
+                            fontWeight =
+                                if (
+                                    option.stateValue ==
+                                        safeSpeed
+                                ) {
+                                    FontWeight.Black
+                                }
+                                else {
+                                    FontWeight.Medium
+                                },
 
-                                fontWeight =
-                                    if (selected) {
-                                        FontWeight.Black
-                                    }
-                                    else {
-                                        FontWeight.Medium
-                                    },
-
-                                color =
-                                    if (selected) {
-                                        colors.tertiary
-                                    }
-                                    else {
-                                        colors
-                                            .onSurfaceVariant
-                                            .copy(
-                                                alpha = 0.62f
-                                            )
-                                    }
-                            )
-                        }
+                            color =
+                                if (
+                                    option.stateValue ==
+                                        safeSpeed
+                                ) {
+                                    colors.tertiary
+                                }
+                                else {
+                                    colors
+                                        .onSurfaceVariant
+                                        .copy(
+                                            alpha = 0.62f
+                                        )
+                                }
+                        )
+                    }
                 }
             }
 
@@ -1431,8 +1409,7 @@ private fun CameraStyleSpeedDial(
                         FontWeight.Bold,
 
                     color =
-                        colors
-                            .tertiary
+                        colors.tertiary
                 )
 
                 Spacer(
@@ -1463,13 +1440,19 @@ private fun CameraStyleSpeedDial(
 private fun readerSpeedText(
     speed: Int
 ): String {
-    return ReaderSpeedOptions[
-        (
-            speed.coerceIn(
-                1,
-                7
-            ) -
-                1
-            )
-    ].label
+    val safeSpeed =
+        speed.coerceIn(
+            ReaderSpeedMinState,
+            ReaderSpeedMaxState
+        )
+
+    val whole =
+        safeSpeed /
+            10
+
+    val decimal =
+        safeSpeed %
+            10
+
+    return "$whole.${decimal}0×"
 }

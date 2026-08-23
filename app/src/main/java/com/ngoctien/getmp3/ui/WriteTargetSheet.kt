@@ -1,31 +1,33 @@
 package com.ngoctien.getmp3.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Save
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,7 +35,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.ngoctien.getmp3.lyrics.LibrarySongCandidate
 import com.ngoctien.getmp3.lyrics.LyricsSearchResult
 import com.ngoctien.getmp3.ui.components.AppActionButton
@@ -44,8 +48,6 @@ import com.ngoctien.getmp3.ui.components.AppLoadingPanel
 import com.ngoctien.getmp3.ui.design.LocalAppDesign
 import com.ngoctien.getmp3.viewmodel.WriteTargetPickerState
 
-private const val InitialWriteTargetCount =
-    8
 
 @OptIn(
     ExperimentalMaterial3Api::class
@@ -63,54 +65,80 @@ internal fun WriteTargetSheet(
     val design =
         LocalAppDesign.current
 
-    var showAll by
+    val colors =
+        MaterialTheme.colorScheme
+
+    var filterQuery by
         remember(
-            state.candidates
+            state.isVisible,
+            selectedLyrics?.id
         ) {
             mutableStateOf(
-                false
+                ""
             )
         }
 
-    val visibleCandidates =
-        if (showAll) {
-            state.candidates
+    val filteredCandidates =
+        remember(
+            state.candidates,
+            filterQuery
+        ) {
+            val needle =
+                filterQuery
+                    .trim()
+                    .lowercase()
+
+            if (needle.isBlank()) {
+                state.candidates
+            }
+            else {
+                state.candidates.filter {
+                        candidate ->
+
+                    candidate.title
+                        .lowercase()
+                        .contains(
+                            needle
+                        ) ||
+                        candidate.artist
+                            .lowercase()
+                            .contains(
+                                needle
+                            ) ||
+                        candidate.displayName
+                            .lowercase()
+                            .contains(
+                                needle
+                            )
+                }
+            }
         }
-        else {
-            state.candidates.take(
-                InitialWriteTargetCount
-            )
-        }
+
+    val sourceLabel =
+        selectedLyrics
+            ?.let {
+                    result ->
+
+                listOf(
+                    result.trackName,
+                    result.artistName
+                )
+                    .filter(
+                        String::isNotBlank
+                    )
+                    .joinToString(
+                        " · "
+                    )
+            }
+            .orEmpty()
+            .ifBlank {
+                "Chọn bài trong Library"
+            }
 
     val busy =
         state.isLoading ||
             state.isChecking ||
             isSaving
-
-    val subtitle =
-        selectedLyrics
-            ?.let { result ->
-                buildString {
-                    append(
-                        result.trackName
-                    )
-
-                    result.artistName
-                        .takeIf(
-                            String::isNotBlank
-                        )
-                        ?.let { artist ->
-                            append(
-                                " · "
-                            )
-
-                            append(
-                                artist
-                            )
-                        }
-                }
-            }
-            .orEmpty()
 
     ModalBottomSheet(
         onDismissRequest =
@@ -131,9 +159,7 @@ internal fun WriteTargetSheet(
             ),
 
         containerColor =
-            MaterialTheme
-                .colorScheme
-                .surface
+            colors.surface
     ) {
         Column(
             modifier =
@@ -142,10 +168,10 @@ internal fun WriteTargetSheet(
                     .navigationBarsPadding()
                     .padding(
                         start =
-                            design.spacing.large,
+                            design.spacing.medium,
 
                         end =
-                            design.spacing.large,
+                            design.spacing.medium,
 
                         bottom =
                             design.spacing.medium
@@ -156,25 +182,252 @@ internal fun WriteTargetSheet(
                     design.spacing.medium
                 )
         ) {
-            LyricsSectionHeader(
-                title =
-                    "Ghi lời vào bài hát",
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
 
-                subtitle =
-                    subtitle
-                        .ifBlank {
-                            "Chọn file MP3 đích"
-                        },
+                verticalAlignment =
+                    Alignment.CenterVertically,
 
-                badge =
-                    state.candidates
-                        .takeIf(
-                            List<LibrarySongCandidate>::isNotEmpty
+                horizontalArrangement =
+                    Arrangement.spacedBy(
+                        12.dp
+                    )
+            ) {
+                Surface(
+                    modifier =
+                        Modifier.size(
+                            52.dp
+                        ),
+
+                    shape =
+                        RoundedCornerShape(
+                            16.dp
+                        ),
+
+                    color =
+                        colors
+                            .secondaryContainer
+                ) {
+                    Box(
+                        modifier =
+                            Modifier.fillMaxSize(),
+
+                        contentAlignment =
+                            Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector =
+                                Icons.Rounded.Save,
+
+                            contentDescription =
+                                null,
+
+                            modifier =
+                                Modifier.size(
+                                    27.dp
+                                ),
+
+                            tint =
+                                colors.secondary
                         )
-                        ?.let {
-                            "${it.size} bài"
+                    }
+                }
+
+                Column(
+                    modifier =
+                        Modifier.weight(
+                            1f
+                        ),
+
+                    verticalArrangement =
+                        Arrangement.spacedBy(
+                            2.dp
+                        )
+                ) {
+                    Text(
+                        text =
+                            "Ghi lời vào bài hát",
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .titleMedium,
+
+                        fontWeight =
+                            FontWeight.Black
+                    )
+
+                    Text(
+                        text =
+                            sourceLabel,
+
+                        maxLines =
+                            1,
+
+                        overflow =
+                            TextOverflow.Ellipsis,
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
+
+                        color =
+                            colors
+                                .onSurfaceVariant
+                    )
+                }
+
+                Surface(
+                    shape =
+                        RoundedCornerShape(
+                            14.dp
+                        ),
+
+                    color =
+                        colors
+                            .surfaceVariant
+                            .copy(
+                                alpha = 0.48f
+                            )
+                ) {
+                    IconButton(
+                        onClick =
+                            onDismiss,
+
+                        enabled =
+                            !busy
+                    ) {
+                        Icon(
+                            imageVector =
+                                Icons.Rounded.Close,
+
+                            contentDescription =
+                                "Đóng"
+                        )
+                    }
+                }
+            }
+
+            OutlinedTextField(
+                value =
+                    filterQuery,
+
+                onValueChange = {
+                    filterQuery =
+                        it
+                },
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                singleLine =
+                    true,
+
+                shape =
+                    RoundedCornerShape(
+                        18.dp
+                    ),
+
+                leadingIcon = {
+                    Icon(
+                        imageVector =
+                            Icons.Rounded.Search,
+
+                        contentDescription =
+                            null
+                    )
+                },
+
+                trailingIcon = {
+                    if (filterQuery.isNotBlank()) {
+                        IconButton(
+                            onClick = {
+                                filterQuery =
+                                    ""
+                            }
+                        ) {
+                            Icon(
+                                imageVector =
+                                    Icons.Rounded.Clear,
+
+                                contentDescription =
+                                    "Xóa tìm kiếm"
+                            )
                         }
+                    }
+                },
+
+                placeholder = {
+                    Text(
+                        text =
+                            "Tìm Title, Artist hoặc tên file"
+                    )
+                }
             )
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                Text(
+                    text =
+                        "Bài hát phù hợp",
+
+                    modifier =
+                        Modifier.weight(
+                            1f
+                        ),
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelLarge,
+
+                    fontWeight =
+                        FontWeight.Black
+                )
+
+                Surface(
+                    shape =
+                        RoundedCornerShape(
+                            99.dp
+                        ),
+
+                    color =
+                        colors
+                            .primary
+                            .copy(
+                                alpha = 0.16f
+                            )
+                ) {
+                    Text(
+                        text =
+                            "${filteredCandidates.size} bài",
+
+                        modifier =
+                            Modifier.padding(
+                                horizontal = 10.dp,
+                                vertical = 5.dp
+                            ),
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
+
+                        fontWeight =
+                            FontWeight.Bold,
+
+                        color =
+                            colors.primary
+                    )
+                }
+            }
 
             when {
                 state.isLoading -> {
@@ -210,8 +463,7 @@ internal fun WriteTargetSheet(
                     ) {
                         AppEmptyState(
                             icon =
-                                Icons.Rounded
-                                    .LibraryMusic,
+                                Icons.Rounded.LibraryMusic,
 
                             title =
                                 "Chưa tìm thấy bài phù hợp",
@@ -219,6 +471,31 @@ internal fun WriteTargetSheet(
                             description =
                                 state.errorMessage
                                     ?: "Không có file MP3 phù hợp trong Library."
+                        )
+                    }
+                }
+
+                filteredCandidates.isEmpty() -> {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(
+                                    1f
+                                ),
+
+                        contentAlignment =
+                            Alignment.Center
+                    ) {
+                        AppEmptyState(
+                            icon =
+                                Icons.Rounded.Search,
+
+                            title =
+                                "Không có bài khớp",
+
+                            description =
+                                "Thử tên bài, Artist hoặc tên file khác."
                         )
                     }
                 }
@@ -234,22 +511,22 @@ internal fun WriteTargetSheet(
 
                         contentPadding =
                             PaddingValues(
-                                vertical =
-                                    design.spacing.tiny
+                                vertical = 2.dp
                             ),
 
                         verticalArrangement =
                             Arrangement.spacedBy(
-                                design.spacing.small
+                                10.dp
                             )
                     ) {
                         items(
                             items =
-                                visibleCandidates,
+                                filteredCandidates,
 
                             key =
                                 LibrarySongCandidate::uri
-                        ) { candidate ->
+                        ) {
+                                candidate ->
 
                             WriteTargetCandidateRow(
                                 candidate =
@@ -278,61 +555,22 @@ internal fun WriteTargetSheet(
                                 }
                             )
                         }
-
-                        if (
-                            !showAll &&
-                            state.candidates.size >
-                            InitialWriteTargetCount
-                        ) {
-                            item(
-                                key =
-                                    "show-all-write-targets"
-                            ) {
-                                TextButton(
-                                    modifier =
-                                        Modifier.fillMaxWidth(),
-
-                                    onClick = {
-                                        showAll =
-                                            true
-                                    }
-                                ) {
-                                    Text(
-                                        text =
-                                            "Xem tất cả ${state.candidates.size} bài"
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
             }
 
-            AnimatedVisibility(
-                visible =
-                    !state.errorMessage
-                        .isNullOrBlank() &&
-                        state.candidates
-                            .isNotEmpty(),
-
-                enter =
-                    expandVertically() +
-                        fadeIn(),
-
-                exit =
-                    shrinkVertically() +
-                        fadeOut()
+            if (
+                !state.errorMessage
+                    .isNullOrBlank() &&
+                state.candidates
+                    .isNotEmpty()
             ) {
-                state.errorMessage
-                    ?.let { message ->
-                        AppErrorNotice(
-                            text =
-                                message
-                        )
-                    }
+                AppErrorNotice(
+                    text =
+                        state.errorMessage
+                            .orEmpty()
+                )
             }
-
-            HorizontalDivider()
 
             AppActionButton(
                 label =

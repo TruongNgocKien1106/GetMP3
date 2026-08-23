@@ -1,21 +1,22 @@
 package com.ngoctien.getmp3.ui
 
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
@@ -24,15 +25,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ngoctien.getmp3.lyrics.LibrarySongCandidate
-import com.ngoctien.getmp3.ui.components.AppIconActionButton
 import com.ngoctien.getmp3.ui.design.LocalAppDesign
 import com.ngoctien.getmp3.ui.design.appPressable
 import kotlin.math.roundToInt
+
 
 @Composable
 internal fun WriteTargetCandidateRow(
@@ -42,24 +42,20 @@ internal fun WriteTargetCandidateRow(
     enabled: Boolean,
     onSelect: () -> Unit
 ) {
-    val context =
-        LocalContext.current
-
     val design =
         LocalAppDesign.current
+
+    val colors =
+        MaterialTheme.colorScheme
 
     val containerColor by
         animateColorAsState(
             targetValue =
                 if (selected) {
-                    MaterialTheme
-                        .colorScheme
-                        .primaryContainer
+                    colors.primaryContainer
                 }
                 else {
-                    MaterialTheme
-                        .colorScheme
-                        .surface
+                    colors.surface
                 },
 
             animationSpec =
@@ -75,17 +71,13 @@ internal fun WriteTargetCandidateRow(
         animateColorAsState(
             targetValue =
                 if (selected) {
-                    MaterialTheme
-                        .colorScheme
-                        .primary
+                    colors.primary
                 }
                 else {
-                    MaterialTheme
-                        .colorScheme
+                    colors
                         .outline
                         .copy(
-                            alpha =
-                                0.24f
+                            alpha = 0.28f
                         )
                 },
 
@@ -123,20 +115,21 @@ internal fun WriteTargetCandidateRow(
 
         contentColor =
             if (selected) {
-                MaterialTheme
-                    .colorScheme
-                    .onPrimaryContainer
+                colors.onPrimaryContainer
             }
             else {
-                MaterialTheme
-                    .colorScheme
-                    .onSurface
+                colors.onSurface
             },
 
         border =
             BorderStroke(
                 width =
-                    1.dp,
+                    if (selected) {
+                        1.5.dp
+                    }
+                    else {
+                        1.dp
+                    },
 
                 color =
                     borderColor
@@ -144,29 +137,85 @@ internal fun WriteTargetCandidateRow(
 
         tonalElevation =
             if (selected) {
-                2.dp
+                4.dp
             }
             else {
-                0.dp
+                1.dp
             }
     ) {
         Row(
             modifier =
-                Modifier.fillMaxWidth(),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        11.dp
+                    ),
 
             verticalAlignment =
-                Alignment.CenterVertically
+                Alignment.CenterVertically,
+
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    11.dp
+                )
         ) {
-            RadioButton(
-                selected =
-                    selected,
+            Surface(
+                modifier =
+                    Modifier.size(
+                        64.dp
+                    ),
 
-                onClick =
-                    onSelect,
+                shape =
+                    RoundedCornerShape(
+                        17.dp
+                    ),
 
-                enabled =
-                    enabled
-            )
+                color =
+                    if (selected) {
+                        colors
+                            .primary
+                            .copy(
+                                alpha = 0.22f
+                            )
+                    }
+                    else {
+                        colors
+                            .surfaceVariant
+                            .copy(
+                                alpha = 0.62f
+                            )
+                    }
+            ) {
+                Box(
+                    modifier =
+                        Modifier.fillMaxSize(),
+
+                    contentAlignment =
+                        Alignment.Center
+                ) {
+                    Icon(
+                        imageVector =
+                            Icons.Rounded.LibraryMusic,
+
+                        contentDescription =
+                            null,
+
+                        modifier =
+                            Modifier.size(
+                                27.dp
+                            ),
+
+                        tint =
+                            if (selected) {
+                                colors.primary
+                            }
+                            else {
+                                colors
+                                    .onSurfaceVariant
+                            }
+                    )
+                }
+            }
 
             Column(
                 modifier =
@@ -176,7 +225,7 @@ internal fun WriteTargetCandidateRow(
 
                 verticalArrangement =
                     Arrangement.spacedBy(
-                        design.spacing.tiny
+                        3.dp
                     )
             ) {
                 Text(
@@ -192,8 +241,13 @@ internal fun WriteTargetCandidateRow(
                     overflow =
                         TextOverflow.Ellipsis,
 
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodyMedium,
+
                     fontWeight =
-                        FontWeight.SemiBold
+                        FontWeight.Black
                 )
 
                 Text(
@@ -215,30 +269,41 @@ internal fun WriteTargetCandidateRow(
                             .bodySmall,
 
                     color =
-                        if (selected) {
-                            MaterialTheme
-                                .colorScheme
-                                .onPrimaryContainer
-                                .copy(
-                                    alpha =
-                                        0.78f
-                                )
-                        }
-                        else {
-                            MaterialTheme
-                                .colorScheme
-                                .onSurfaceVariant
-                        }
+                        colors
+                            .onSurfaceVariant
+                )
+
+                Text(
+                    text =
+                        candidate.displayName,
+
+                    maxLines =
+                        1,
+
+                    overflow =
+                        TextOverflow.Ellipsis,
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall,
+
+                    color =
+                        colors
+                            .onSurfaceVariant
+                            .copy(
+                                alpha = 0.68f
+                            )
                 )
 
                 Row(
+                    verticalAlignment =
+                        Alignment.CenterVertically,
+
                     horizontalArrangement =
                         Arrangement.spacedBy(
-                            design.spacing.small
-                        ),
-
-                    verticalAlignment =
-                        Alignment.CenterVertically
+                            7.dp
+                        )
                 ) {
                     LyricsPill(
                         text =
@@ -246,7 +311,12 @@ internal fun WriteTargetCandidateRow(
                                 (
                                     candidate.score *
                                         100
-                                ).roundToInt()
+                                    )
+                                    .roundToInt()
+                                    .coerceIn(
+                                        0,
+                                        100
+                                    )
                             }%",
 
                         emphasized =
@@ -256,7 +326,7 @@ internal fun WriteTargetCandidateRow(
                     if (currentSong) {
                         LyricsPill(
                             text =
-                                "Bài đang mở",
+                                "Đang mở",
 
                             emphasized =
                                 true
@@ -268,71 +338,19 @@ internal fun WriteTargetCandidateRow(
             Spacer(
                 modifier =
                     Modifier.width(
-                        design.spacing.small
+                        2.dp
                     )
             )
 
-            AppIconActionButton(
-                icon =
-                    Icons.Rounded.PlayArrow,
+            RadioButton(
+                selected =
+                    selected,
 
-                contentDescription =
-                    "Mở bài để nghe thử",
-
-                onClick = {
-                    openCandidateAudio(
-                        context =
-                            context,
-
-                        uri =
-                            candidate.uri
-                    )
-                },
+                onClick =
+                    onSelect,
 
                 enabled =
-                    enabled,
-
-                haptic =
-                    false
-            )
-        }
-    }
-}
-
-private fun openCandidateAudio(
-    context: Context,
-    uri: String
-) {
-    val intent =
-        Intent(
-            Intent.ACTION_VIEW
-        ).apply {
-            setDataAndType(
-                Uri.parse(
-                    uri
-                ),
-                "audio/mpeg"
-            )
-
-            addFlags(
-                Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
-        }
-
-    try {
-        context.startActivity(
-            intent
-        )
-    }
-    catch (
-        _: ActivityNotFoundException
-    ) {
-        runCatching {
-            context.startActivity(
-                Intent.createChooser(
-                    intent,
-                    "Chọn ứng dụng mở nhạc"
-                )
+                    enabled
             )
         }
     }

@@ -870,18 +870,22 @@ private fun LyricsScrollBar(
 private fun autoScrollPixelsPerTick(
     speed: Int
 ): Int {
-    return when (
+    val safeSpeed =
         speed.coerceIn(
-            1,
-            7
+            5,
+            50
         )
-    ) {
-        1 -> 2
-        2 -> 3
-        3 -> 4
-        4 -> 5
-        5 -> 6
-        6 -> 7
-        else -> 8
-    }
+
+    val multiplier =
+        safeSpeed /
+            10f
+
+    return (
+        multiplier *
+            4f
+        )
+        .roundToInt()
+        .coerceAtLeast(
+            1
+        )
 }
