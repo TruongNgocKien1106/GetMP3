@@ -449,9 +449,6 @@ internal fun BentoTagEditorScreen(
                             fileName =
                                 state.previewFileName,
 
-                            album =
-                                state.selectedAlbum,
-
                             coverPath =
                                 song.coverPath
                         )
@@ -894,158 +891,322 @@ private fun MetadataEditorCard(
 @Composable
 private fun SongPreviewCard(
     fileName: String,
-    album: String,
     coverPath: String?
 ) {
     val colors =
         MaterialTheme.colorScheme
 
-    Surface(
+    Column(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(
-                    72.dp
-                ),
+            Modifier.fillMaxWidth(),
 
-        shape =
-            RoundedCornerShape(
-                20.dp
-            ),
-
-        color =
-            colors
-                .surface
-                .copy(
-                    alpha =
-                        0.84f
-                ),
-
-        border =
-            BorderStroke(
-                width =
-                    1.dp,
-
-                color =
-                    colors
-                        .outline
-                        .copy(
-                            alpha =
-                                0.24f
-                        )
-            ),
-
-        tonalElevation =
-            4.dp,
-
-        shadowElevation =
-            6.dp
+        verticalArrangement =
+            Arrangement.spacedBy(
+                6.dp
+            )
     ) {
-        Row(
+        /*
+         * Large cover preview.
+         *
+         * Keep this compact enough to preserve the fixed viewport,
+         * but large enough to make the artwork a primary element.
+         */
+        Surface(
             modifier =
                 Modifier
-                    .fillMaxSize()
-                    .padding(
-                        8.dp
+                    .fillMaxWidth()
+                    .height(
+                        158.dp
                     ),
 
-            verticalAlignment =
-                Alignment.CenterVertically
+            shape =
+                RoundedCornerShape(
+                    22.dp
+                ),
+
+            color =
+                colors
+                    .surfaceVariant,
+
+            border =
+                BorderStroke(
+                    width =
+                        1.dp,
+
+                    color =
+                        BrandSky
+                            .copy(
+                                alpha =
+                                    0.28f
+                            )
+                ),
+
+            tonalElevation =
+                5.dp,
+
+            shadowElevation =
+                9.dp
         ) {
-            AppMediaCover(
-                model =
-                    coverPath
-                        ?.let(
-                            ::File
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                listOf(
+                                    BrandBlue
+                                        .copy(
+                                            alpha =
+                                                0.46f
+                                        ),
+                                    BrandViolet
+                                        .copy(
+                                            alpha =
+                                                0.32f
+                                        ),
+                                    colors
+                                        .surfaceVariant
+                                )
+                            )
+                        )
+            ) {
+                AsyncImage(
+                    model =
+                        coverPath
+                            ?.let(
+                                ::File
+                            ),
+
+                    contentDescription =
+                        "Cover bài hát",
+
+                    modifier =
+                        Modifier
+                            .fillMaxSize(),
+
+                    contentScale =
+                        ContentScale.Crop
+                )
+
+                /*
+                 * Very light bottom fade keeps the cover premium
+                 * without placing extra labels over the artwork.
+                 */
+                Box(
+                    modifier =
+                        Modifier
+                            .align(
+                                Alignment.BottomCenter
+                            )
+                            .fillMaxWidth()
+                            .height(
+                                42.dp
+                            )
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.Transparent,
+                                        Color.Black
+                                            .copy(
+                                                alpha =
+                                                    0.22f
+                                            )
+                                    )
+                                )
+                            )
+                )
+
+                /*
+                 * Visible fallback when the file has no artwork.
+                 */
+                if (
+                    coverPath.isNullOrBlank()
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize(),
+
+                        contentAlignment =
+                            Alignment.Center
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .size(
+                                        58.dp
+                                    )
+                                    .clip(
+                                        RoundedCornerShape(
+                                            18.dp
+                                        )
+                                    )
+                                    .background(
+                                        BrandViolet
+                                            .copy(
+                                                alpha =
+                                                    0.48f
+                                            )
+                                    ),
+
+                            contentAlignment =
+                                Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector =
+                                    Icons.Rounded
+                                        .MusicNote,
+
+                                contentDescription =
+                                    null,
+
+                                modifier =
+                                    Modifier.size(
+                                        31.dp
+                                    ),
+
+                                tint =
+                                    Color.White
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        /*
+         * File preview is deliberately separate from the cover.
+         *
+         * This mirrors the prototype hierarchy:
+         * artwork first -> file identity -> editable metadata.
+         */
+        Surface(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(
+                        48.dp
+                    ),
+
+            shape =
+                RoundedCornerShape(
+                    16.dp
+                ),
+
+            color =
+                colors
+                    .surface
+                    .copy(
+                        alpha =
+                            0.88f
+                    ),
+
+            border =
+                BorderStroke(
+                    width =
+                        1.dp,
+
+                    color =
+                        colors
+                            .outline
+                            .copy(
+                                alpha =
+                                    0.22f
+                            )
+                ),
+
+            tonalElevation =
+                3.dp,
+
+            shadowElevation =
+                4.dp
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(
+                            horizontal =
+                                10.dp
                         ),
 
-                size =
-                    56
-            )
-
-            Spacer(
-                modifier =
-                    Modifier.width(
-                        10.dp
-                    )
-            )
-
-            Column(
-                modifier =
-                    Modifier.weight(
-                        1f
-                    ),
-
-                verticalArrangement =
-                    Arrangement.Center
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
-                Text(
-                    text =
-                        fileName,
+                Box(
+                    modifier =
+                        Modifier
+                            .size(
+                                32.dp
+                            )
+                            .clip(
+                                RoundedCornerShape(
+                                    10.dp
+                                )
+                            )
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(
+                                        BrandBlue,
+                                        BrandViolet
+                                    )
+                                )
+                            ),
 
-                    maxLines =
-                        1,
+                    contentAlignment =
+                        Alignment.Center
+                ) {
+                    Icon(
+                        imageVector =
+                            Icons.Rounded
+                                .MusicNote,
 
-                    overflow =
-                        TextOverflow
-                            .Ellipsis,
+                        contentDescription =
+                            null,
 
-                    style =
-                        MaterialTheme
-                            .typography
-                            .titleSmall,
+                        modifier =
+                            Modifier.size(
+                                18.dp
+                            ),
 
-                    fontWeight =
-                        FontWeight.Black
-                )
+                        tint =
+                            Color.White
+                    )
+                }
 
                 Spacer(
                     modifier =
-                        Modifier.height(
-                            4.dp
+                        Modifier.width(
+                            9.dp
                         )
                 )
 
-                Surface(
-                    shape =
-                        RoundedCornerShape(
-                            99.dp
+                Column(
+                    modifier =
+                        Modifier.weight(
+                            1f
                         ),
 
-                    color =
-                        BrandBlue
-                            .copy(
-                                alpha =
-                                    0.18f
-                            ),
-
-                    border =
-                        BorderStroke(
-                            width =
-                                1.dp,
-
-                            color =
-                                BrandCyan
-                                    .copy(
-                                        alpha =
-                                            0.22f
-                                    )
-                        )
+                    verticalArrangement =
+                        Arrangement.Center
                 ) {
                     Text(
                         text =
-                            album.ifBlank {
-                                "Chưa phân loại"
-                            },
+                            "File MP3",
 
-                        modifier =
-                            Modifier.padding(
-                                horizontal =
-                                    8.dp,
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
 
-                                vertical =
-                                    2.dp
-                            ),
+                        color =
+                            colors
+                                .onSurfaceVariant
+                    )
+
+                    Text(
+                        text =
+                            fileName,
 
                         maxLines =
                             1,
@@ -1057,7 +1218,7 @@ private fun SongPreviewCard(
                         style =
                             MaterialTheme
                                 .typography
-                                .labelSmall,
+                                .bodyMedium,
 
                         fontWeight =
                             FontWeight.Bold,
@@ -1071,7 +1232,6 @@ private fun SongPreviewCard(
         }
     }
 }
-
 
 @Composable
 private fun PremiumTagEditorHeader(
@@ -2692,20 +2852,7 @@ private fun TagYearPickerDialog(
                                 FontWeight.Black
                         )
 
-                        Text(
-                            text =
-                                "$oldestYear — $currentYear · 200 năm",
 
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .labelSmall,
-
-                            color =
-                                MaterialTheme
-                                    .colorScheme
-                                    .onSurfaceVariant
-                        )
                     }
 
                     TextButton(
@@ -2798,23 +2945,7 @@ private fun TagYearPickerDialog(
                     }
                 }
 
-                Text(
-                    text =
-                        "Chỉ chọn năm phát hành, không có tháng hoặc ngày.",
 
-                    modifier =
-                        Modifier.fillMaxWidth(),
-
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelSmall,
-
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant
-                )
             }
         }
     }
