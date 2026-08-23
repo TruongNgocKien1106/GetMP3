@@ -17,11 +17,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -59,6 +57,12 @@ import com.ngoctien.getmp3.ui.theme.BrandCyan
 import com.ngoctien.getmp3.ui.theme.BrandViolet
 import java.time.LocalTime
 
+private val HomeTextPrimary =
+    Color(0xFFF6F8FF)
+
+private val HomeTextSecondary =
+    Color(0xFFBAC6DA)
+
 @Composable
 internal fun BentoHome(
     inboxFolderName: String,
@@ -90,13 +94,13 @@ internal fun BentoHome(
                 .statusBarsPadding(),
         contentPadding =
             PaddingValues(
-                start = 16.dp,
-                top = 14.dp,
-                end = 16.dp,
+                start = 18.dp,
+                top = 10.dp,
+                end = 18.dp,
                 bottom = 28.dp
             ),
         verticalArrangement =
-            Arrangement.spacedBy(16.dp)
+            Arrangement.spacedBy(14.dp)
     ) {
         item {
             HomeHeader(
@@ -123,13 +127,13 @@ internal fun BentoHome(
         item {
             Column(
                 verticalArrangement =
-                    Arrangement.spacedBy(12.dp)
+                    Arrangement.spacedBy(10.dp)
             ) {
                 Row(
                     modifier =
                         Modifier.fillMaxWidth(),
                     horizontalArrangement =
-                        Arrangement.spacedBy(12.dp)
+                        Arrangement.spacedBy(10.dp)
                 ) {
                     ExploreCard(
                         title = "LIBRARY",
@@ -140,12 +144,12 @@ internal fun BentoHome(
                         icon =
                             Icons.Rounded.LibraryMusic,
                         accent =
-                            Color(0xFF5FB2FF),
+                            Color(0xFF62B7FF),
                         background =
                             listOf(
-                                Color(0xFF174B82),
-                                Color(0xFF15345F),
-                                Color(0xFF122C51)
+                                Color(0xFF0F4279),
+                                Color(0xFF11345F),
+                                Color(0xFF102846)
                             ),
                         modifier =
                             Modifier.weight(1f),
@@ -163,9 +167,9 @@ internal fun BentoHome(
                             Color(0xFFC27BFF),
                         background =
                             listOf(
-                                Color(0xFF5B2D83),
-                                Color(0xFF422267),
-                                Color(0xFF352054)
+                                Color(0xFF51267A),
+                                Color(0xFF3C1E60),
+                                Color(0xFF2C183F)
                             ),
                         modifier =
                             Modifier.weight(1f),
@@ -178,7 +182,7 @@ internal fun BentoHome(
                     modifier =
                         Modifier.fillMaxWidth(),
                     horizontalArrangement =
-                        Arrangement.spacedBy(12.dp)
+                        Arrangement.spacedBy(10.dp)
                 ) {
                     ExploreCard(
                         title = "TAGS",
@@ -189,12 +193,12 @@ internal fun BentoHome(
                         icon =
                             Icons.Rounded.Edit,
                         accent =
-                            Color(0xFFFFC45C),
+                            Color(0xFFFFC84C),
                         background =
                             listOf(
-                                Color(0xFF263D5E),
-                                Color(0xFF202F49),
-                                Color(0xFF19283E)
+                                Color(0xFF1A304C),
+                                Color(0xFF17283F),
+                                Color(0xFF142235)
                             ),
                         modifier =
                             Modifier.weight(1f),
@@ -213,12 +217,12 @@ internal fun BentoHome(
                         icon =
                             Icons.Rounded.Sync,
                         accent =
-                            Color(0xFFE77CFF),
+                            Color(0xFFFF77A8),
                         background =
                             listOf(
-                                Color(0xFF54306F),
-                                Color(0xFF3F255B),
-                                Color(0xFF342047)
+                                Color(0xFF4C245B),
+                                Color(0xFF3A1D47),
+                                Color(0xFF2D1738)
                             ),
                         modifier =
                             Modifier.weight(1f),
@@ -240,7 +244,7 @@ internal fun BentoHome(
                 modifier =
                     Modifier.fillMaxWidth(),
                 horizontalArrangement =
-                    Arrangement.spacedBy(12.dp)
+                    Arrangement.spacedBy(10.dp)
             ) {
                 QuickToolCard(
                     title =
@@ -303,11 +307,10 @@ private fun HomeHeader(
     ) {
         Column(
             verticalArrangement =
-                Arrangement.spacedBy(2.dp)
+                Arrangement.spacedBy(1.dp)
         ) {
             Text(
-                text =
-                    greeting,
+                text = greeting,
                 style =
                     MaterialTheme
                         .typography
@@ -315,14 +318,11 @@ private fun HomeHeader(
                 fontWeight =
                     FontWeight.Bold,
                 color =
-                    MaterialTheme
-                        .colorScheme
-                        .primary
+                    Color(0xFF82A9FF)
             )
 
             Text(
-                text =
-                    "GetMP3",
+                text = "GetMP3",
                 style =
                     MaterialTheme
                         .typography
@@ -330,9 +330,7 @@ private fun HomeHeader(
                 fontWeight =
                     FontWeight.Black,
                 color =
-                    MaterialTheme
-                        .colorScheme
-                        .onBackground
+                    HomeTextPrimary
             )
         }
 
@@ -341,27 +339,20 @@ private fun HomeHeader(
                 Modifier
                     .size(46.dp)
                     .appPressable(
+                        pressedScale = 0.94f,
                         haptic = true,
-                        onClick =
-                            onOpenSettings
+                        onClick = onOpenSettings
                     ),
             shape =
-                CircleShape,
+                RoundedCornerShape(15.dp),
             color =
-                MaterialTheme
-                    .colorScheme
-                    .surface
-                    .copy(
-                        alpha = 0.88f
-                    ),
+                Color(0xFF0D1A2D),
             border =
                 BorderStroke(
                     1.dp,
-                    MaterialTheme
-                        .colorScheme
-                        .outline
+                    Color(0xFF6090E8)
                         .copy(
-                            alpha = 0.16f
+                            alpha = 0.35f
                         )
                 )
         ) {
@@ -377,13 +368,14 @@ private fun HomeHeader(
                     contentDescription =
                         "Cài đặt",
                     modifier =
-                        Modifier.size(22.dp)
+                        Modifier.size(21.dp),
+                    tint =
+                        Color(0xFFDDE8FF)
                 )
             }
         }
     }
 }
-
 @Composable
 private fun DownloadHero(
     inboxFolderName: String,
@@ -391,20 +383,23 @@ private fun DownloadHero(
     onQuickDownloadFromClipboard: () -> Unit
 ) {
     val shape =
-        RoundedCornerShape(28.dp)
+        RoundedCornerShape(25.dp)
+
+    val targetFolder =
+        inboxFolderName
+            .ifBlank {
+                "Music/Inbox"
+            }
 
     Surface(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .heightIn(
-                    min = 144.dp
-                )
+                .height(142.dp)
                 .appPressable(
-                    pressedScale = 0.985f,
+                    pressedScale = 0.982f,
                     haptic = true,
-                    onClick =
-                        onOpenInbox
+                    onClick = onOpenInbox
                 ),
         shape =
             shape,
@@ -413,198 +408,138 @@ private fun DownloadHero(
         border =
             BorderStroke(
                 1.dp,
-                Color(0xFF6BA7FF)
+                Color(0xFF739BFF)
                     .copy(
-                        alpha = 0.34f
+                        alpha = 0.58f
                     )
             )
     ) {
         Box(
             modifier =
                 Modifier
-                    .fillMaxWidth()
+                    .fillMaxSize()
                     .background(
                         Brush.linearGradient(
                             listOf(
-                                Color(0xFF102B55),
-                                Color(0xFF182A55),
-                                Color(0xFF312259)
+                                Color(0xFF143A78),
+                                Color(0xFF243C86),
+                                Color(0xFF392270)
                             )
                         ),
                         shape
                     )
                     .padding(
-                        horizontal = 16.dp,
-                        vertical = 16.dp
+                        horizontal = 17.dp,
+                        vertical = 15.dp
                     )
         ) {
+            Column(
+                modifier =
+                    Modifier.align(
+                        Alignment.TopStart
+                    ),
+                verticalArrangement =
+                    Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text =
+                        "QUICK DOWNLOAD",
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall,
+                    fontWeight =
+                        FontWeight.Bold,
+                    color =
+                        Color(0xFFB3CCFF)
+                )
+
+                Text(
+                    text =
+                        "Tải nhạc",
+                    style =
+                        MaterialTheme
+                            .typography
+                            .headlineSmall,
+                    fontWeight =
+                        FontWeight.Black,
+                    color =
+                        Color.White
+                )
+
+                Text(
+                    text =
+                        "Dán link YouTube để tải.",
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+                    color =
+                        Color.White.copy(
+                            alpha = 0.86f
+                        )
+                )
+            }
+
             HomeHeroWave(
                 modifier =
                     Modifier
                         .align(
-                            Alignment.BottomEnd
+                            Alignment.BottomStart
                         )
                         .padding(
-                            end = 50.dp,
-                            bottom = 8.dp
+                            start = 8.dp,
+                            bottom = 3.dp
                         )
             )
 
-            Row(
+            Surface(
                 modifier =
-                    Modifier.fillMaxWidth(),
-                horizontalArrangement =
-                    Arrangement.spacedBy(14.dp),
-                verticalAlignment =
-                    Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier =
-                        Modifier.weight(1f),
-                    verticalArrangement =
-                        Arrangement.spacedBy(7.dp)
-                ) {
-                    Surface(
-                        modifier =
-                            Modifier.size(36.dp),
-                        shape =
-                            RoundedCornerShape(12.dp),
-                        color =
-                            Color.White.copy(
-                                alpha = 0.10f
+                    Modifier
+                        .size(50.dp)
+                        .align(
+                            Alignment.CenterEnd
+                        )
+                        .appPressable(
+                            pressedScale = 0.92f,
+                            haptic = true,
+                            onClick =
+                                onQuickDownloadFromClipboard
+                        ),
+                shape =
+                    RoundedCornerShape(16.dp),
+                color =
+                    Color(0xFF3857A2),
+                border =
+                    BorderStroke(
+                        1.dp,
+                        Color(0xFF9AB9FF)
+                            .copy(
+                                alpha = 0.52f
                             )
-                    ) {
-                        Box(
-                            modifier =
-                                Modifier.fillMaxSize(),
-                            contentAlignment =
-                                Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector =
-                                    Icons.Rounded.Download,
-                                contentDescription =
-                                    null,
-                                tint =
-                                    Color(0xFFDCEAFF),
-                                modifier =
-                                    Modifier.size(20.dp)
-                            )
-                        }
-                    }
-
-                    Text(
-                        text =
-                            "QUICK ACTION",
-                        style =
-                            MaterialTheme
-                                .typography
-                                .labelSmall,
-                        fontWeight =
-                            FontWeight.Bold,
-                        color =
-                            Color(0xFFABC9FF)
                     )
-
-                    Text(
-                        text =
-                            "Tải nhạc",
-                        style =
-                            MaterialTheme
-                                .typography
-                                .headlineSmall,
-                        fontWeight =
-                            FontWeight.Black,
-                        color =
+            ) {
+                Box(
+                    modifier =
+                        Modifier.fillMaxSize(),
+                    contentAlignment =
+                        Alignment.Center
+                ) {
+                    Icon(
+                        imageVector =
+                            Icons.Rounded.Download,
+                        contentDescription =
+                            "Tải vào $targetFolder",
+                        modifier =
+                            Modifier.size(23.dp),
+                        tint =
                             Color.White
                     )
-
-                    Text(
-                        text =
-                            "Search YouTube hoặc dùng URL vừa copy.",
-                        style =
-                            MaterialTheme
-                                .typography
-                                .bodySmall,
-                        color =
-                            Color.White.copy(
-                                alpha = 0.78f
-                            ),
-                        maxLines =
-                            2,
-                        overflow =
-                            TextOverflow.Ellipsis
-                    )
-
-                    Text(
-                        text =
-                            inboxFolderName
-                                .ifBlank {
-                                    "Music/Inbox"
-                                },
-                        style =
-                            MaterialTheme
-                                .typography
-                                .labelSmall,
-                        color =
-                            Color.White.copy(
-                                alpha = 0.54f
-                            ),
-                        maxLines =
-                            1,
-                        overflow =
-                            TextOverflow.Ellipsis
-                    )
-                }
-
-                Surface(
-                    modifier =
-                        Modifier
-                            .size(50.dp)
-                            .appPressable(
-                                pressedScale = 0.92f,
-                                haptic = true,
-                                onClick =
-                                    onQuickDownloadFromClipboard
-                            ),
-                    shape =
-                        RoundedCornerShape(17.dp),
-                    color =
-                        Color(0xFF5F86FF)
-                            .copy(
-                                alpha = 0.92f
-                            ),
-                    border =
-                        BorderStroke(
-                            1.dp,
-                            Color.White.copy(
-                                alpha = 0.22f
-                            )
-                        )
-                ) {
-                    Box(
-                        modifier =
-                            Modifier.fillMaxSize(),
-                        contentAlignment =
-                            Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector =
-                                Icons.Rounded.Download,
-                            contentDescription =
-                                "Tải URL đã sao chép",
-                            tint =
-                                Color.White,
-                            modifier =
-                                Modifier.size(24.dp)
-                        )
-                    }
                 }
             }
         }
     }
 }
-
 @Composable
 private fun HomeHeroWave(
     modifier: Modifier = Modifier
@@ -698,8 +633,7 @@ private fun HomeSectionTitle(
     text: String
 ) {
     Text(
-        text =
-            text,
+        text = text,
         style =
             MaterialTheme
                 .typography
@@ -707,12 +641,9 @@ private fun HomeSectionTitle(
         fontWeight =
             FontWeight.Bold,
         color =
-            MaterialTheme
-                .colorScheme
-                .onBackground
+            HomeTextPrimary
     )
 }
-
 @Composable
 private fun ExploreCard(
     title: String,
@@ -725,19 +656,28 @@ private fun ExploreCard(
     onClick: () -> Unit
 ) {
     val shape =
-        RoundedCornerShape(24.dp)
+        RoundedCornerShape(22.dp)
+
+    val metricColor =
+        when (title) {
+            "TAGS" ->
+                Color(0xFFFFC84C)
+
+            "DUPLICATES" ->
+                Color(0xFFFF77A8)
+
+            else ->
+                HomeTextPrimary
+        }
 
     Surface(
         modifier =
             modifier
-                .heightIn(
-                    min = 196.dp
-                )
+                .height(170.dp)
                 .appPressable(
-                    pressedScale = 0.97f,
+                    pressedScale = 0.965f,
                     haptic = true,
-                    onClick =
-                        onClick
+                    onClick = onClick
                 ),
         shape =
             shape,
@@ -747,7 +687,7 @@ private fun ExploreCard(
             BorderStroke(
                 1.dp,
                 accent.copy(
-                    alpha = 0.30f
+                    alpha = 0.38f
                 )
             )
     ) {
@@ -761,24 +701,19 @@ private fun ExploreCard(
                         ),
                         shape
                     )
-                    .padding(18.dp)
+                    .padding(14.dp)
         ) {
             Box(
                 modifier =
                     Modifier
-                        .size(118.dp)
+                        .size(80.dp)
                         .align(
                             Alignment.TopEnd
                         )
                         .graphicsLayer {
-                            translationX =
-                                42f
-
-                            translationY =
-                                -58f
-
-                            alpha =
-                                0.22f
+                            translationX = 27f
+                            translationY = -35f
+                            alpha = 0.14f
                         }
                         .background(
                             accent,
@@ -802,12 +737,19 @@ private fun ExploreCard(
                 ) {
                     Surface(
                         modifier =
-                            Modifier.size(46.dp),
+                            Modifier.size(39.dp),
                         shape =
-                            RoundedCornerShape(15.dp),
+                            RoundedCornerShape(13.dp),
                         color =
                             accent.copy(
-                                alpha = 0.18f
+                                alpha = 0.16f
+                            ),
+                        border =
+                            BorderStroke(
+                                1.dp,
+                                Color.White.copy(
+                                    alpha = 0.09f
+                                )
                             )
                     ) {
                         Box(
@@ -821,33 +763,31 @@ private fun ExploreCard(
                                     icon,
                                 contentDescription =
                                     null,
-                                tint =
-                                    Color.White,
                                 modifier =
-                                    Modifier.size(23.dp)
+                                    Modifier.size(20.dp),
+                                tint =
+                                    Color.White
                             )
                         }
                     }
 
                     Text(
                         text =
-                            "→",
+                            "›",
                         style =
                             MaterialTheme
                                 .typography
-                                .titleMedium,
-                        fontWeight =
-                            FontWeight.Bold,
+                                .titleLarge,
                         color =
                             Color.White.copy(
-                                alpha = 0.70f
+                                alpha = 0.74f
                             )
                     )
                 }
 
                 Column(
                     verticalArrangement =
-                        Arrangement.spacedBy(6.dp)
+                        Arrangement.spacedBy(3.dp)
                 ) {
                     Text(
                         text =
@@ -859,7 +799,11 @@ private fun ExploreCard(
                         fontWeight =
                             FontWeight.Black,
                         color =
-                            Color.White
+                            HomeTextPrimary,
+                        maxLines =
+                            1,
+                        overflow =
+                            TextOverflow.Ellipsis
                     )
 
                     if (metric != null) {
@@ -868,13 +812,11 @@ private fun ExploreCard(
                                 metric,
                             transitionSpec = {
                                 fadeIn(
-                                    animationSpec =
-                                        tween(180)
+                                    tween(170)
                                 )
                                     .togetherWith(
                                         fadeOut(
-                                            animationSpec =
-                                                tween(120)
+                                            tween(110)
                                         )
                                     )
                             },
@@ -891,7 +833,7 @@ private fun ExploreCard(
                                 fontWeight =
                                     FontWeight.Black,
                                 color =
-                                    Color.White
+                                    metricColor
                             )
                         }
                     }
@@ -908,9 +850,7 @@ private fun ExploreCard(
                                     .typography
                                     .bodySmall,
                             color =
-                                Color.White.copy(
-                                    alpha = 0.66f
-                                ),
+                                HomeTextSecondary,
                             maxLines =
                                 1,
                             overflow =
@@ -922,7 +862,6 @@ private fun ExploreCard(
         }
     }
 }
-
 @Composable
 private fun QuickToolCard(
     title: String,
@@ -934,53 +873,46 @@ private fun QuickToolCard(
     onClick: () -> Unit
 ) {
     val shape =
-        RoundedCornerShape(22.dp)
+        RoundedCornerShape(21.dp)
 
     Surface(
         modifier =
             modifier
-                .heightIn(
-                    min = 116.dp
-                )
+                .height(108.dp)
                 .appPressable(
-                    enabled =
-                        enabled,
-                    pressedScale =
-                        0.97f,
-                    haptic =
-                        true,
-                    onClick =
-                        onClick
+                    enabled = enabled,
+                    pressedScale = 0.965f,
+                    haptic = true,
+                    onClick = onClick
                 ),
         shape =
             shape,
         color =
-            MaterialTheme
-                .colorScheme
-                .surface
-                .copy(
-                    alpha =
-                        if (enabled) {
-                            0.94f
-                        } else {
-                            0.72f
-                        }
-                ),
+            if (enabled) {
+                Color(0xFF0C1828)
+            } else {
+                Color(0xFF09131F)
+            },
         border =
             BorderStroke(
                 1.dp,
                 accent.copy(
-                    alpha = 0.20f
+                    alpha =
+                        if (enabled) {
+                            0.28f
+                        } else {
+                            0.14f
+                        }
                 )
             )
     ) {
         Column(
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp),
+                    .fillMaxSize()
+                    .padding(13.dp),
             verticalArrangement =
-                Arrangement.spacedBy(8.dp)
+                Arrangement.SpaceBetween
         ) {
             Row(
                 modifier =
@@ -992,12 +924,12 @@ private fun QuickToolCard(
             ) {
                 Surface(
                     modifier =
-                        Modifier.size(38.dp),
+                        Modifier.size(36.dp),
                     shape =
-                        RoundedCornerShape(13.dp),
+                        RoundedCornerShape(12.dp),
                     color =
                         accent.copy(
-                            alpha = 0.14f
+                            alpha = 0.15f
                         )
                 ) {
                     Box(
@@ -1011,72 +943,61 @@ private fun QuickToolCard(
                                 icon,
                             contentDescription =
                                 null,
-                            tint =
-                                accent,
                             modifier =
-                                Modifier.size(20.dp)
+                                Modifier.size(19.dp),
+                            tint =
+                                accent
                         )
                     }
                 }
 
                 Text(
                     text =
-                        "→",
+                        "›",
                     style =
                         MaterialTheme
                             .typography
-                            .labelLarge,
+                            .titleMedium,
                     color =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant
-                            .copy(
-                                alpha =
-                                    if (enabled) {
-                                        0.72f
-                                    } else {
-                                        0.38f
-                                    }
-                            )
+                        HomeTextSecondary
                 )
             }
 
-            Spacer(
-                modifier =
-                    Modifier.height(2.dp)
-            )
+            Column(
+                verticalArrangement =
+                    Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text =
+                        title,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleSmall,
+                    fontWeight =
+                        FontWeight.Bold,
+                    color =
+                        HomeTextPrimary
+                )
 
-            Text(
-                text =
-                    title,
-                style =
-                    MaterialTheme
-                        .typography
-                        .titleSmall,
-                fontWeight =
-                    FontWeight.Bold
-            )
-
-            Text(
-                text =
-                    subtitle,
-                style =
-                    MaterialTheme
-                        .typography
-                        .bodySmall,
-                color =
-                    MaterialTheme
-                        .colorScheme
-                        .onSurfaceVariant,
-                maxLines =
-                    2,
-                overflow =
-                    TextOverflow.Ellipsis
-            )
+                Text(
+                    text =
+                        subtitle,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+                    color =
+                        HomeTextSecondary,
+                    maxLines =
+                        1,
+                    overflow =
+                        TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
-
 private fun greetingForHour(
     hour: Int
 ): String =

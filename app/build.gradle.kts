@@ -1,6 +1,4 @@
 import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 plugins {
     alias(libs.plugins.android.application)
@@ -16,12 +14,25 @@ val generatedVersionCode =
         .coerceIn(6L, 2_100_000_000L)
         .toInt()
 
+val generatedDevRevision =
+    providers.exec {
+        commandLine(
+            "git",
+            "rev-list",
+            "--count",
+            "HEAD"
+        )
+    }
+        .standardOutput
+        .asText
+        .get()
+        .trim()
+        .toIntOrNull()
+        ?.coerceAtLeast(1)
+        ?: 1
+
 val generatedVersionName =
-    "1.0.0-dev." +
-        DateTimeFormatter
-            .ofPattern("yyyyMMdd.HHmmss")
-            .withZone(ZoneId.systemDefault())
-            .format(buildInstant)
+    "1.0.$generatedDevRevision-dev"
 
 android {
     namespace = "com.ngoctien.getmp3"
@@ -29,8 +40,7 @@ android {
 
     defaultConfig {
         applicationId = "com.ngoctien.getmp3"
-
-        // Chá»‰ dÃ¹ng MediaStore hiá»‡n Ä‘áº¡i, khÃ´ng cáº§n quyá»n ghi bá»™ nhá»› cÅ©.
+        // Use modern MediaStore only; legacy external-storage write permission is not required.
         minSdk = 29
         targetSdk = 36
 

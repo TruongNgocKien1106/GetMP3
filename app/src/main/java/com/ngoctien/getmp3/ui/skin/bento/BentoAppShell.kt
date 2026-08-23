@@ -1,12 +1,13 @@
 package com.ngoctien.getmp3.ui.skin.bento
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -16,25 +17,16 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.ngoctien.getmp3.ui.AppDestination
 import com.ngoctien.getmp3.ui.AppMotion
-import com.ngoctien.getmp3.ui.AppScreenBackdrop
 
-/*
- * Bento-specific application shell.
- *
- * Home là dashboard điều hướng chính.
- * Màn con dùng system back / back gesture, không cần nút Back cố định.
- *
- * Business state is deliberately absent from this file.
- */
 @Composable
 internal fun BentoAppShell(
     selectedDestination: AppDestination,
     snackbarHostState: SnackbarHostState,
-    onDestinationSelected:
-        (AppDestination) -> Unit,
+    onDestinationSelected: (AppDestination) -> Unit,
     content:
         @Composable (
             destination: AppDestination,
@@ -44,7 +36,6 @@ internal fun BentoAppShell(
     Scaffold(
         containerColor =
             Color.Transparent,
-
         contentWindowInsets =
             WindowInsets(
                 0,
@@ -52,7 +43,6 @@ internal fun BentoAppShell(
                 0,
                 0
             ),
-
         snackbarHost = {
             SnackbarHost(
                 hostState =
@@ -60,75 +50,65 @@ internal fun BentoAppShell(
             )
         }
     ) { innerPadding ->
-
-        AppScreenBackdrop(
+        Box(
             modifier =
-                Modifier.fillMaxSize()
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color(0xFF081426),
+                                Color(0xFF060C17),
+                                Color(0xFF050810),
+                                Color(0xFF090715)
+                            )
+                        )
+                    )
         ) {
-            Box(
+            AnimatedContent(
+                targetState =
+                    selectedDestination,
                 modifier =
-                    Modifier.fillMaxSize()
-            ) {
-                AnimatedContent(
-                    targetState =
-                        selectedDestination,
-
-                    modifier =
-                        Modifier.fillMaxSize(),
-
-                    transitionSpec = {
-                        (
-                            fadeIn(
+                    Modifier.fillMaxSize(),
+                transitionSpec = {
+                    (
+                        fadeIn(
+                            tween(
+                                AppMotion.EnterMillis
+                            )
+                        ) +
+                            scaleIn(
+                                initialScale =
+                                    0.988f,
                                 animationSpec =
                                     tween(
-                                        durationMillis =
-                                            AppMotion
-                                                .EnterMillis
+                                        AppMotion.EnterMillis
                                     )
+                            )
+                    )
+                        .togetherWith(
+                            fadeOut(
+                                tween(
+                                    AppMotion.ExitMillis
+                                )
                             ) +
-                                scaleIn(
-                                    initialScale =
-                                        0.985f,
-
+                                scaleOut(
+                                    targetScale =
+                                        0.988f,
                                     animationSpec =
                                         tween(
-                                            durationMillis =
-                                                AppMotion
-                                                    .EnterMillis
+                                            AppMotion.ExitMillis
                                         )
                                 )
                         )
-                            .togetherWith(
-                                fadeOut(
-                                    animationSpec =
-                                        tween(
-                                            durationMillis =
-                                                AppMotion
-                                                    .ExitMillis
-                                        )
-                                ) +
-                                    scaleOut(
-                                        targetScale =
-                                            0.985f,
-
-                                        animationSpec =
-                                            tween(
-                                                durationMillis =
-                                                    AppMotion
-                                                        .ExitMillis
-                                            )
-                                    )
-                            )
-                    },
-
-                    label =
-                        "app-shell-destination"
-                ) { destination ->
-                    content(
-                        destination,
-                        innerPadding
-                    )
-                }
+                },
+                label =
+                    "bento-destination"
+            ) { destination ->
+                content(
+                    destination,
+                    innerPadding
+                )
             }
         }
     }
