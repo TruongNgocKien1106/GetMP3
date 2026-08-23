@@ -342,11 +342,22 @@ internal fun LyricsTab(
                 )
         ) {
             if (state.screen != LyricsScreen.READER) {
-                LyricsHeader(
-                    state = state,
-                    onBack =
-                        actions.back
-                )
+                when (state.screen) {
+                    LyricsScreen.LIBRARY,
+                    LyricsScreen.RESULTS -> {
+                        LyricsHeader()
+                    }
+
+                    LyricsScreen.EDITOR -> {
+                        LyricsEditorHeader(
+                            state = state,
+                            onBack =
+                                actions.back
+                        )
+                    }
+
+                    LyricsScreen.READER -> Unit
+                }
 
                 Spacer(
                     modifier =
@@ -377,8 +388,17 @@ internal fun LyricsTab(
                 }
 
                 LyricsScreen.RESULTS -> {
-                    LyricsResultsScreen(
+                    LyricsLibraryScreen(
                         state = state,
+
+                        onQueryChange =
+                            actions.setQuery,
+
+                        onClear =
+                            actions.clearQuery,
+
+                        onSubmit =
+                            actions.submitSearch,
 
                         onSelectResult =
                             actions.selectLyricsResult,
@@ -456,65 +476,105 @@ internal fun LyricsTab(
 }
 
 @Composable
-private fun LyricsHeader(
+private fun LyricsHeader() {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = 4.dp,
+                    vertical = 2.dp
+                ),
+        verticalAlignment =
+            Alignment.CenterVertically,
+        horizontalArrangement =
+            Arrangement.spacedBy(12.dp)
+    ) {
+        Surface(
+            modifier =
+                Modifier.size(42.dp),
+            shape =
+                RoundedCornerShape(13.dp),
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .primary
+                    .copy(
+                        alpha = 0.14f
+                    ),
+            border =
+                BorderStroke(
+                    1.dp,
+                    MaterialTheme
+                        .colorScheme
+                        .primary
+                        .copy(
+                            alpha = 0.30f
+                        )
+                )
+        ) {
+            Box(
+                modifier =
+                    Modifier.fillMaxSize(),
+                contentAlignment =
+                    Alignment.Center
+            ) {
+                Icon(
+                    imageVector =
+                        Icons.Rounded.LibraryMusic,
+                    contentDescription =
+                        null,
+                    modifier =
+                        Modifier.size(22.dp),
+                    tint =
+                        MaterialTheme
+                            .colorScheme
+                            .primary
+                )
+            }
+        }
+
+        Text(
+            text =
+                "Lyrics",
+            style =
+                MaterialTheme
+                    .typography
+                    .headlineMedium,
+            fontWeight =
+                FontWeight.Black,
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onBackground
+        )
+    }
+}
+
+
+@Composable
+private fun LyricsEditorHeader(
     state: LyricsUiState,
     onBack: () -> Unit
 ) {
-    val subtitle =
-        when (state.screen) {
-            LyricsScreen.LIBRARY ->
-                "Tìm lời • karaoke • ghi khi cần"
-
-            LyricsScreen.RESULTS ->
-                state.selectedSong
-                    ?.title
-                    ?: "Kết quả tìm lyrics"
-
-            LyricsScreen.READER ->
-                state.selectedResult
-                    ?.artistName
-                    ?.ifBlank {
-                        "Đang đọc lyrics"
-                    }
-                    ?: "Đang đọc lyrics"
-
-            LyricsScreen.EDITOR ->
-                state.editorTarget
-                    ?.displayName
-                    ?: "Ghi lyrics vào MP3"
-        }
-
     AppPageHeader(
         title =
             "Lyrics",
-
         subtitle =
-            subtitle,
-
+            state.editorTarget
+                ?.displayName
+                ?: "Ghi lyrics vào MP3",
         icon =
-            Icons.Rounded
-                .LibraryMusic,
-
-        action =
-            if (
-                state.screen !=
-                LyricsScreen.LIBRARY
-            ) {
-                {
-                    AppHeaderActionButton(
-                        icon =
-                            Icons.Rounded
-                                .ArrowBack,
-
-                        contentDescription =
-                            "Quay lại",
-
-                        onClick =
-                            onBack
-                    )
-                }
-            } else {
-                null
-            }
+            Icons.Rounded.LibraryMusic,
+        action = {
+            AppHeaderActionButton(
+                icon =
+                    Icons.Rounded.ArrowBack,
+                contentDescription =
+                    "Quay lại",
+                onClick =
+                    onBack
+            )
+        }
     )
 }
