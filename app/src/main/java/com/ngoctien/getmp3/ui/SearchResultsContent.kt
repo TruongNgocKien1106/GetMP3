@@ -58,7 +58,6 @@ import com.ngoctien.getmp3.youtube.YouTubeSearchResult
 internal fun SearchResultsContent(
     state: YouTubeSearchUiState,
     downloadEnabled: Boolean,
-    bitrateKbps: Int = 128,
     onSearch: () -> Unit,
     onLoadMore: () -> Unit,
     onDownload:
@@ -132,8 +131,6 @@ internal fun SearchResultsContent(
                             result,
                         downloadEnabled =
                             downloadEnabled,
-                        bitrateKbps =
-                            bitrateKbps,
                         onDownload = {
                             onDownload(
                                 result
@@ -282,7 +279,6 @@ private fun PrototypeResultsHeader(
 private fun PrototypeYouTubeResultCard(
     result: YouTubeSearchResult,
     downloadEnabled: Boolean,
-    bitrateKbps: Int,
     onDownload: () -> Unit
 ) {
     val context =
@@ -632,8 +628,6 @@ private fun PrototypeYouTubeResultCard(
                 PrototypeDownloadButton(
                     enabled =
                         downloadEnabled,
-                    bitrateKbps =
-                        bitrateKbps,
                     onClick =
                         onDownload
                 )
@@ -646,17 +640,16 @@ private fun PrototypeYouTubeResultCard(
 @Composable
 private fun PrototypeDownloadButton(
     enabled: Boolean,
-    bitrateKbps: Int,
     onClick: () -> Unit
 ) {
     val shape =
-        RoundedCornerShape(15.dp)
+        RoundedCornerShape(14.dp)
 
     Box(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+                .height(50.dp)
                 .graphicsLayer {
                     alpha =
                         if (enabled) {
@@ -669,9 +662,9 @@ private fun PrototypeDownloadButton(
                 .background(
                     Brush.horizontalGradient(
                         listOf(
-                            Color(0xFF61C9FF),
-                            Color(0xFF70A9FF),
-                            Color(0xFF9B7FFF)
+                            Color(0xFF62C9FF),
+                            Color(0xFF73B1FF),
+                            Color(0xFF9B82FF)
                         )
                     )
                 )
@@ -690,73 +683,36 @@ private fun PrototypeDownloadButton(
     ) {
         Row(
             horizontalArrangement =
-                Arrangement.spacedBy(10.dp),
+                Arrangement.spacedBy(8.dp),
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
-            Surface(
+            Icon(
+                imageVector =
+                    Icons.Rounded.Download,
+                contentDescription =
+                    null,
                 modifier =
-                    Modifier.size(34.dp),
-                shape =
-                    RoundedCornerShape(
-                        11.dp
-                    ),
+                    Modifier.size(19.dp),
+                tint =
+                    Color(0xFF071526)
+            )
+
+            Text(
+                text =
+                    "Tải MP3",
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelLarge,
+                fontWeight =
+                    FontWeight.Black,
                 color =
-                    Color.White.copy(
-                        alpha = 0.24f
-                    )
-            ) {
-                Box(
-                    modifier =
-                        Modifier.fillMaxSize(),
-                    contentAlignment =
-                        Alignment.Center
-                ) {
-                    Icon(
-                        imageVector =
-                            Icons.Rounded.Download,
-                        contentDescription =
-                            null,
-                        modifier =
-                            Modifier.size(19.dp),
-                        tint =
-                            Color(0xFF071526)
-                    )
-                }
-            }
-
-            Column {
-                Text(
-                    text =
-                        "Tải MP3",
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelLarge,
-                    fontWeight =
-                        FontWeight.Black,
-                    color =
-                        Color(0xFF071526)
-                )
-
-                Text(
-                    text =
-                        "$bitrateKbps kbps • lưu vào Inbox",
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelSmall,
-                    color =
-                        Color(0xFF071526)
-                            .copy(
-                                alpha = 0.72f
-                            )
-                )
-            }
+                    Color(0xFF071526)
+            )
         }
     }
 }
-
 
 @Composable
 private fun PrototypeLoadMoreFooter(

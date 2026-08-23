@@ -41,7 +41,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteSweep
-import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.MusicNote
@@ -81,7 +80,6 @@ import coil.compose.AsyncImage
 import com.ngoctien.getmp3.data.DownloadJobEntity
 import com.ngoctien.getmp3.model.DownloadStatus
 import com.ngoctien.getmp3.note.ReferenceSongMatch
-import com.ngoctien.getmp3.settings.AppSettings
 import com.ngoctien.getmp3.ui.design.appPressable
 import com.ngoctien.getmp3.viewmodel.DownloadScreenUiState
 import com.ngoctien.getmp3.viewmodel.FfmpegReadyState
@@ -103,7 +101,6 @@ private enum class InboxTab {
 internal fun BentoSearchDownloadScreen(
     searchState: YouTubeSearchUiState,
     downloadState: DownloadScreenUiState,
-    settings: AppSettings,
     modifier: Modifier = Modifier,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
@@ -115,8 +112,6 @@ internal fun BentoSearchDownloadScreen(
         (CharSequence?) -> Unit,
     onDownloadResult:
         (YouTubeSearchResult) -> Unit,
-    onOpenReferenceSong:
-        (ReferenceSongMatch) -> Unit,
     onCancelJob: (String) -> Unit,
     onRetryJob:
         (DownloadJobEntity) -> Unit,
@@ -398,8 +393,6 @@ internal fun BentoSearchDownloadScreen(
                             searchState,
                         downloadEnabled =
                             downloadEnabled,
-                        bitrateKbps =
-                            settings.bitrateKbps,
                         onSearch = {
                             searchFromInbox()
                         },
@@ -422,9 +415,7 @@ internal fun BentoSearchDownloadScreen(
                                 .isSearchingReference,
                         message =
                             searchState
-                                .referenceMessage,
-                        onOpenEditor =
-                            onOpenReferenceSong
+                                .referenceMessage
                     )
                 }
 
@@ -913,9 +904,7 @@ private fun PrototypeDuplicateContent(
     matches:
         List<ReferenceSongMatch>,
     isSearching: Boolean,
-    message: String?,
-    onOpenEditor:
-        (ReferenceSongMatch) -> Unit
+    message: String?
 ) {
     LazyColumn(
         modifier =
@@ -967,7 +956,7 @@ private fun PrototypeDuplicateContent(
                                 .colorScheme
                                 .tertiary
                                 .copy(
-                                    alpha = 0.16f
+                                    alpha = 0.14f
                                 ),
                         border =
                             BorderStroke(
@@ -976,8 +965,7 @@ private fun PrototypeDuplicateContent(
                                     .colorScheme
                                     .tertiary
                                     .copy(
-                                        alpha =
-                                            0.42f
+                                        alpha = 0.36f
                                     )
                             )
                     ) {
@@ -1005,7 +993,7 @@ private fun PrototypeDuplicateContent(
 
                 Text(
                     text =
-                        "File trong Library có độ tương đồng cao.",
+                        "File trong Library có tên tương đồng.",
                     style =
                         MaterialTheme
                             .typography
@@ -1052,12 +1040,7 @@ private fun PrototypeDuplicateContent(
                 ) { match ->
                     PrototypeDuplicateCard(
                         match =
-                            match,
-                        onOpenEditor = {
-                            onOpenEditor(
-                                match
-                            )
-                        }
+                            match
                     )
                 }
             }
@@ -1085,8 +1068,7 @@ private fun PrototypeDuplicateContent(
 
 @Composable
 private fun PrototypeDuplicateCard(
-    match: ReferenceSongMatch,
-    onOpenEditor: () -> Unit
+    match: ReferenceSongMatch
 ) {
     val context =
         LocalContext.current
@@ -1099,28 +1081,39 @@ private fun PrototypeDuplicateCard(
                 100
             )
 
-    val badge =
-        when {
-            match.score >= 0.97 ->
-                "Đã có"
+    val titlePercent =
+        (
+            (
+                match.titleScore
+                    ?: match.score
+            ) *
+                100.0
+        )
+            .toInt()
+            .coerceIn(
+                0,
+                100
+            )
 
-            match.score >= 0.84 ->
-                "Rất giống"
-
-            else ->
-                "Có thể trùng"
-        }
+    val combinedPercent =
+        (
+            (
+                match.combinedScore
+                    ?: match.score
+            ) *
+                100.0
+        )
+            .toInt()
+            .coerceIn(
+                0,
+                100
+            )
 
     val accent =
-        when {
-            match.score >= 0.97 ->
-                Color(0xFF28C7C5)
-
-            match.score >= 0.84 ->
-                Color(0xFF6D90FF)
-
-            else ->
-                Color(0xFFFFB64A)
+        if (match.score >= 0.95) {
+            Color(0xFF35CFE3)
+        } else {
+            Color(0xFFFFB23E)
         }
 
     Surface(
@@ -1133,13 +1126,13 @@ private fun PrototypeDuplicateCard(
                 .colorScheme
                 .surface
                 .copy(
-                    alpha = 0.86f
+                    alpha = 0.84f
                 ),
         border =
             BorderStroke(
                 1.dp,
                 accent.copy(
-                    alpha = 0.42f
+                    alpha = 0.46f
                 )
             )
     ) {
@@ -1147,9 +1140,11 @@ private fun PrototypeDuplicateCard(
             modifier =
                 Modifier.padding(13.dp),
             verticalArrangement =
-                Arrangement.spacedBy(12.dp)
+                Arrangement.spacedBy(10.dp)
         ) {
             Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
                 verticalAlignment =
                     Alignment.Top
             ) {
@@ -1214,19 +1209,21 @@ private fun PrototypeDuplicateCard(
                     )
 
                     if (
-                        match.durationSeconds !=
-                        null
+                        !match.album
+                            .isNullOrBlank()
                     ) {
                         Spacer(
                             modifier =
-                                Modifier.height(2.dp)
+                                Modifier.height(3.dp)
                         )
 
                         Text(
                             text =
-                                formatInlineDuration(
-                                    match.durationSeconds
-                                ),
+                                "Album: ${match.album}",
+                            maxLines =
+                                1,
+                            overflow =
+                                TextOverflow.Ellipsis,
                             style =
                                 MaterialTheme
                                     .typography
@@ -1235,9 +1232,28 @@ private fun PrototypeDuplicateCard(
                                 MaterialTheme
                                     .colorScheme
                                     .onSurfaceVariant
-                                    .copy(
-                                        alpha = 0.72f
-                                    )
+                        )
+                    }
+
+                    if (
+                        !match.year
+                            .isNullOrBlank()
+                    ) {
+                        Text(
+                            text =
+                                "Year: ${match.year}",
+                            maxLines =
+                                1,
+                            overflow =
+                                TextOverflow.Ellipsis,
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelSmall,
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .onSurfaceVariant
                         )
                     }
                 }
@@ -1245,7 +1261,7 @@ private fun PrototypeDuplicateCard(
                 Surface(
                     shape =
                         RoundedCornerShape(
-                            13.dp
+                            12.dp
                         ),
                     color =
                         accent.copy(
@@ -1259,53 +1275,77 @@ private fun PrototypeDuplicateCard(
                             )
                         )
                 ) {
-                    Column(
+                    Text(
+                        text =
+                            "$percent%",
                         modifier =
                             Modifier.padding(
                                 horizontal = 9.dp,
-                                vertical = 6.dp
+                                vertical = 7.dp
                             ),
-                        horizontalAlignment =
-                            Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text =
-                                "$percent%",
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .labelLarge,
-                            fontWeight =
-                                FontWeight.Black,
-                            color =
-                                accent
-                        )
-
-                        Text(
-                            text =
-                                badge,
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .labelSmall,
-                            color =
-                                accent
-                        )
-                    }
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelLarge,
+                        fontWeight =
+                            FontWeight.Black,
+                        color =
+                            accent
+                    )
                 }
+            }
+
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(
+                            MaterialTheme
+                                .colorScheme
+                                .outline
+                                .copy(
+                                    alpha = 0.14f
+                                )
+                        )
+            )
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.spacedBy(18.dp)
+            ) {
+                DuplicateSimilarityMetric(
+                    label =
+                        "Tên bài",
+                    value =
+                        "$titlePercent%",
+                    modifier =
+                        Modifier.weight(1f)
+                )
+
+                DuplicateSimilarityMetric(
+                    label =
+                        "Tên + Artist",
+                    value =
+                        "$combinedPercent%",
+                    modifier =
+                        Modifier.weight(1f)
+                )
             }
 
             Surface(
                 modifier =
                     Modifier.fillMaxWidth(),
                 shape =
-                    RoundedCornerShape(11.dp),
+                    RoundedCornerShape(10.dp),
                 color =
                     MaterialTheme
                         .colorScheme
                         .surfaceVariant
                         .copy(
-                            alpha = 0.46f
+                            alpha = 0.38f
                         )
             ) {
                 Text(
@@ -1335,15 +1375,9 @@ private fun PrototypeDuplicateCard(
                 modifier =
                     Modifier.fillMaxWidth(),
                 horizontalArrangement =
-                    Arrangement.spacedBy(9.dp)
+                    Arrangement.End
             ) {
-                PrototypeSecondaryAction(
-                    label =
-                        "Nghe thử",
-                    icon =
-                        Icons.Rounded.PlayArrow,
-                    modifier =
-                        Modifier.weight(1f),
+                DuplicateListenButton(
                     onClick = {
                         openInlineReferenceAudio(
                             context =
@@ -1353,20 +1387,159 @@ private fun PrototypeDuplicateCard(
                         )
                     }
                 )
-
-                PrototypePrimaryAction(
-                    label =
-                        "Sửa thẻ",
-                    icon =
-                        Icons.Rounded.Edit,
-                    modifier =
-                        Modifier.weight(1f),
-                    onClick =
-                        onOpenEditor
-                )
             }
         }
     }
+}
+
+
+@Composable
+private fun DuplicateSimilarityMetric(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier =
+            modifier,
+        horizontalArrangement =
+            Arrangement.SpaceBetween,
+        verticalAlignment =
+            Alignment.CenterVertically
+    ) {
+        Text(
+            text =
+                label,
+            style =
+                MaterialTheme
+                    .typography
+                    .labelSmall,
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        )
+
+        Text(
+            text =
+                value,
+            style =
+                MaterialTheme
+                    .typography
+                    .labelSmall,
+            fontWeight =
+                FontWeight.Black,
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onSurface
+        )
+    }
+}
+
+
+@Composable
+private fun DuplicateListenButton(
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier =
+            Modifier
+                .height(40.dp)
+                .appPressable(
+                    pressedScale =
+                        0.94f,
+                    haptic =
+                        true,
+                    onClick =
+                        onClick
+                ),
+        shape =
+            RoundedCornerShape(12.dp),
+        color =
+            Color(0xFF173C6E),
+        border =
+            BorderStroke(
+                1.dp,
+                Color(0xFF669BE5)
+                    .copy(
+                        alpha = 0.52f
+                    )
+            )
+    ) {
+        Row(
+            modifier =
+                Modifier.padding(
+                    horizontal = 13.dp
+                ),
+            horizontalArrangement =
+                Arrangement.spacedBy(8.dp),
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .width(14.dp)
+                        .height(16.dp),
+                horizontalArrangement =
+                    Arrangement.spacedBy(
+                        2.dp
+                    ),
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                DuplicateListenBar(
+                    height = 7.dp
+                )
+
+                DuplicateListenBar(
+                    height = 13.dp
+                )
+
+                DuplicateListenBar(
+                    height = 9.dp
+                )
+
+                DuplicateListenBar(
+                    height = 5.dp
+                )
+            }
+
+            Text(
+                text =
+                    "Nghe",
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelMedium,
+                fontWeight =
+                    FontWeight.Black,
+                color =
+                    Color.White
+            )
+        }
+    }
+}
+
+
+@Composable
+private fun DuplicateListenBar(
+    height:
+        androidx.compose.ui.unit.Dp
+) {
+    Box(
+        modifier =
+            Modifier
+                .width(2.dp)
+                .height(height)
+                .clip(
+                    CircleShape
+                )
+                .background(
+                    Color(0xFFBFD8FF)
+                )
+    )
 }
 
 
@@ -1389,14 +1562,14 @@ private fun DuplicateArtwork(
                 .size(72.dp)
                 .clip(
                     RoundedCornerShape(
-                        17.dp
+                        16.dp
                     )
                 )
                 .background(
                     Brush.linearGradient(
                         listOf(
                             accent.copy(
-                                alpha = 0.62f
+                                alpha = 0.58f
                             ),
                             Color(0xFF173B67),
                             Color(0xFF35245E)
@@ -1413,7 +1586,7 @@ private fun DuplicateArtwork(
                 null,
             tint =
                 Color.White.copy(
-                    alpha = 0.92f
+                    alpha = 0.90f
                 )
         )
 
@@ -1511,7 +1684,6 @@ private fun DuplicateEmptyState(
         }
     }
 }
-
 
 @Composable
 private fun PrototypeHistoryContent(
@@ -2291,154 +2463,6 @@ private fun HistoryEmptyState() {
 
 
 @Composable
-private fun PrototypeSecondaryAction(
-    label: String,
-    icon:
-        androidx.compose.ui.graphics.vector.ImageVector,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier =
-            modifier
-                .height(44.dp)
-                .appPressable(
-                    pressedScale =
-                        0.96f,
-                    haptic =
-                        true,
-                    onClick =
-                        onClick
-                ),
-        shape =
-            RoundedCornerShape(14.dp),
-        color =
-            MaterialTheme
-                .colorScheme
-                .surfaceVariant
-                .copy(
-                    alpha = 0.34f
-                ),
-        border =
-            BorderStroke(
-                1.dp,
-                MaterialTheme
-                    .colorScheme
-                    .outline
-                    .copy(
-                        alpha = 0.34f
-                    )
-            )
-    ) {
-        Row(
-            modifier =
-                Modifier.fillMaxSize(),
-            horizontalArrangement =
-                Arrangement.Center,
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector =
-                    icon,
-                contentDescription =
-                    null,
-                modifier =
-                    Modifier.size(17.dp)
-            )
-
-            Spacer(
-                modifier =
-                    Modifier.width(5.dp)
-            )
-
-            Text(
-                text =
-                    label,
-                style =
-                    MaterialTheme
-                        .typography
-                        .labelMedium,
-                fontWeight =
-                    FontWeight.Bold
-            )
-        }
-    }
-}
-
-
-@Composable
-private fun PrototypePrimaryAction(
-    label: String,
-    icon:
-        androidx.compose.ui.graphics.vector.ImageVector,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier =
-            modifier
-                .height(44.dp)
-                .clip(
-                    RoundedCornerShape(
-                        14.dp
-                    )
-                )
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            Color(0xFF72C8FF),
-                            Color(0xFF789DFF),
-                            Color(0xFFA17FFF)
-                        )
-                    )
-                )
-                .appPressable(
-                    pressedScale =
-                        0.96f,
-                    haptic =
-                        true,
-                    onClick =
-                        onClick
-                ),
-        contentAlignment =
-            Alignment.Center
-    ) {
-        Row(
-            horizontalArrangement =
-                Arrangement.spacedBy(6.dp),
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector =
-                    icon,
-                contentDescription =
-                    null,
-                modifier =
-                    Modifier.size(17.dp),
-                tint =
-                    Color(0xFF071526)
-            )
-
-            Text(
-                text =
-                    label,
-                style =
-                    MaterialTheme
-                        .typography
-                        .labelMedium,
-                fontWeight =
-                    FontWeight.Black,
-                color =
-                    Color(0xFF071526)
-            )
-        }
-    }
-}
-
-
-@Composable
 private fun PreparingDownloadNotice(
     message: String
 ) {
@@ -2617,21 +2641,6 @@ private fun historyStatusColor(
                 .colorScheme
                 .primary
     }
-}
-
-
-private fun formatInlineDuration(
-    seconds: Long?
-): String {
-    val safe =
-        seconds
-            ?.coerceAtLeast(0L)
-            ?: return ""
-
-    return "%d:%02d".format(
-        safe / 60L,
-        safe % 60L
-    )
 }
 
 

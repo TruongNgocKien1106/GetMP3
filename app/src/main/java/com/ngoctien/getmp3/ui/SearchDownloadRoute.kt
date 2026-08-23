@@ -164,9 +164,6 @@ internal fun SearchDownloadRoute(
                 downloadState =
                     downloadState,
 
-                settings =
-                    settings,
-
                 modifier =
                     modifier,
 
@@ -190,9 +187,6 @@ internal fun SearchDownloadRoute(
 
                 onDownloadResult =
                     downloadResult,
-
-                onOpenReferenceSong =
-                    openReferenceSong,
 
                 onCancelJob =
                     cancelJob,

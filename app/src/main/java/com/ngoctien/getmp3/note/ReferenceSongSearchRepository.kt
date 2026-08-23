@@ -24,6 +24,10 @@ data class ReferenceSongMatch(
     val title: String,
     val artist: String,
     val score: Double,
+    val titleScore: Double? = null,
+    val combinedScore: Double? = null,
+    val album: String? = null,
+    val year: String? = null,
     val coverPath: String? = null,
     val durationSeconds: Long? = null
 )
@@ -40,6 +44,8 @@ private data class ReferenceSongEntry(
 
 private data class ReferenceMediaDetails(
     val durationSeconds: Long?,
+    val album: String?,
+    val year: String?,
     val coverPath: String?
 )
 
@@ -367,19 +373,24 @@ class ReferenceSongSearchRepository(
         ) {
             entries.asSequence()
                 .mapNotNull { entry ->
+                    val titleScore =
+                        SongNameMatcher
+                            .similarity(
+                                normalizedQuery,
+                                entry.normalizedTitle
+                            )
+
+                    val combinedScore =
+                        SongNameMatcher
+                            .similarity(
+                                normalizedQuery,
+                                entry.normalizedCombined
+                            )
+
                     val score =
                         max(
-                            SongNameMatcher
-                                .similarity(
-                                    normalizedQuery,
-                                    entry.normalizedTitle
-                                ),
-
-                            SongNameMatcher
-                                .similarity(
-                                    normalizedQuery,
-                                    entry.normalizedCombined
-                                )
+                            titleScore,
+                            combinedScore
                         )
 
                     if (
@@ -406,7 +417,13 @@ class ReferenceSongSearchRepository(
                                 entry.artist,
 
                             score =
-                                score
+                                score,
+
+                            titleScore =
+                                titleScore,
+
+                            combinedScore =
+                                combinedScore
                         )
                     }
                 }
@@ -453,6 +470,12 @@ class ReferenceSongSearchRepository(
                         )
 
                     match.copy(
+                        album =
+                            details?.album,
+
+                        year =
+                            details?.year,
+
                         coverPath =
                             details?.coverPath,
 
@@ -488,6 +511,26 @@ class ReferenceSongSearchRepository(
                     ?.div(1_000L)
                     ?.coerceAtLeast(0L)
 
+            val album =
+                retriever.extractMetadata(
+                    MediaMetadataRetriever
+                        .METADATA_KEY_ALBUM
+                )
+                    ?.trim()
+                    ?.takeIf(
+                        String::isNotBlank
+                    )
+
+            val year =
+                retriever.extractMetadata(
+                    MediaMetadataRetriever
+                        .METADATA_KEY_YEAR
+                )
+                    ?.trim()
+                    ?.takeIf(
+                        String::isNotBlank
+                    )
+
             val coverPath =
                 saveEmbeddedCover(
                     imageBytes =
@@ -501,7 +544,12 @@ class ReferenceSongSearchRepository(
             ReferenceMediaDetails(
                 durationSeconds =
                     durationSeconds,
-                coverPath = coverPath
+                album =
+                    album,
+                year =
+                    year,
+                coverPath =
+                    coverPath
             )
         }
         catch (
