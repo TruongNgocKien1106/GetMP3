@@ -993,7 +993,7 @@ private fun PrototypeDuplicateContent(
 
                 Text(
                     text =
-                        "File trong Library có tên tương đồng.",
+                        "File trong Library có độ tương đồng cao.",
                     style =
                         MaterialTheme
                             .typography
@@ -1095,24 +1095,50 @@ private fun PrototypeDuplicateCard(
                 100
             )
 
-    val combinedPercent =
-        (
-            (
-                match.combinedScore
-                    ?: match.score
-            ) *
-                100.0
-        )
-            .toInt()
-            .coerceIn(
-                0,
-                100
-            )
+    val artistText =
+        match.artist
+            .trim()
+            .ifBlank {
+                "—"
+            }
+
+    val albumText =
+        match.album
+            ?.trim()
+            .orEmpty()
+            .ifBlank {
+                "—"
+            }
+
+    val yearText =
+        match.year
+            ?.trim()
+            .orEmpty()
+            .ifBlank {
+                "—"
+            }
+
+    val coverFile =
+        match.coverPath
+            ?.let(::File)
+            ?.takeIf {
+                it.isFile &&
+                    it.length() > 0L
+            }
+
+    val coverText =
+        if (coverFile != null) {
+            "Có"
+        }
+        else {
+            "—"
+        }
 
     val accent =
         if (match.score >= 0.95) {
-            Color(0xFF35CFE3)
-        } else {
+            Color(0xFF37C9E7)
+        }
+        else {
             Color(0xFFFFB23E)
         }
 
@@ -1120,7 +1146,7 @@ private fun PrototypeDuplicateCard(
         modifier =
             Modifier.fillMaxWidth(),
         shape =
-            RoundedCornerShape(23.dp),
+            RoundedCornerShape(24.dp),
         color =
             MaterialTheme
                 .colorScheme
@@ -1132,15 +1158,20 @@ private fun PrototypeDuplicateCard(
             BorderStroke(
                 1.dp,
                 accent.copy(
-                    alpha = 0.46f
+                    alpha = 0.60f
                 )
             )
     ) {
         Column(
             modifier =
-                Modifier.padding(13.dp),
+                Modifier.padding(
+                    start = 14.dp,
+                    top = 14.dp,
+                    end = 14.dp,
+                    bottom = 13.dp
+                ),
             verticalArrangement =
-                Arrangement.spacedBy(10.dp)
+                Arrangement.spacedBy(11.dp)
         ) {
             Row(
                 modifier =
@@ -1157,7 +1188,7 @@ private fun PrototypeDuplicateCard(
 
                 Spacer(
                     modifier =
-                        Modifier.width(11.dp)
+                        Modifier.width(12.dp)
                 )
 
                 Column(
@@ -1168,7 +1199,7 @@ private fun PrototypeDuplicateCard(
                         text =
                             match.title,
                         maxLines =
-                            2,
+                            1,
                         overflow =
                             TextOverflow.Ellipsis,
                         style =
@@ -1185,15 +1216,12 @@ private fun PrototypeDuplicateCard(
 
                     Spacer(
                         modifier =
-                            Modifier.height(2.dp)
+                            Modifier.height(3.dp)
                     )
 
                     Text(
                         text =
-                            match.artist
-                                .ifBlank {
-                                    "Chưa xác định Artist"
-                                },
+                            artistText,
                         maxLines =
                             1,
                         overflow =
@@ -1208,70 +1236,65 @@ private fun PrototypeDuplicateCard(
                                 .onSurfaceVariant
                     )
 
-                    if (
-                        !match.album
-                            .isNullOrBlank()
-                    ) {
-                        Spacer(
-                            modifier =
-                                Modifier.height(3.dp)
-                        )
+                    Spacer(
+                        modifier =
+                            Modifier.height(6.dp)
+                    )
 
-                        Text(
-                            text =
-                                "Album: ${match.album}",
-                            maxLines =
-                                1,
-                            overflow =
-                                TextOverflow.Ellipsis,
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .labelSmall,
-                            color =
-                                MaterialTheme
-                                    .colorScheme
-                                    .onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        text =
+                            "Album: $albumText",
+                        maxLines =
+                            1,
+                        overflow =
+                            TextOverflow.Ellipsis,
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                    )
 
-                    if (
-                        !match.year
-                            .isNullOrBlank()
-                    ) {
-                        Text(
-                            text =
-                                "Year: ${match.year}",
-                            maxLines =
-                                1,
-                            overflow =
-                                TextOverflow.Ellipsis,
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .labelSmall,
-                            color =
-                                MaterialTheme
-                                    .colorScheme
-                                    .onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        text =
+                            "Year: $yearText",
+                        maxLines =
+                            1,
+                        overflow =
+                            TextOverflow.Ellipsis,
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                    )
                 }
+
+                Spacer(
+                    modifier =
+                        Modifier.width(8.dp)
+                )
 
                 Surface(
                     shape =
                         RoundedCornerShape(
-                            12.dp
+                            13.dp
                         ),
                     color =
                         accent.copy(
-                            alpha = 0.14f
+                            alpha = 0.15f
                         ),
                     border =
                         BorderStroke(
                             1.dp,
                             accent.copy(
-                                alpha = 0.42f
+                                alpha = 0.55f
                             )
                         )
                 ) {
@@ -1280,8 +1303,8 @@ private fun PrototypeDuplicateCard(
                             "$percent%",
                         modifier =
                             Modifier.padding(
-                                horizontal = 9.dp,
-                                vertical = 7.dp
+                                horizontal = 10.dp,
+                                vertical = 8.dp
                             ),
                         style =
                             MaterialTheme
@@ -1314,52 +1337,59 @@ private fun PrototypeDuplicateCard(
                 modifier =
                     Modifier.fillMaxWidth(),
                 horizontalArrangement =
-                    Arrangement.spacedBy(18.dp)
+                    Arrangement.spacedBy(22.dp)
             ) {
-                DuplicateSimilarityMetric(
+                DuplicateMetadataMetric(
                     label =
-                        "Tên bài",
+                        "Title",
                     value =
                         "$titlePercent%",
                     modifier =
                         Modifier.weight(1f)
                 )
 
-                DuplicateSimilarityMetric(
+                DuplicateMetadataMetric(
                     label =
-                        "Tên + Artist",
+                        "Artist",
                     value =
-                        "$combinedPercent%",
+                        artistText,
                     modifier =
                         Modifier.weight(1f)
                 )
             }
 
-            Surface(
+            Row(
                 modifier =
                     Modifier.fillMaxWidth(),
-                shape =
-                    RoundedCornerShape(10.dp),
-                color =
-                    MaterialTheme
-                        .colorScheme
-                        .surfaceVariant
-                        .copy(
-                            alpha = 0.38f
-                        )
+                horizontalArrangement =
+                    Arrangement.spacedBy(22.dp)
+            ) {
+                DuplicateMetadataMetric(
+                    label =
+                        "Cover",
+                    value =
+                        coverText,
+                    modifier =
+                        Modifier.weight(1f)
+                )
+
+                DuplicateMetadataMetric(
+                    label =
+                        "Year",
+                    value =
+                        yearText,
+                    modifier =
+                        Modifier.weight(1f)
+                )
+            }
+
+            Column(
+                verticalArrangement =
+                    Arrangement.spacedBy(5.dp)
             ) {
                 Text(
                     text =
-                        match.displayName,
-                    modifier =
-                        Modifier.padding(
-                            horizontal = 10.dp,
-                            vertical = 7.dp
-                        ),
-                    maxLines =
-                        1,
-                    overflow =
-                        TextOverflow.Ellipsis,
+                        "File name",
                     style =
                         MaterialTheme
                             .typography
@@ -1369,6 +1399,44 @@ private fun PrototypeDuplicateCard(
                             .colorScheme
                             .onSurfaceVariant
                 )
+
+                Surface(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    shape =
+                        RoundedCornerShape(
+                            10.dp
+                        ),
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .surfaceVariant
+                            .copy(
+                                alpha = 0.38f
+                            )
+                ) {
+                    Text(
+                        text =
+                            match.displayName,
+                        modifier =
+                            Modifier.padding(
+                                horizontal = 10.dp,
+                                vertical = 8.dp
+                            ),
+                        maxLines =
+                            1,
+                        overflow =
+                            TextOverflow.Ellipsis,
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                    )
+                }
             }
 
             Row(
@@ -1394,7 +1462,7 @@ private fun PrototypeDuplicateCard(
 
 
 @Composable
-private fun DuplicateSimilarityMetric(
+private fun DuplicateMetadataMetric(
     label: String,
     value: String,
     modifier: Modifier = Modifier
@@ -1420,9 +1488,18 @@ private fun DuplicateSimilarityMetric(
                     .onSurfaceVariant
         )
 
+        Spacer(
+            modifier =
+                Modifier.width(7.dp)
+        )
+
         Text(
             text =
                 value,
+            maxLines =
+                1,
+            overflow =
+                TextOverflow.Ellipsis,
             style =
                 MaterialTheme
                     .typography
@@ -1448,14 +1525,16 @@ private fun DuplicateListenButton(
                 .height(40.dp)
                 .appPressable(
                     pressedScale =
-                        0.94f,
+                        0.93f,
                     haptic =
                         true,
                     onClick =
                         onClick
                 ),
         shape =
-            RoundedCornerShape(12.dp),
+            RoundedCornerShape(
+                12.dp
+            ),
         color =
             Color(0xFF173C6E),
         border =
@@ -1463,7 +1542,7 @@ private fun DuplicateListenButton(
                 1.dp,
                 Color(0xFF669BE5)
                     .copy(
-                        alpha = 0.52f
+                        alpha = 0.58f
                     )
             )
     ) {
@@ -1480,8 +1559,8 @@ private fun DuplicateListenButton(
             Row(
                 modifier =
                     Modifier
-                        .width(14.dp)
-                        .height(16.dp),
+                        .width(15.dp)
+                        .height(17.dp),
                 horizontalArrangement =
                     Arrangement.spacedBy(
                         2.dp
@@ -1490,7 +1569,7 @@ private fun DuplicateListenButton(
                     Alignment.CenterVertically
             ) {
                 DuplicateListenBar(
-                    height = 7.dp
+                    height = 6.dp
                 )
 
                 DuplicateListenBar(
@@ -1502,7 +1581,11 @@ private fun DuplicateListenButton(
                 )
 
                 DuplicateListenBar(
-                    height = 5.dp
+                    height = 15.dp
+                )
+
+                DuplicateListenBar(
+                    height = 7.dp
                 )
             }
 
@@ -1537,7 +1620,7 @@ private fun DuplicateListenBar(
                     CircleShape
                 )
                 .background(
-                    Color(0xFFBFD8FF)
+                    Color(0xFFC8DCFF)
                 )
     )
 }
@@ -1559,17 +1642,17 @@ private fun DuplicateArtwork(
     Box(
         modifier =
             Modifier
-                .size(72.dp)
+                .size(76.dp)
                 .clip(
                     RoundedCornerShape(
-                        16.dp
+                        17.dp
                     )
                 )
                 .background(
                     Brush.linearGradient(
                         listOf(
                             accent.copy(
-                                alpha = 0.58f
+                                alpha = 0.56f
                             ),
                             Color(0xFF173B67),
                             Color(0xFF35245E)
