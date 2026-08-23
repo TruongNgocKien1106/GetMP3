@@ -165,6 +165,7 @@ import com.ngoctien.getmp3.viewmodel.TagEditorViewModel
 import com.ngoctien.getmp3.viewmodel.YouTubeSearchViewModel
 import java.io.File
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
 internal fun BentoTagEditorScreen(
     state: TagEditorUiState,
@@ -198,28 +199,40 @@ internal fun BentoTagEditorScreen(
 
     var showFileList by
         remember {
-            mutableStateOf(false)
+            mutableStateOf(
+                false
+            )
         }
 
     var showDeleteConfirmation by
         remember {
-            mutableStateOf(false)
+            mutableStateOf(
+                false
+            )
         }
 
     if (showFileList) {
         FileListDialog(
-            files = state.files,
+            files =
+                state.files,
 
             selectedIndex =
                 state.currentIndex,
 
             onDismiss = {
-                showFileList = false
+                showFileList =
+                    false
             },
 
             onSelect = {
-                showFileList = false
-                onSelectFile(it)
+                    index ->
+
+                showFileList =
+                    false
+
+                onSelectFile(
+                    index
+                )
             }
         )
     }
@@ -232,10 +245,6 @@ internal fun BentoTagEditorScreen(
             onSelect =
                 onSelectArtist,
 
-            /*
-             * Đóng hộp này không thay đổi Artist.
-             * Người dùng tiếp tục nhập tên thủ công.
-             */
             onDismiss =
                 onDismissArtists
         )
@@ -253,7 +262,8 @@ internal fun BentoTagEditorScreen(
             icon = {
                 Icon(
                     imageVector =
-                        Icons.Rounded.Delete,
+                        Icons.Rounded
+                            .Delete,
 
                     contentDescription =
                         null,
@@ -298,7 +308,8 @@ internal fun BentoTagEditorScreen(
                         !state.isDeleting
                 ) {
                     Text(
-                        text = "Xóa",
+                        text =
+                            "Xóa",
 
                         color =
                             MaterialTheme
@@ -318,298 +329,238 @@ internal fun BentoTagEditorScreen(
                     enabled =
                         !state.isDeleting
                 ) {
-                    Text("Hủy")
+                    Text(
+                        "Hủy"
+                    )
                 }
             }
         )
     }
 
-    androidx.compose.foundation.lazy.LazyColumn(
-        modifier = modifier
-            .statusBarsPadding()
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = {
-                        focusManager.clearFocus(
-                            force = true
-                        )
-                    }
-                )
-            },
-
-        contentPadding =
-            PaddingValues(
-                start = 10.dp,
-                top = 4.dp,
-                end = 10.dp,
-                bottom = 4.dp
-            ),
-
-        userScrollEnabled =
-            false,
-
-        verticalArrangement =
-            Arrangement.spacedBy(6.dp)
+    AppScreenBackdrop(
+        modifier =
+            modifier
     ) {
-        item {
-            AppPageHeader(
-                title = "Sửa thẻ",
-
-                subtitle =
-                    if (
-                        state.totalFiles > 0
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .padding(
+                        start = 12.dp,
+                        top = 7.dp,
+                        end = 12.dp,
+                        bottom = 7.dp
+                    )
+                    .pointerInput(
+                        Unit
                     ) {
-                        "${state.displayIndex} / ${state.totalFiles} file MP3"
-                    } else {
-                        "Không có file MP3"
+                        detectTapGestures(
+                            onTap = {
+                                focusManager
+                                    .clearFocus(
+                                        force =
+                                            true
+                                    )
+                            }
+                        )
                     },
 
-                icon =
-                    Icons.Rounded.Tag,
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    7.dp
+                )
+        ) {
+            PremiumTagEditorHeader(
+                displayIndex =
+                    state.displayIndex,
 
-                action = {
-                    AppHeaderActionButton(
-                        icon =
-                            Icons.Rounded.List,
+                totalFiles =
+                    state.totalFiles,
 
-                        contentDescription =
-                            "Danh sách file",
+                enabled =
+                    !state.isScanning &&
+                        !state.isLoadingSong &&
+                        !state.isSaving &&
+                        !state.isDeleting,
 
-                        enabled =
-                            !state.isScanning &&
-                                !state.isLoadingSong &&
-                                !state.isSaving &&
-                                !state.isDeleting,
+                onOpenFileList = {
+                    onRefreshFiles()
 
-                        onClick = {
-                            onRefreshFiles()
-                            showFileList = true
-                        }
-                    )
+                    showFileList =
+                        true
                 }
             )
-        }
-        if (
-            state.isScanning ||
-            state.isLoadingSong
-        ) {
-            item {
-                AppLoadingPanel(
-                    text =
-                        if (state.isScanning) {
-                            "Đang quét file MP3..."
-                        } else {
-                            "Đang đọc metadata..."
-                        }
-                )
-            }
-        } else if (
-            state.files.isEmpty()
-        ) {
-            item {
-                AppEmptyPanel(
-                    text =
-                        "Không có MP3 trong thư mục đã chọn"
-                )
-            }
-        } else {
-            state.currentSong?.let {
-                    song ->
 
-                item {
-                    SongPreviewCard(
-                        fileName =
-                            state.previewFileName,
+            when {
+                state.isScanning ||
+                    state.isLoadingSong -> {
 
-                        album =
-                            state.selectedAlbum,
-
-                        coverPath =
-                            song.coverPath
-                    )
-                }
-
-                item {
-                    MetadataEditorCard(
-                        state = state,
-
-                        onTitleChange =
-                            onTitleChange,
-
-                        onClearTitle =
-                            onClearTitle,
-
-                        onArtistChange =
-                            onArtistChange,
-
-                        onClearArtist =
-                            onClearArtist,
-
-                        onArtistCaseModeChange =
-                            onArtistCaseModeChange,
-
-                        onAlbumChange =
-                            onAlbumChange,
-
-                        onYearChange =
-                            onYearChange,
-
-                        onQuickFormat =
-                            onQuickFormat
-                    )
-                }
-
-
-                item {
-                    OutlinedButton(
-                        onClick =
-                            onEditLyrics,
-
-                        enabled =
-                            state.currentSong != null &&
-                                !state.isSaving &&
-                                !state.isDeleting,
-
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(40.dp)
-                    ) {
-                        Icon(
-                            imageVector =
-                                Icons.Rounded.LibraryMusic,
-
-                            contentDescription =
-                                null
-                        )
-
-                        Spacer(
-                            modifier =
-                                Modifier.width(8.dp)
-                        )
-
-                        Text("Lời bài hát")
-                    }
-                }
-
-                state.errorMessage?.let {
-                    item {
-                        AppErrorNotice(
-                            text = it
-                        )
-                    }
-                }
-
-                item {
-                    Row(
+                    Box(
                         modifier =
-                            Modifier.fillMaxWidth(),
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(
+                                    1f
+                                ),
 
-                        horizontalArrangement =
-                            Arrangement.spacedBy(
-                                8.dp
-                            )
+                        contentAlignment =
+                            Alignment.Center
                     ) {
-                        AppDestructiveButton(
-                            label =
-                                "Xóa",
+                        AppLoadingPanel(
+                            text =
+                                if (
+                                    state.isScanning
+                                ) {
+                                    "Đang quét file MP3..."
+                                }
+                                else {
+                                    "Đang đọc metadata..."
+                                }
+                        )
+                    }
+                }
 
-                            onClick = {
-                                showDeleteConfirmation =
-                                    true
-                            },
+                state.files.isEmpty() -> {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(
+                                    1f
+                                ),
 
-                            enabled =
-                                !state.isSaving &&
-                                    !state.isDeleting,
+                        contentAlignment =
+                            Alignment.Center
+                    ) {
+                        AppEmptyPanel(
+                            text =
+                                "Không có MP3 trong thư mục đã chọn"
+                        )
+                    }
+                }
 
-                            loading =
+                else -> {
+                    state.currentSong?.let {
+                            song ->
+
+                        SongPreviewCard(
+                            fileName =
+                                state.previewFileName,
+
+                            album =
+                                state.selectedAlbum,
+
+                            coverPath =
+                                song.coverPath
+                        )
+
+                        MetadataEditorCard(
+                            state =
+                                state,
+
+                            onTitleChange =
+                                onTitleChange,
+
+                            onClearTitle =
+                                onClearTitle,
+
+                            onArtistChange =
+                                onArtistChange,
+
+                            onClearArtist =
+                                onClearArtist,
+
+                            onArtistCaseModeChange =
+                                onArtistCaseModeChange,
+
+                            onAlbumChange =
+                                onAlbumChange,
+
+                            onYearChange =
+                                onYearChange,
+
+                            modifier =
+                                Modifier.weight(
+                                    1f
+                                )
+                        )
+
+                        AnimatedVisibility(
+                            visible =
+                                !state.errorMessage
+                                    .isNullOrBlank(),
+
+                            enter =
+                                fadeIn(),
+
+                            exit =
+                                fadeOut()
+                        ) {
+                            state.errorMessage
+                                ?.let {
+                                        message ->
+
+                                    Text(
+                                        text =
+                                            message,
+
+                                        modifier =
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .padding(
+                                                    horizontal =
+                                                        4.dp
+                                                ),
+
+                                        maxLines =
+                                            1,
+
+                                        overflow =
+                                            TextOverflow
+                                                .Ellipsis,
+
+                                        style =
+                                            MaterialTheme
+                                                .typography
+                                                .labelSmall,
+
+                                        color =
+                                            MaterialTheme
+                                                .colorScheme
+                                                .error
+                                    )
+                                }
+                        }
+
+                        TagEditorActionDock(
+                            knownArtistCount =
+                                state.knownArtistCount,
+
+                            busy =
+                                state.isSaving ||
+                                    state.isDeleting,
+
+                            saving =
+                                state.isSaving,
+
+                            deleting =
                                 state.isDeleting,
 
-                            loadingLabel =
-                                "Đang xóa...",
+                            onQuickFormat =
+                                onQuickFormat,
 
-                            leadingIcon =
-                                Icons.Rounded
-                                    .Delete,
-
-                            haptic =
-                                true,
-
-                            modifier =
-                                Modifier.height(
-                                    42.dp
-                                )
-                        )
-
-                        OutlinedButton(
-                            onClick = onSkip,
-
-                            enabled =
-                                !state.isSaving &&
-                                    !state.isDeleting,
-
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(42.dp),
-
-                            contentPadding =
-                                PaddingValues(
-                                    horizontal =
-                                        10.dp
-                                )
-                        ) {
-                            Text("Bỏ qua")
-                        }
-
-                        AppActionButton(
-                            label =
-                                "Lưu & xử lý",
-
-                            onClick =
+                            onSave =
                                 onSave,
 
-                            enabled =
-                                !state.isSaving &&
-                                    !state.isDeleting,
+                            onSkip =
+                                onSkip,
 
-                            modifier =
-                                Modifier
-                                    .weight(
-                                        1.35f
-                                    )
-                                    .height(
-                                        42.dp
-                                    ),
-
-                            state =
-                                when {
-                                    state.isSaving &&
-                                        !state.isDeleting ->
-                                        AppActionVisualState
-                                            .LOADING
-
-                                    !state.errorMessage
-                                        .isNullOrBlank() ->
-                                        AppActionVisualState
-                                            .ERROR
-
-                                    else ->
-                                        AppActionVisualState
-                                            .IDLE
-                                },
-
-                            loadingLabel =
-                                "Đang xử lý...",
-
-                            errorLabel =
-                                "Thử lưu lại",
-
-                            leadingIcon =
-                                Icons.Rounded
-                                    .Save,
-
-                            haptic =
-                                true
+                            onDelete = {
+                                showDeleteConfirmation =
+                                    true
+                            }
                         )
                     }
                 }
@@ -617,6 +568,7 @@ internal fun BentoTagEditorScreen(
         }
     }
 }
+
 @Composable
 private fun MetadataEditorCard(
     state: TagEditorUiState,
@@ -632,52 +584,187 @@ private fun MetadataEditorCard(
 
     onAlbumChange: (String) -> Unit,
     onYearChange: (String) -> Unit,
-    onQuickFormat: () -> Unit
-) {
-    AppCard(
-        modifier =
-            Modifier.fillMaxWidth(),
 
-        contentPadding =
-            PaddingValues()
+    modifier: Modifier =
+        Modifier
+) {
+    var showAlbumPicker by
+        rememberSaveable {
+            mutableStateOf(
+                false
+            )
+        }
+
+    var showYearPicker by
+        rememberSaveable {
+            mutableStateOf(
+                false
+            )
+        }
+
+    if (showAlbumPicker) {
+        TagAlbumPickerDialog(
+            currentValue =
+                state.selectedAlbum,
+
+            options =
+                state.albumOptions,
+
+            onSelected = {
+                    value ->
+
+                onAlbumChange(
+                    value
+                )
+
+                showAlbumPicker =
+                    false
+            },
+
+            onDismiss = {
+                showAlbumPicker =
+                    false
+            }
+        )
+    }
+
+    if (showYearPicker) {
+        TagYearPickerDialog(
+            currentValue =
+                state.year,
+
+            onSelected = {
+                    value ->
+
+                onYearChange(
+                    value
+                )
+
+                showYearPicker =
+                    false
+            },
+
+            onClear = {
+                onYearChange(
+                    ""
+                )
+
+                showYearPicker =
+                    false
+            },
+
+            onDismiss = {
+                showYearPicker =
+                    false
+            }
+        )
+    }
+
+    val colors =
+        MaterialTheme.colorScheme
+
+    Surface(
+        modifier =
+            modifier
+                .fillMaxWidth(),
+
+        shape =
+            RoundedCornerShape(
+                23.dp
+            ),
+
+        color =
+            colors
+                .surface
+                .copy(
+                    alpha =
+                        0.88f
+                ),
+
+        border =
+            BorderStroke(
+                width =
+                    1.dp,
+
+                color =
+                    colors
+                        .outline
+                        .copy(
+                            alpha =
+                                0.24f
+                        )
+            ),
+
+        tonalElevation =
+            5.dp,
+
+        shadowElevation =
+            7.dp
     ) {
         Column(
             modifier =
-                Modifier.padding(10.dp),
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        10.dp
+                    ),
 
             verticalArrangement =
-                Arrangement.spacedBy(6.dp)
+                Arrangement.spacedBy(
+                    6.dp
+                )
         ) {
             StableOutlinedTextField(
-                value = state.title,
+                value =
+                    state.title,
 
                 onValueChange =
                     onTitleChange,
 
                 modifier =
-                    Modifier.fillMaxWidth(),
+                    Modifier
+                        .fillMaxWidth(),
 
                 label = {
-                    Text("Title")
+                    Text(
+                        "Title"
+                    )
                 },
 
-                singleLine = true,
+                placeholder = {
+                    Text(
+                        "Nhập Title"
+                    )
+                },
+
+                singleLine =
+                    true,
+
+                shape =
+                    RoundedCornerShape(
+                        16.dp
+                    ),
 
                 keyboardOptions =
                     KeyboardOptions(
                         capitalization =
-                            KeyboardCapitalization.Words
+                            KeyboardCapitalization
+                                .Words
                     ),
 
                 trailingIcon = {
-                    if (state.title.isNotEmpty()) {
+                    if (
+                        state.title
+                            .isNotEmpty()
+                    ) {
                         IconButton(
                             onClick =
                                 onClearTitle
                         ) {
                             Icon(
                                 imageVector =
-                                    Icons.Rounded.Clear,
+                                    Icons.Rounded
+                                        .Clear,
 
                                 contentDescription =
                                     "Xóa Title"
@@ -688,29 +775,49 @@ private fun MetadataEditorCard(
             )
 
             StableOutlinedTextField(
-                value = state.artist,
+                value =
+                    state.artist,
 
                 onValueChange =
                     onArtistChange,
 
                 modifier =
-                    Modifier.fillMaxWidth(),
+                    Modifier
+                        .fillMaxWidth(),
 
                 label = {
-                    Text("Artist")
+                    Text(
+                        "Artist"
+                    )
                 },
 
-                singleLine = true,
+                placeholder = {
+                    Text(
+                        "Nhập Artist"
+                    )
+                },
+
+                singleLine =
+                    true,
+
+                shape =
+                    RoundedCornerShape(
+                        16.dp
+                    ),
 
                 trailingIcon = {
-                    if (state.artist.isNotEmpty()) {
+                    if (
+                        state.artist
+                            .isNotEmpty()
+                    ) {
                         IconButton(
                             onClick =
                                 onClearArtist
                         ) {
                             Icon(
                                 imageVector =
-                                    Icons.Rounded.Clear,
+                                    Icons.Rounded
+                                        .Clear,
 
                                 contentDescription =
                                     "Xóa Artist"
@@ -720,135 +827,66 @@ private fun MetadataEditorCard(
                 }
             )
 
-            Row(
-                horizontalArrangement =
-                    Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected =
-                        state.artistCaseMode ==
-                            ArtistCaseMode
-                                .CAPITALIZE_WORDS,
-
-                    onClick = {
-                        onArtistCaseModeChange(
-                            ArtistCaseMode
-                                .CAPITALIZE_WORDS
-                        )
-                    },
-
-                    label = {
-                        Text("Viết hoa chữ đầu")
-                    }
-                )
-
-                FilterChip(
-                    selected =
-                        state.artistCaseMode ==
-                            ArtistCaseMode
-                                .KEEP_ORIGINAL,
-
-                    onClick = {
-                        onArtistCaseModeChange(
-                            ArtistCaseMode
-                                .KEEP_ORIGINAL
-                        )
-                    },
-
-                    label = {
-                        Text("Giữ nguyên")
-                    }
-                )
-            }
-
-            OutlinedButton(
-                onClick =
-                    onQuickFormat,
-
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(40.dp)
-            ) {
-                Icon(
-                    imageVector =
-                        Icons.Rounded.Tune,
-
-                    contentDescription =
-                        null
-                )
-
-                Spacer(
-                    modifier =
-                        Modifier.width(8.dp)
-                )
-
-                Text(
-                    text =
-                        "Format nhanh",
-
-                    fontWeight =
-                        FontWeight.SemiBold
-                )
-
-                if (
-                    state.knownArtistCount > 0
-                ) {
-                    Spacer(
-                        modifier =
-                            Modifier.width(6.dp)
-                    )
-
-                    Text(
-                        text =
-                            "• ${state.knownArtistCount} ca sĩ",
-
-                        color =
-                            MaterialTheme
-                                .colorScheme
-                                .onSurfaceVariant
-                    )
-                }
-            }
-
-            AnimatedSelectorField(
-                label = "Album",
-
-                value =
-                    state.selectedAlbum,
-
-                options =
-                    state.albumOptions,
+            ArtistCaseSegmentedControl(
+                selectedMode =
+                    state.artistCaseMode,
 
                 onSelected =
-                    onAlbumChange
+                    onArtistCaseModeChange
             )
 
-            StableOutlinedTextField(
-                value =
-                    state.year,
-
-                onValueChange =
-                    onYearChange,
-
+            Row(
                 modifier =
                     Modifier
                         .fillMaxWidth(),
 
-                label = {
-                    Text(
-                        "Year"
+                horizontalArrangement =
+                    Arrangement.spacedBy(
+                        8.dp
                     )
-                },
+            ) {
+                CompactMetadataPicker(
+                    label =
+                        "Album",
 
-                singleLine =
-                    true,
+                    value =
+                        state.selectedAlbum
+                            .ifBlank {
+                                "Chưa phân loại"
+                            },
 
-                supportingText = {
-                    Text(
-                        "4 chữ số · năm phát hành của đúng bản thu/version"
-                    )
-                }
-            )
+                    modifier =
+                        Modifier.weight(
+                            1.55f
+                        ),
+
+                    onClick = {
+                        showAlbumPicker =
+                            true
+                    }
+                )
+
+                CompactMetadataPicker(
+                    label =
+                        "Year",
+
+                    value =
+                        state.year
+                            .ifBlank {
+                                "Chọn năm"
+                            },
+
+                    modifier =
+                        Modifier.weight(
+                            0.85f
+                        ),
+
+                    onClick = {
+                        showYearPicker =
+                            true
+                    }
+                )
+            }
         }
     }
 }
@@ -859,87 +897,2041 @@ private fun SongPreviewCard(
     album: String,
     coverPath: String?
 ) {
-    AppCard(
-        modifier =
-            Modifier.fillMaxWidth(),
+    val colors =
+        MaterialTheme.colorScheme
 
-        contentPadding =
-            PaddingValues()
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(
+                    72.dp
+                ),
+
+        shape =
+            RoundedCornerShape(
+                20.dp
+            ),
+
+        color =
+            colors
+                .surface
+                .copy(
+                    alpha =
+                        0.84f
+                ),
+
+        border =
+            BorderStroke(
+                width =
+                    1.dp,
+
+                color =
+                    colors
+                        .outline
+                        .copy(
+                            alpha =
+                                0.24f
+                        )
+            ),
+
+        tonalElevation =
+            4.dp,
+
+        shadowElevation =
+            6.dp
     ) {
         Row(
             modifier =
-                Modifier.padding(8.dp),
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        8.dp
+                    ),
 
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
             AppMediaCover(
                 model =
-                    coverPath?.let(::File),
+                    coverPath
+                        ?.let(
+                            ::File
+                        ),
 
-                size = 60
+                size =
+                    56
             )
 
             Spacer(
                 modifier =
-                    Modifier.width(8.dp)
+                    Modifier.width(
+                        10.dp
+                    )
             )
 
             Column(
                 modifier =
-                    Modifier.weight(1f)
+                    Modifier.weight(
+                        1f
+                    ),
+
+                verticalArrangement =
+                    Arrangement.Center
             ) {
                 Text(
-                    text = fileName,
+                    text =
+                        fileName,
 
-                    maxLines = 2,
+                    maxLines =
+                        1,
 
                     overflow =
-                        TextOverflow.Ellipsis,
+                        TextOverflow
+                            .Ellipsis,
 
                     style =
                         MaterialTheme
                             .typography
-                            .titleMedium,
+                            .titleSmall,
 
                     fontWeight =
-                        FontWeight.Bold
+                        FontWeight.Black
                 )
 
                 Spacer(
                     modifier =
-                        Modifier.height(2.dp)
+                        Modifier.height(
+                            4.dp
+                        )
                 )
 
                 Surface(
-                    shape = CircleShape,
+                    shape =
+                        RoundedCornerShape(
+                            99.dp
+                        ),
 
                     color =
-                        MaterialTheme
-                            .colorScheme
-                            .primaryContainer
+                        BrandBlue
+                            .copy(
+                                alpha =
+                                    0.18f
+                            ),
+
+                    border =
+                        BorderStroke(
+                            width =
+                                1.dp,
+
+                            color =
+                                BrandCyan
+                                    .copy(
+                                        alpha =
+                                            0.22f
+                                    )
+                        )
                 ) {
                     Text(
-                        text = album,
+                        text =
+                            album.ifBlank {
+                                "Chưa phân loại"
+                            },
 
                         modifier =
                             Modifier.padding(
-                                horizontal = 8.dp,
-                                vertical = 2.dp
+                                horizontal =
+                                    8.dp,
+
+                                vertical =
+                                    2.dp
                             ),
+
+                        maxLines =
+                            1,
+
+                        overflow =
+                            TextOverflow
+                                .Ellipsis,
 
                         style =
                             MaterialTheme
                                 .typography
-                                .labelMedium,
+                                .labelSmall,
+
+                        fontWeight =
+                            FontWeight.Bold,
 
                         color =
-                            MaterialTheme
-                                .colorScheme
-                                .onPrimaryContainer
+                            colors
+                                .onSurface
                     )
                 }
             }
+        }
+    }
+}
+
+
+@Composable
+private fun PremiumTagEditorHeader(
+    displayIndex: Int,
+    totalFiles: Int,
+    enabled: Boolean,
+    onOpenFileList: () -> Unit
+) {
+    val colors =
+        MaterialTheme.colorScheme
+
+    val transition =
+        rememberInfiniteTransition(
+            label =
+                "tag-editor-header-motion"
+        )
+
+    val pulse by
+        transition.animateFloat(
+            initialValue =
+                0.96f,
+
+            targetValue =
+                1.06f,
+
+            animationSpec =
+                infiniteRepeatable(
+                    animation =
+                        tween(
+                            durationMillis =
+                                2400
+                        ),
+
+                    repeatMode =
+                        RepeatMode.Reverse
+                ),
+
+            label =
+                "tag-editor-icon-pulse"
+        )
+
+    val tilt by
+        transition.animateFloat(
+            initialValue =
+                -3f,
+
+            targetValue =
+                3f,
+
+            animationSpec =
+                infiniteRepeatable(
+                    animation =
+                        tween(
+                            durationMillis =
+                                3300
+                        ),
+
+                    repeatMode =
+                        RepeatMode.Reverse
+                ),
+
+            label =
+                "tag-editor-icon-tilt"
+        )
+
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(
+                    60.dp
+                ),
+
+        shape =
+            RoundedCornerShape(
+                22.dp
+            ),
+
+        color =
+            colors
+                .surface
+                .copy(
+                    alpha =
+                        0.84f
+                ),
+
+        border =
+            BorderStroke(
+                width =
+                    1.dp,
+
+                color =
+                    BrandSky
+                        .copy(
+                            alpha =
+                                0.32f
+                        )
+            ),
+
+        tonalElevation =
+            5.dp,
+
+        shadowElevation =
+            8.dp
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        horizontal =
+                            9.dp
+                    ),
+
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .size(
+                            44.dp
+                        )
+                        .graphicsLayer {
+                            scaleX =
+                                pulse
+
+                            scaleY =
+                                pulse
+
+                            rotationZ =
+                                tilt
+                        }
+                        .clip(
+                            RoundedCornerShape(
+                                14.dp
+                            )
+                        )
+                        .background(
+                            Brush.linearGradient(
+                                listOf(
+                                    BrandCyan,
+                                    BrandBlue,
+                                    BrandViolet
+                                )
+                            )
+                        ),
+
+                contentAlignment =
+                    Alignment.Center
+            ) {
+                Icon(
+                    imageVector =
+                        Icons.Rounded
+                            .Tag,
+
+                    contentDescription =
+                        null,
+
+                    modifier =
+                        Modifier.size(
+                            25.dp
+                        ),
+
+                    tint =
+                        Color.White
+                )
+            }
+
+            Spacer(
+                modifier =
+                    Modifier.width(
+                        10.dp
+                    )
+            )
+
+            Column(
+                modifier =
+                    Modifier.weight(
+                        1f
+                    )
+            ) {
+                Text(
+                    text =
+                        "Sửa thẻ",
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleLarge,
+
+                    fontWeight =
+                        FontWeight.Black
+                )
+
+                Text(
+                    text =
+                        "Metadata MP3",
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall,
+
+                    color =
+                        colors
+                            .onSurfaceVariant
+                )
+            }
+
+            Surface(
+                shape =
+                    RoundedCornerShape(
+                        99.dp
+                    ),
+
+                color =
+                    colors
+                        .surfaceVariant
+                        .copy(
+                            alpha =
+                                0.62f
+                        ),
+
+                border =
+                    BorderStroke(
+                        width =
+                            1.dp,
+
+                        color =
+                            colors
+                                .outline
+                                .copy(
+                                    alpha =
+                                        0.20f
+                                )
+                    )
+            ) {
+                Text(
+                    text =
+                        if (
+                            totalFiles > 0
+                        ) {
+                            "$displayIndex / $totalFiles"
+                        }
+                        else {
+                            "0 / 0"
+                        },
+
+                    modifier =
+                        Modifier.padding(
+                            horizontal =
+                                9.dp,
+
+                            vertical =
+                                5.dp
+                        ),
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelMedium,
+
+                    fontWeight =
+                        FontWeight.Black
+                )
+            }
+
+            Spacer(
+                modifier =
+                    Modifier.width(
+                        6.dp
+                    )
+            )
+
+            Surface(
+                modifier =
+                    Modifier
+                        .size(
+                            42.dp
+                        )
+                        .bouncyClickable(
+                            enabled =
+                                enabled
+                        ) {
+                            onOpenFileList()
+                        },
+
+                shape =
+                    CircleShape,
+
+                color =
+                    colors
+                        .primaryContainer,
+
+                contentColor =
+                    colors
+                        .onPrimaryContainer,
+
+                tonalElevation =
+                    5.dp,
+
+                shadowElevation =
+                    6.dp
+            ) {
+                Box(
+                    modifier =
+                        Modifier.fillMaxSize(),
+
+                    contentAlignment =
+                        Alignment.Center
+                ) {
+                    Icon(
+                        imageVector =
+                            Icons.Rounded
+                                .List,
+
+                        contentDescription =
+                            "Danh sách file",
+
+                        modifier =
+                            Modifier.size(
+                                21.dp
+                            )
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun ArtistCaseSegmentedControl(
+    selectedMode: ArtistCaseMode,
+    onSelected: (ArtistCaseMode) -> Unit
+) {
+    val colors =
+        MaterialTheme.colorScheme
+
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(
+                    38.dp
+                ),
+
+        shape =
+            RoundedCornerShape(
+                14.dp
+            ),
+
+        color =
+            colors
+                .surfaceVariant
+                .copy(
+                    alpha =
+                        0.64f
+                ),
+
+        border =
+            BorderStroke(
+                width =
+                    1.dp,
+
+                color =
+                    colors
+                        .outline
+                        .copy(
+                            alpha =
+                                0.20f
+                        )
+            )
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        3.dp
+                    ),
+
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    3.dp
+                )
+        ) {
+            ArtistCaseSegment(
+                text =
+                    "Viết hoa chữ đầu",
+
+                selected =
+                    selectedMode ==
+                        ArtistCaseMode
+                            .CAPITALIZE_WORDS,
+
+                modifier =
+                    Modifier.weight(
+                        1.25f
+                    ),
+
+                onClick = {
+                    onSelected(
+                        ArtistCaseMode
+                            .CAPITALIZE_WORDS
+                    )
+                }
+            )
+
+            ArtistCaseSegment(
+                text =
+                    "Giữ nguyên",
+
+                selected =
+                    selectedMode ==
+                        ArtistCaseMode
+                            .KEEP_ORIGINAL,
+
+                modifier =
+                    Modifier.weight(
+                        0.85f
+                    ),
+
+                onClick = {
+                    onSelected(
+                        ArtistCaseMode
+                            .KEEP_ORIGINAL
+                    )
+                }
+            )
+        }
+    }
+}
+
+
+@Composable
+private fun ArtistCaseSegment(
+    text: String,
+    selected: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .bouncyClickable(
+                    pressedScale =
+                        0.975f,
+
+                    onClick =
+                        onClick
+                ),
+
+        shape =
+            RoundedCornerShape(
+                11.dp
+            ),
+
+        color =
+            if (selected) {
+                BrandViolet
+                    .copy(
+                        alpha =
+                            0.46f
+                    )
+            }
+            else {
+                Color.Transparent
+            },
+
+        contentColor =
+            MaterialTheme
+                .colorScheme
+                .onSurface,
+
+        tonalElevation =
+            if (selected) {
+                4.dp
+            }
+            else {
+                0.dp
+            }
+    ) {
+        Box(
+            modifier =
+                Modifier.fillMaxSize(),
+
+            contentAlignment =
+                Alignment.Center
+        ) {
+            Text(
+                text =
+                    text,
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelMedium,
+
+                fontWeight =
+                    if (selected) {
+                        FontWeight.Black
+                    }
+                    else {
+                        FontWeight.Medium
+                    }
+            )
+        }
+    }
+}
+
+
+@Composable
+private fun CompactMetadataPicker(
+    label: String,
+    value: String,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    val colors =
+        MaterialTheme.colorScheme
+
+    Surface(
+        modifier =
+            modifier
+                .height(
+                    54.dp
+                )
+                .bouncyClickable(
+                    pressedScale =
+                        0.98f,
+
+                    onClick =
+                        onClick
+                ),
+
+        shape =
+            RoundedCornerShape(
+                16.dp
+            ),
+
+        color =
+            colors
+                .surfaceVariant
+                .copy(
+                    alpha =
+                        0.64f
+                ),
+
+        border =
+            BorderStroke(
+                width =
+                    1.dp,
+
+                color =
+                    colors
+                        .outline
+                        .copy(
+                            alpha =
+                                0.25f
+                        )
+            ),
+
+        tonalElevation =
+            2.dp
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(
+                        horizontal =
+                            11.dp
+                    ),
+
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            Column(
+                modifier =
+                    Modifier.weight(
+                        1f
+                    ),
+
+                verticalArrangement =
+                    Arrangement.Center
+            ) {
+                Text(
+                    text =
+                        label,
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall,
+
+                    color =
+                        colors
+                            .onSurfaceVariant
+                )
+
+                Text(
+                    text =
+                        value,
+
+                    maxLines =
+                        1,
+
+                    overflow =
+                        TextOverflow
+                            .Ellipsis,
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodyMedium,
+
+                    fontWeight =
+                        FontWeight.Bold
+                )
+            }
+
+            Icon(
+                imageVector =
+                    Icons.Rounded
+                        .ExpandMore,
+
+                contentDescription =
+                    null,
+
+                modifier =
+                    Modifier.size(
+                        19.dp
+                    ),
+
+                tint =
+                    colors
+                        .onSurfaceVariant
+            )
+        }
+    }
+}
+
+
+@Composable
+private fun TagEditorActionDock(
+    knownArtistCount: Int,
+    busy: Boolean,
+    saving: Boolean,
+    deleting: Boolean,
+    onQuickFormat: () -> Unit,
+    onSave: () -> Unit,
+    onSkip: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Column(
+        modifier =
+            Modifier.fillMaxWidth(),
+
+        verticalArrangement =
+            Arrangement.spacedBy(
+                6.dp
+            )
+    ) {
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    8.dp
+                )
+        ) {
+            TagEditor3DButton(
+                label =
+                    "Format nhanh",
+
+                subtitle =
+                    if (
+                        knownArtistCount > 0
+                    ) {
+                        "$knownArtistCount ca sĩ"
+                    }
+                    else {
+                        null
+                    },
+
+                icon =
+                    Icons.Rounded
+                        .Tune,
+
+                gradient =
+                    listOf(
+                        BrandViolet,
+                        BrandPink
+                    ),
+
+                enabled =
+                    !busy,
+
+                modifier =
+                    Modifier.weight(
+                        0.92f
+                    ),
+
+                onClick =
+                    onQuickFormat
+            )
+
+            TagEditor3DButton(
+                label =
+                    if (saving) {
+                        "Đang lưu..."
+                    }
+                    else {
+                        "Lưu & tiếp"
+                    },
+
+                subtitle =
+                    null,
+
+                icon =
+                    Icons.Rounded
+                        .Save,
+
+                gradient =
+                    listOf(
+                        BrandSky,
+                        BrandBlue,
+                        BrandViolet
+                    ),
+
+                enabled =
+                    !busy,
+
+                modifier =
+                    Modifier.weight(
+                        1.08f
+                    ),
+
+                onClick =
+                    onSave
+            )
+        }
+
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(
+                        38.dp
+                    ),
+
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    8.dp
+                )
+        ) {
+            TagEditorSubtleAction(
+                text =
+                    "Bỏ qua",
+
+                icon =
+                    Icons.Rounded
+                        .SkipNext,
+
+                enabled =
+                    !busy,
+
+                modifier =
+                    Modifier.weight(
+                        1f
+                    ),
+
+                destructive =
+                    false,
+
+                onClick =
+                    onSkip
+            )
+
+            TagEditorSubtleAction(
+                text =
+                    if (deleting) {
+                        "Đang xóa..."
+                    }
+                    else {
+                        "Xóa file"
+                    },
+
+                icon =
+                    Icons.Rounded
+                        .Delete,
+
+                enabled =
+                    !busy,
+
+                modifier =
+                    Modifier.weight(
+                        1f
+                    ),
+
+                destructive =
+                    true,
+
+                onClick =
+                    onDelete
+            )
+        }
+    }
+}
+
+
+@Composable
+private fun TagEditor3DButton(
+    label: String,
+    subtitle: String?,
+    icon: ImageVector,
+    gradient: List<Color>,
+    enabled: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    val shape =
+        RoundedCornerShape(
+            17.dp
+        )
+
+    val transition =
+        rememberInfiniteTransition(
+            label =
+                "tag-editor-3d-button"
+        )
+
+    val iconPulse by
+        transition.animateFloat(
+            initialValue =
+                0.96f,
+
+            targetValue =
+                1.06f,
+
+            animationSpec =
+                infiniteRepeatable(
+                    animation =
+                        tween(
+                            durationMillis =
+                                2100
+                        ),
+
+                    repeatMode =
+                        RepeatMode.Reverse
+                ),
+
+            label =
+                "tag-editor-action-icon"
+        )
+
+    val sheen by
+        transition.animateFloat(
+            initialValue =
+                -1f,
+
+            targetValue =
+                1f,
+
+            animationSpec =
+                infiniteRepeatable(
+                    animation =
+                        tween(
+                            durationMillis =
+                                5200
+                        ),
+
+                    repeatMode =
+                        RepeatMode.Restart
+                ),
+
+            label =
+                "tag-editor-action-sheen"
+        )
+
+    val density =
+        LocalDensity.current
+
+    val sheenTravel =
+        with(density) {
+            180.dp.toPx()
+        }
+
+    Surface(
+        modifier =
+            modifier
+                .height(
+                    52.dp
+                )
+                .shadow(
+                    elevation =
+                        if (enabled) {
+                            9.dp
+                        }
+                        else {
+                            2.dp
+                        },
+
+                    shape =
+                        shape
+                )
+                .bouncyClickable(
+                    enabled =
+                        enabled,
+
+                    pressedScale =
+                        0.965f,
+
+                    onClick =
+                        onClick
+                ),
+
+        shape =
+            shape,
+
+        color =
+            Color.Transparent
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            gradient.map {
+                                    color ->
+
+                                if (enabled) {
+                                    color
+                                }
+                                else {
+                                    color.copy(
+                                        alpha =
+                                            0.34f
+                                    )
+                                }
+                            }
+                        )
+                    )
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            translationX =
+                                sheen *
+                                    sheenTravel
+                        }
+                        .background(
+                            Brush.linearGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    Color.White
+                                        .copy(
+                                            alpha =
+                                                if (enabled) {
+                                                    0.12f
+                                                }
+                                                else {
+                                                    0f
+                                                }
+                                        ),
+                                    Color.Transparent
+                                )
+                            )
+                        )
+            )
+
+            Box(
+                modifier =
+                    Modifier
+                        .align(
+                            Alignment.TopCenter
+                        )
+                        .fillMaxWidth()
+                        .height(
+                            1.dp
+                        )
+                        .background(
+                            Color.White
+                                .copy(
+                                    alpha =
+                                        0.34f
+                                )
+                        )
+            )
+
+            Box(
+                modifier =
+                    Modifier
+                        .align(
+                            Alignment.BottomCenter
+                        )
+                        .fillMaxWidth()
+                        .height(
+                            4.dp
+                        )
+                        .background(
+                            Color.Black
+                                .copy(
+                                    alpha =
+                                        0.16f
+                                )
+                        )
+            )
+
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(
+                            horizontal =
+                                12.dp
+                        ),
+
+                verticalAlignment =
+                    Alignment.CenterVertically,
+
+                horizontalArrangement =
+                    Arrangement.Center
+            ) {
+                Icon(
+                    imageVector =
+                        icon,
+
+                    contentDescription =
+                        null,
+
+                    modifier =
+                        Modifier
+                            .size(
+                                20.dp
+                            )
+                            .graphicsLayer {
+                                scaleX =
+                                    iconPulse
+
+                                scaleY =
+                                    iconPulse
+                            },
+
+                    tint =
+                        Color.White
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.width(
+                            8.dp
+                        )
+                )
+
+                Column(
+                    verticalArrangement =
+                        Arrangement.Center
+                ) {
+                    Text(
+                        text =
+                            label,
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelLarge,
+
+                        fontWeight =
+                            FontWeight.Black,
+
+                        color =
+                            Color.White
+                    )
+
+                    if (
+                        !subtitle
+                            .isNullOrBlank()
+                    ) {
+                        Text(
+                            text =
+                                subtitle,
+
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelSmall,
+
+                            color =
+                                Color.White
+                                    .copy(
+                                        alpha =
+                                            0.74f
+                                    )
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun TagEditorSubtleAction(
+    text: String,
+    icon: ImageVector,
+    enabled: Boolean,
+    modifier: Modifier,
+    destructive: Boolean,
+    onClick: () -> Unit
+) {
+    val colors =
+        MaterialTheme.colorScheme
+
+    val actionColor =
+        if (destructive) {
+            colors.error
+        }
+        else {
+            colors
+                .onSurfaceVariant
+        }
+
+    Surface(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .bouncyClickable(
+                    enabled =
+                        enabled,
+
+                    pressedScale =
+                        0.975f,
+
+                    onClick =
+                        onClick
+                ),
+
+        shape =
+            RoundedCornerShape(
+                14.dp
+            ),
+
+        color =
+            if (destructive) {
+                colors
+                    .errorContainer
+                    .copy(
+                        alpha =
+                            0.16f
+                    )
+            }
+            else {
+                colors
+                    .surfaceVariant
+                    .copy(
+                        alpha =
+                            0.42f
+                    )
+            },
+
+        border =
+            BorderStroke(
+                width =
+                    1.dp,
+
+                color =
+                    actionColor
+                        .copy(
+                            alpha =
+                                0.35f
+                        )
+            )
+    ) {
+        Row(
+            modifier =
+                Modifier.fillMaxSize(),
+
+            verticalAlignment =
+                Alignment.CenterVertically,
+
+            horizontalArrangement =
+                Arrangement.Center
+        ) {
+            Icon(
+                imageVector =
+                    icon,
+
+                contentDescription =
+                    null,
+
+                modifier =
+                    Modifier.size(
+                        17.dp
+                    ),
+
+                tint =
+                    actionColor
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.width(
+                        6.dp
+                    )
+            )
+
+            Text(
+                text =
+                    text,
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelMedium,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                color =
+                    actionColor
+            )
+        }
+    }
+}
+
+
+@Composable
+private fun TagAlbumPickerDialog(
+    currentValue: String,
+    options: List<String>,
+    onSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val selectedIndex =
+        options
+            .indexOf(
+                currentValue
+            )
+            .coerceAtLeast(
+                0
+            )
+
+    val listState =
+        rememberLazyListState(
+            initialFirstVisibleItemIndex =
+                selectedIndex
+        )
+
+    Dialog(
+        onDismissRequest =
+            onDismiss
+    ) {
+        Surface(
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            shape =
+                RoundedCornerShape(
+                    26.dp
+                ),
+
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .surface,
+
+            tonalElevation =
+                12.dp,
+
+            shadowElevation =
+                18.dp
+        ) {
+            Column(
+                modifier =
+                    Modifier.padding(
+                        16.dp
+                    ),
+
+                verticalArrangement =
+                    Arrangement.spacedBy(
+                        10.dp
+                    )
+            ) {
+                Text(
+                    text =
+                        "Chọn Album",
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleLarge,
+
+                    fontWeight =
+                        FontWeight.Black
+                )
+
+                Text(
+                    text =
+                        "Chọn nhóm phù hợp cho bài hát.",
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                )
+
+                LazyColumn(
+                    modifier =
+                        Modifier.heightIn(
+                            max =
+                                390.dp
+                        ),
+
+                    state =
+                        listState,
+
+                    verticalArrangement =
+                        Arrangement.spacedBy(
+                            7.dp
+                        )
+                ) {
+                    itemsIndexed(
+                        options
+                    ) {
+                            _,
+                            option ->
+
+                        val selected =
+                            option ==
+                                currentValue
+
+                        Surface(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .bouncyClickable {
+                                        onSelected(
+                                            option
+                                        )
+                                    },
+
+                            shape =
+                                RoundedCornerShape(
+                                    15.dp
+                                ),
+
+                            color =
+                                if (selected) {
+                                    MaterialTheme
+                                        .colorScheme
+                                        .primaryContainer
+                                }
+                                else {
+                                    MaterialTheme
+                                        .colorScheme
+                                        .surfaceVariant
+                                        .copy(
+                                            alpha =
+                                                0.44f
+                                        )
+                                },
+
+                            border =
+                                BorderStroke(
+                                    width =
+                                        1.dp,
+
+                                    color =
+                                        if (selected) {
+                                            MaterialTheme
+                                                .colorScheme
+                                                .primary
+                                        }
+                                        else {
+                                            MaterialTheme
+                                                .colorScheme
+                                                .outline
+                                                .copy(
+                                                    alpha =
+                                                        0.18f
+                                                )
+                                        }
+                                )
+                        ) {
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(
+                                            horizontal =
+                                                14.dp,
+
+                                            vertical =
+                                                12.dp
+                                        ),
+
+                                verticalAlignment =
+                                    Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text =
+                                        option,
+
+                                    modifier =
+                                        Modifier.weight(
+                                            1f
+                                        ),
+
+                                    fontWeight =
+                                        if (selected) {
+                                            FontWeight.Black
+                                        }
+                                        else {
+                                            FontWeight.Medium
+                                        }
+                                )
+
+                                if (selected) {
+                                    Icon(
+                                        imageVector =
+                                            Icons.Rounded
+                                                .Check,
+
+                                        contentDescription =
+                                            null,
+
+                                        tint =
+                                            MaterialTheme
+                                                .colorScheme
+                                                .primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                TextButton(
+                    onClick =
+                        onDismiss,
+
+                    modifier =
+                        Modifier.align(
+                            Alignment.End
+                        )
+                ) {
+                    Text(
+                        "Đóng"
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun TagYearPickerDialog(
+    currentValue: String,
+    onSelected: (String) -> Unit,
+    onClear: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val currentYear =
+        remember {
+            java.util.Calendar
+                .getInstance()
+                .get(
+                    java.util.Calendar.YEAR
+                )
+        }
+
+    val oldestYear =
+        currentYear -
+            199
+
+    val years =
+        remember(
+            currentYear
+        ) {
+            (
+                currentYear downTo
+                    oldestYear
+                )
+                .toList()
+        }
+
+    val rows =
+        remember(
+            years
+        ) {
+            years.chunked(
+                4
+            )
+        }
+
+    val selectedYear =
+        currentValue
+            .trim()
+            .toIntOrNull()
+
+    val initialRow =
+        selectedYear
+            ?.takeIf {
+                it in
+                    oldestYear..currentYear
+            }
+            ?.let {
+                (
+                    currentYear -
+                        it
+                    ) /
+                    4
+            }
+            ?: 0
+
+    val listState =
+        rememberLazyListState(
+            initialFirstVisibleItemIndex =
+                initialRow
+                    .coerceIn(
+                        0,
+                        (
+                            rows.size -
+                                1
+                            )
+                            .coerceAtLeast(
+                                0
+                            )
+                    )
+        )
+
+    Dialog(
+        onDismissRequest =
+            onDismiss
+    ) {
+        Surface(
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            shape =
+                RoundedCornerShape(
+                    28.dp
+                ),
+
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .surface,
+
+            border =
+                BorderStroke(
+                    width =
+                        1.dp,
+
+                    color =
+                        BrandViolet
+                            .copy(
+                                alpha =
+                                    0.32f
+                            )
+                ),
+
+            tonalElevation =
+                14.dp,
+
+            shadowElevation =
+                20.dp
+        ) {
+            Column(
+                modifier =
+                    Modifier.padding(
+                        16.dp
+                    ),
+
+                verticalArrangement =
+                    Arrangement.spacedBy(
+                        10.dp
+                    )
+            ) {
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier =
+                            Modifier.weight(
+                                1f
+                            )
+                    ) {
+                        Text(
+                            text =
+                                "Chọn năm",
+
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .titleLarge,
+
+                            fontWeight =
+                                FontWeight.Black
+                        )
+
+                        Text(
+                            text =
+                                "$oldestYear — $currentYear · 200 năm",
+
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelSmall,
+
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .onSurfaceVariant
+                        )
+                    }
+
+                    TextButton(
+                        onClick =
+                            onClear
+                    ) {
+                        Text(
+                            "Không rõ"
+                        )
+                    }
+                }
+
+                HorizontalDivider(
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .outline
+                            .copy(
+                                alpha =
+                                    0.16f
+                            )
+                )
+
+                LazyColumn(
+                    modifier =
+                        Modifier.heightIn(
+                            max =
+                                390.dp
+                        ),
+
+                    state =
+                        listState,
+
+                    verticalArrangement =
+                        Arrangement.spacedBy(
+                            8.dp
+                        )
+                ) {
+                    itemsIndexed(
+                        rows
+                    ) {
+                            _,
+                            rowYears ->
+
+                        Row(
+                            modifier =
+                                Modifier.fillMaxWidth(),
+
+                            horizontalArrangement =
+                                Arrangement.spacedBy(
+                                    8.dp
+                                )
+                        ) {
+                            rowYears.forEach {
+                                    year ->
+
+                                YearCell(
+                                    year =
+                                        year,
+
+                                    selected =
+                                        year ==
+                                            selectedYear,
+
+                                    modifier =
+                                        Modifier.weight(
+                                            1f
+                                        ),
+
+                                    onClick = {
+                                        onSelected(
+                                            year.toString()
+                                        )
+                                    }
+                                )
+                            }
+
+                            repeat(
+                                4 -
+                                    rowYears.size
+                            ) {
+                                Spacer(
+                                    modifier =
+                                        Modifier.weight(
+                                            1f
+                                        )
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Text(
+                    text =
+                        "Chỉ chọn năm phát hành, không có tháng hoặc ngày.",
+
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall,
+
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun YearCell(
+    year: Int,
+    selected: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    val colors =
+        MaterialTheme.colorScheme
+
+    Surface(
+        modifier =
+            modifier
+                .height(
+                    43.dp
+                )
+                .bouncyClickable(
+                    pressedScale =
+                        0.94f,
+
+                    onClick =
+                        onClick
+                ),
+
+        shape =
+            RoundedCornerShape(
+                14.dp
+            ),
+
+        color =
+            if (selected) {
+                BrandViolet
+                    .copy(
+                        alpha =
+                            0.58f
+                    )
+            }
+            else {
+                colors
+                    .surfaceVariant
+                    .copy(
+                        alpha =
+                            0.54f
+                    )
+            },
+
+        border =
+            BorderStroke(
+                width =
+                    if (selected) {
+                        1.5.dp
+                    }
+                    else {
+                        1.dp
+                    },
+
+                color =
+                    if (selected) {
+                        BrandSky
+                    }
+                    else {
+                        colors
+                            .outline
+                            .copy(
+                                alpha =
+                                    0.17f
+                            )
+                    }
+            ),
+
+        tonalElevation =
+            if (selected) {
+                6.dp
+            }
+            else {
+                1.dp
+            }
+    ) {
+        Box(
+            modifier =
+                Modifier.fillMaxSize(),
+
+            contentAlignment =
+                Alignment.Center
+        ) {
+            Text(
+                text =
+                    year.toString(),
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelLarge,
+
+                fontWeight =
+                    if (selected) {
+                        FontWeight.Black
+                    }
+                    else {
+                        FontWeight.Medium
+                    },
+
+                color =
+                    if (selected) {
+                        Color.White
+                    }
+                    else {
+                        colors
+                            .onSurface
+                    }
+            )
         }
     }
 }
