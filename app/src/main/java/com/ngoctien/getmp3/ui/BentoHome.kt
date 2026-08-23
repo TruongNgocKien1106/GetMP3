@@ -120,6 +120,8 @@ internal fun BentoHome(
             DownloadHero(
                 inboxFolderName =
                     inboxFolderName,
+                isDarkTheme =
+                    isDarkTheme,
                 onOpenInbox =
                     onOpenInbox,
                 onQuickDownloadFromClipboard =
@@ -162,6 +164,8 @@ internal fun BentoHome(
                             ),
                         motion =
                             ExploreMotion.LIBRARY,
+                        isDarkTheme =
+                            isDarkTheme,
                         modifier =
                             Modifier.weight(1f),
                         onClick =
@@ -184,6 +188,8 @@ internal fun BentoHome(
                             ),
                         motion =
                             ExploreMotion.LYRICS,
+                        isDarkTheme =
+                            isDarkTheme,
                         modifier =
                             Modifier.weight(1f),
                         onClick =
@@ -215,6 +221,8 @@ internal fun BentoHome(
                             ),
                         motion =
                             ExploreMotion.TAGS,
+                        isDarkTheme =
+                            isDarkTheme,
                         modifier =
                             Modifier.weight(1f),
                         onClick =
@@ -241,6 +249,8 @@ internal fun BentoHome(
                             ),
                         motion =
                             ExploreMotion.DUPLICATES,
+                        isDarkTheme =
+                            isDarkTheme,
                         modifier =
                             Modifier.weight(1f),
                         onClick =
@@ -282,6 +292,8 @@ internal fun BentoHome(
                         Color(0xFF6495FF),
                     enabled =
                         !isLibrarySyncing,
+                    isDarkTheme =
+                        isDarkTheme,
                     modifier =
                         Modifier.weight(1f),
                     onClick =
@@ -299,6 +311,8 @@ internal fun BentoHome(
                         Color(0xFFFFA75B),
                     enabled =
                         true,
+                    isDarkTheme =
+                        isDarkTheme,
                     modifier =
                         Modifier.weight(1f),
                     onClick =
@@ -418,6 +432,7 @@ private fun HomeHeader(
 @Composable
 private fun DownloadHero(
     inboxFolderName: String,
+    isDarkTheme: Boolean,
     onOpenInbox: () -> Unit,
     onQuickDownloadFromClipboard: () -> Unit
 ) {
@@ -429,6 +444,65 @@ private fun DownloadHero(
             .ifBlank {
                 "Music/Inbox"
             }
+
+    val heroBackground =
+        if (isDarkTheme) {
+            listOf(
+                Color(0xFF143A78),
+                Color(0xFF243C86),
+                Color(0xFF392270)
+            )
+        } else {
+            listOf(
+                Color(0xFFEAF2FF),
+                Color(0xFFDDE8FF),
+                Color(0xFFE9E0FF)
+            )
+        }
+
+    val heroPrimary =
+        if (isDarkTheme) {
+            Color.White
+        } else {
+            Color(0xFF172744)
+        }
+
+    val heroSecondary =
+        if (isDarkTheme) {
+            Color.White.copy(
+                alpha = 0.86f
+            )
+        } else {
+            Color(0xFF405475)
+        }
+
+    val heroEyebrow =
+        if (isDarkTheme) {
+            Color(0xFFB3CCFF)
+        } else {
+            Color(0xFF315DAD)
+        }
+
+    val heroBorder =
+        if (isDarkTheme) {
+            Color(0xFF739BFF)
+        } else {
+            Color(0xFF7894DC)
+        }
+
+    val buttonColor =
+        if (isDarkTheme) {
+            Color(0xFF3857A2)
+        } else {
+            Color(0xFF5273CD)
+        }
+
+    val sheenTint =
+        if (isDarkTheme) {
+            Color.White
+        } else {
+            Color(0xFF5272C8)
+        }
 
     Surface(
         modifier =
@@ -448,10 +522,14 @@ private fun DownloadHero(
         border =
             BorderStroke(
                 1.dp,
-                Color(0xFF739BFF)
-                    .copy(
-                        alpha = 0.58f
-                    )
+                heroBorder.copy(
+                    alpha =
+                        if (isDarkTheme) {
+                            0.58f
+                        } else {
+                            0.72f
+                        }
+                )
             )
     ) {
         Box(
@@ -460,11 +538,7 @@ private fun DownloadHero(
                     .fillMaxSize()
                     .background(
                         Brush.linearGradient(
-                            listOf(
-                                Color(0xFF143A78),
-                                Color(0xFF243C86),
-                                Color(0xFF392270)
-                            )
+                            heroBackground
                         ),
                         shape
                     )
@@ -472,6 +546,10 @@ private fun DownloadHero(
             PrototypeCardSheen(
                 delayMillis =
                     3_400,
+                tint =
+                    sheenTint,
+                isDarkTheme =
+                    isDarkTheme,
                 modifier =
                     Modifier.fillMaxSize()
             )
@@ -503,7 +581,7 @@ private fun DownloadHero(
                         fontWeight =
                             FontWeight.Bold,
                         color =
-                            Color(0xFFB3CCFF)
+                            heroEyebrow
                     )
 
                     Text(
@@ -516,7 +594,7 @@ private fun DownloadHero(
                         fontWeight =
                             FontWeight.Black,
                         color =
-                            Color.White
+                            heroPrimary
                     )
 
                     Text(
@@ -527,9 +605,7 @@ private fun DownloadHero(
                                 .typography
                                 .bodySmall,
                         color =
-                            Color.White.copy(
-                                alpha = 0.86f
-                            )
+                            heroSecondary
                     )
                 }
 
@@ -561,14 +637,18 @@ private fun DownloadHero(
                     shape =
                         RoundedCornerShape(16.dp),
                     color =
-                        Color(0xFF3857A2),
+                        buttonColor,
                     border =
                         BorderStroke(
                             1.dp,
-                            Color(0xFF9AB9FF)
-                                .copy(
-                                    alpha = 0.52f
-                                )
+                            Color.White.copy(
+                                alpha =
+                                    if (isDarkTheme) {
+                                        0.30f
+                                    } else {
+                                        0.58f
+                                    }
+                            )
                         )
                 ) {
                     Box(
@@ -714,22 +794,110 @@ private fun ExploreCard(
     accent: Color,
     background: List<Color>,
     motion: ExploreMotion,
+    isDarkTheme: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     val shape =
         RoundedCornerShape(21.dp)
 
-    val metricColor =
+    val lightBackground =
         when (motion) {
+            ExploreMotion.LIBRARY ->
+                listOf(
+                    Color(0xFFE7F3FF),
+                    Color(0xFFDCEBFA),
+                    Color(0xFFF2F8FF)
+                )
+
+            ExploreMotion.LYRICS ->
+                listOf(
+                    Color(0xFFF4EAFF),
+                    Color(0xFFECDFFF),
+                    Color(0xFFFAF6FF)
+                )
+
             ExploreMotion.TAGS ->
-                Color(0xFFFFC84C)
+                listOf(
+                    Color(0xFFFFF5DE),
+                    Color(0xFFF7EFDF),
+                    Color(0xFFFFFAF0)
+                )
 
             ExploreMotion.DUPLICATES ->
-                Color(0xFFFF86A6)
+                listOf(
+                    Color(0xFFFFEAF2),
+                    Color(0xFFF7E2EC),
+                    Color(0xFFFFF5F8)
+                )
+        }
 
-            else ->
-                HomeTextPrimary
+    val resolvedBackground =
+        if (isDarkTheme) {
+            background
+        } else {
+            lightBackground
+        }
+
+    val primaryText =
+        if (isDarkTheme) {
+            HomeTextPrimary
+        } else {
+            Color(0xFF172238)
+        }
+
+    val secondaryText =
+        if (isDarkTheme) {
+            HomeTextSecondary
+        } else {
+            Color(0xFF58657B)
+        }
+
+    val iconTint =
+        if (isDarkTheme) {
+            Color.White
+        } else {
+            when (motion) {
+                ExploreMotion.LIBRARY ->
+                    Color(0xFF1769A8)
+
+                ExploreMotion.LYRICS ->
+                    Color(0xFF7440A6)
+
+                ExploreMotion.TAGS ->
+                    Color(0xFFA56B00)
+
+                ExploreMotion.DUPLICATES ->
+                    Color(0xFFA93668)
+            }
+        }
+
+    val metricColor =
+        if (isDarkTheme) {
+            when (motion) {
+                ExploreMotion.TAGS ->
+                    Color(0xFFFFC84C)
+
+                ExploreMotion.DUPLICATES ->
+                    Color(0xFFFF86A6)
+
+                else ->
+                    HomeTextPrimary
+            }
+        } else {
+            when (motion) {
+                ExploreMotion.LIBRARY ->
+                    Color(0xFF174D83)
+
+                ExploreMotion.LYRICS ->
+                    Color(0xFF63388E)
+
+                ExploreMotion.TAGS ->
+                    Color(0xFFB56B00)
+
+                ExploreMotion.DUPLICATES ->
+                    Color(0xFFB53668)
+            }
         }
 
     val sheenDelay =
@@ -790,9 +958,17 @@ private fun ExploreCard(
     val ambientAlpha by
         ambientTransition.animateFloat(
             initialValue =
-                0.15f,
+                if (isDarkTheme) {
+                    0.15f
+                } else {
+                    0.055f
+                },
             targetValue =
-                0.25f,
+                if (isDarkTheme) {
+                    0.25f
+                } else {
+                    0.11f
+                },
             animationSpec =
                 infiniteRepeatable(
                     animation =
@@ -827,7 +1003,12 @@ private fun ExploreCard(
             BorderStroke(
                 1.dp,
                 accent.copy(
-                    alpha = 0.38f
+                    alpha =
+                        if (isDarkTheme) {
+                            0.38f
+                        } else {
+                            0.52f
+                        }
                 )
             )
     ) {
@@ -837,7 +1018,7 @@ private fun ExploreCard(
                     .fillMaxSize()
                     .background(
                         Brush.linearGradient(
-                            background
+                            resolvedBackground
                         ),
                         shape
                     )
@@ -872,6 +1053,14 @@ private fun ExploreCard(
             PrototypeCardSheen(
                 delayMillis =
                     sheenDelay,
+                tint =
+                    if (isDarkTheme) {
+                        Color.White
+                    } else {
+                        accent
+                    },
+                isDarkTheme =
+                    isDarkTheme,
                 modifier =
                     Modifier.fillMaxSize()
             )
@@ -901,13 +1090,23 @@ private fun ExploreCard(
                             RoundedCornerShape(13.dp),
                         color =
                             accent.copy(
-                                alpha = 0.16f
+                                alpha =
+                                    if (isDarkTheme) {
+                                        0.16f
+                                    } else {
+                                        0.12f
+                                    }
                             ),
                         border =
                             BorderStroke(
                                 1.dp,
-                                Color.White.copy(
-                                    alpha = 0.09f
+                                accent.copy(
+                                    alpha =
+                                        if (isDarkTheme) {
+                                            0.20f
+                                        } else {
+                                            0.32f
+                                        }
                                 )
                             )
                     ) {
@@ -925,7 +1124,7 @@ private fun ExploreCard(
                                 modifier =
                                     Modifier.size(20.dp),
                                 tint =
-                                    Color.White
+                                    iconTint
                             )
                         }
                     }
@@ -938,9 +1137,15 @@ private fun ExploreCard(
                                 .typography
                                 .titleLarge,
                         color =
-                            Color.White.copy(
-                                alpha = 0.78f
-                            )
+                            if (isDarkTheme) {
+                                Color.White.copy(
+                                    alpha = 0.78f
+                                )
+                            } else {
+                                primaryText.copy(
+                                    alpha = 0.66f
+                                )
+                            }
                     )
                 }
 
@@ -962,7 +1167,7 @@ private fun ExploreCard(
                     fontWeight =
                         FontWeight.Black,
                     color =
-                        HomeTextPrimary,
+                        primaryText,
                     maxLines =
                         1,
                     overflow =
@@ -1028,7 +1233,7 @@ private fun ExploreCard(
                                 fontWeight =
                                     FontWeight.Bold,
                                 color =
-                                    HomeTextSecondary,
+                                    secondaryText,
                                 maxLines =
                                     1
                             )
@@ -1040,7 +1245,11 @@ private fun ExploreCard(
                     motion =
                         motion,
                     accent =
-                        accent,
+                        if (isDarkTheme) {
+                            accent
+                        } else {
+                            iconTint
+                        },
                     modifier =
                         Modifier
                             .align(
@@ -1059,6 +1268,8 @@ private fun ExploreCard(
 @Composable
 private fun PrototypeCardSheen(
     delayMillis: Int,
+    tint: Color,
+    isDarkTheme: Boolean,
     modifier: Modifier = Modifier
 ) {
     val transition =
@@ -1095,11 +1306,43 @@ private fun PrototypeCardSheen(
         modifier =
             modifier
     ) {
-        val travelPx =
-            constraints
-                .maxWidth
+        /*
+         * Keep the sheen completely outside the card while
+         * tween delay holds progress at 0.
+         *
+         * constraints are pixels, so all translation values
+         * below are pixels too.
+         */
+        val safeDistancePx =
+            (
+                constraints.maxWidth +
+                    constraints.maxHeight
+                )
                 .toFloat() +
-                220f
+                320f
+
+        val startPx =
+            -safeDistancePx
+
+        val endPx =
+            safeDistancePx
+
+        val translationPx =
+            startPx +
+                (endPx - startPx) *
+                progress
+
+        val visibleAlpha =
+            if (
+                progress <= 0.08f ||
+                progress >= 0.92f
+            ) {
+                0f
+            } else if (isDarkTheme) {
+                0.92f
+            } else {
+                0.52f
+            }
 
         Box(
             modifier =
@@ -1108,31 +1351,44 @@ private fun PrototypeCardSheen(
                     .fillMaxHeight()
                     .graphicsLayer {
                         translationX =
-                            -150f +
-                                travelPx *
-                                    progress
+                            translationPx
 
                         rotationZ =
                             -14f
 
                         alpha =
-                            0.92f
+                            visibleAlpha
                     }
                     .background(
                         Brush.horizontalGradient(
                             listOf(
                                 Color.Transparent,
-                                Color.White.copy(
-                                    alpha = 0.018f
+                                tint.copy(
+                                    alpha = 0.015f
                                 ),
-                                Color.White.copy(
-                                    alpha = 0.075f
+                                tint.copy(
+                                    alpha =
+                                        if (isDarkTheme) {
+                                            0.075f
+                                        } else {
+                                            0.04f
+                                        }
                                 ),
-                                Color.White.copy(
-                                    alpha = 0.22f
+                                tint.copy(
+                                    alpha =
+                                        if (isDarkTheme) {
+                                            0.22f
+                                        } else {
+                                            0.12f
+                                        }
                                 ),
-                                Color.White.copy(
-                                    alpha = 0.07f
+                                tint.copy(
+                                    alpha =
+                                        if (isDarkTheme) {
+                                            0.07f
+                                        } else {
+                                            0.035f
+                                        }
                                 ),
                                 Color.Transparent
                             )
@@ -1498,11 +1754,41 @@ private fun QuickToolCard(
     icon: ImageVector,
     accent: Color,
     enabled: Boolean,
+    isDarkTheme: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     val shape =
         RoundedCornerShape(21.dp)
+
+    val surfaceColor =
+        if (isDarkTheme) {
+            if (enabled) {
+                Color(0xFF0C1828)
+            } else {
+                Color(0xFF09131F)
+            }
+        } else {
+            if (enabled) {
+                Color(0xFFF7F9FD)
+            } else {
+                Color(0xFFEEF2F7)
+            }
+        }
+
+    val primaryText =
+        if (isDarkTheme) {
+            HomeTextPrimary
+        } else {
+            Color(0xFF182237)
+        }
+
+    val secondaryText =
+        if (isDarkTheme) {
+            HomeTextSecondary
+        } else {
+            Color(0xFF59667A)
+        }
 
     Surface(
         modifier =
@@ -1521,18 +1807,18 @@ private fun QuickToolCard(
         shape =
             shape,
         color =
-            if (enabled) {
-                Color(0xFF0C1828)
-            } else {
-                Color(0xFF09131F)
-            },
+            surfaceColor,
         border =
             BorderStroke(
                 1.dp,
                 accent.copy(
                     alpha =
                         if (enabled) {
-                            0.28f
+                            if (isDarkTheme) {
+                                0.28f
+                            } else {
+                                0.42f
+                            }
                         } else {
                             0.14f
                         }
@@ -1562,7 +1848,12 @@ private fun QuickToolCard(
                         RoundedCornerShape(12.dp),
                     color =
                         accent.copy(
-                            alpha = 0.15f
+                            alpha =
+                                if (isDarkTheme) {
+                                    0.15f
+                                } else {
+                                    0.12f
+                                }
                         )
                 ) {
                     Box(
@@ -1579,7 +1870,13 @@ private fun QuickToolCard(
                             modifier =
                                 Modifier.size(19.dp),
                             tint =
-                                accent
+                                if (isDarkTheme) {
+                                    accent
+                                } else {
+                                    accent.copy(
+                                        alpha = 0.92f
+                                    )
+                                }
                         )
                     }
                 }
@@ -1592,7 +1889,7 @@ private fun QuickToolCard(
                             .typography
                             .titleMedium,
                     color =
-                        HomeTextSecondary
+                        secondaryText
                 )
             }
 
@@ -1610,7 +1907,7 @@ private fun QuickToolCard(
                     fontWeight =
                         FontWeight.Bold,
                     color =
-                        HomeTextPrimary
+                        primaryText
                 )
 
                 Text(
@@ -1621,7 +1918,7 @@ private fun QuickToolCard(
                             .typography
                             .bodySmall,
                     color =
-                        HomeTextSecondary,
+                        secondaryText,
                     maxLines =
                         1,
                     overflow =
@@ -1631,7 +1928,6 @@ private fun QuickToolCard(
         }
     }
 }
-
 private fun greetingForHour(
     hour: Int
 ): String =

@@ -14,7 +14,7 @@ val generatedVersionCode =
         .coerceIn(6L, 2_100_000_000L)
         .toInt()
 
-val generatedDevRevision =
+val committedRevision =
     providers.exec {
         commandLine(
             "git",
@@ -28,8 +28,32 @@ val generatedDevRevision =
         .get()
         .trim()
         .toIntOrNull()
-        ?.coerceAtLeast(1)
         ?: 1
+
+val hasWorkingTreeChanges =
+    providers.exec {
+        commandLine(
+            "git",
+            "status",
+            "--porcelain",
+            "--untracked-files=no"
+        )
+    }
+        .standardOutput
+        .asText
+        .get()
+        .isNotBlank()
+
+val generatedDevRevision =
+    (
+        committedRevision +
+            if (hasWorkingTreeChanges) {
+                1
+            } else {
+                0
+            }
+        )
+        .coerceAtLeast(1)
 
 val generatedVersionName =
     "1.0.$generatedDevRevision"
