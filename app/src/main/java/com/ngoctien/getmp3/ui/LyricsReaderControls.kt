@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -224,6 +225,28 @@ private fun AutoScrollAction(
             30.dp.toPx()
         }
 
+    /*
+     * Keep gesture inputs fresh without restarting pointerInput.
+     *
+     * The previous implementation used `speed` as a
+     * pointerInput key. Every speed update therefore cancelled
+     * the active long-press drag gesture.
+     */
+    val currentSpeed by
+        rememberUpdatedState(
+            speed
+        )
+
+    val currentOnSpeedChange by
+        rememberUpdatedState(
+            onSpeedChange
+        )
+
+    val currentOnAdjustingChange by
+        rememberUpdatedState(
+            onAdjustingChange
+        )
+
     Surface(
         modifier =
             modifier
@@ -231,11 +254,10 @@ private fun AutoScrollAction(
                     78.dp
                 )
                 .pointerInput(
-                    speed,
                     scrubStepPx
                 ) {
                     var startSpeed =
-                        speed.coerceIn(
+                        currentSpeed.coerceIn(
                             1,
                             7
                         )
@@ -248,8 +270,12 @@ private fun AutoScrollAction(
 
                     detectDragGesturesAfterLongPress(
                         onDragStart = {
+                            /*
+                             * Capture speed only once when the long press
+                             * officially becomes a scrub gesture.
+                             */
                             startSpeed =
-                                speed.coerceIn(
+                                currentSpeed.coerceIn(
                                     1,
                                     7
                                 )
@@ -260,19 +286,19 @@ private fun AutoScrollAction(
                             totalHorizontalDrag =
                                 0f
 
-                            onAdjustingChange(
+                            currentOnAdjustingChange(
                                 true
                             )
                         },
 
                         onDragCancel = {
-                            onAdjustingChange(
+                            currentOnAdjustingChange(
                                 false
                             )
                         },
 
                         onDragEnd = {
-                            onAdjustingChange(
+                            currentOnAdjustingChange(
                                 false
                             )
                         },
@@ -283,6 +309,15 @@ private fun AutoScrollAction(
 
                             change.consume()
 
+                            /*
+                             * Total displacement is measured from the
+                             * long-press origin.
+                             *
+                             * This allows:
+                             * right -> faster
+                             * left  -> slower
+                             * reverse direction -> reverse speed
+                             */
                             totalHorizontalDrag +=
                                 dragAmount.x
 
@@ -310,7 +345,7 @@ private fun AutoScrollAction(
                                 currentGestureSpeed =
                                     targetSpeed
 
-                                onSpeedChange(
+                                currentOnSpeedChange(
                                     targetSpeed
                                 )
                             }
