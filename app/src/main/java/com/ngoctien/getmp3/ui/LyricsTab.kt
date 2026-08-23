@@ -368,8 +368,11 @@ internal fun LyricsTab(
                         onSubmit =
                             actions.submitSearch,
 
-                        onSelectSong =
-                            actions.selectSong
+                        onSelectResult =
+                            actions.selectLyricsResult,
+
+                        onRetry =
+                            actions.retryLyricsSearch
                     )
                 }
 
@@ -460,7 +463,7 @@ private fun LyricsHeader(
     val subtitle =
         when (state.screen) {
             LyricsScreen.LIBRARY ->
-                "Library • tìm lời • ghi vào MP3"
+                "Tìm lời • karaoke • ghi khi cần"
 
             LyricsScreen.RESULTS ->
                 state.selectedSong

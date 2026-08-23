@@ -130,7 +130,7 @@ class LyricsViewModel(
         SharedFlow<LyricsEvent> =
             mutableEvents.asSharedFlow()
 
-    private var suggestionJob: Job? = null
+
     private var lyricsSearchJob: Job? = null
     private var fileJob: Job? = null
     private var savedIndicatorJob: Job? = null
@@ -143,89 +143,34 @@ class LyricsViewModel(
         mutableUiState.update {
             it.copy(
                 query = value,
+                suggestions =
+                    emptyList(),
+                searchResults =
+                    emptyList(),
+                selectedResult = null,
+                isLoadingSuggestions =
+                    false,
+                successMessage = null,
                 errorMessage = null
             )
         }
-
-        suggestionJob?.cancel()
-
-        val cleanValue =
-            value.trim()
-
-        if (cleanValue.length < 2) {
-            mutableUiState.update {
-                it.copy(
-                    suggestions =
-                        emptyList(),
-                    isLoadingSuggestions =
-                        false
-                )
-            }
-
-            return
-        }
-
-        suggestionJob =
-            viewModelScope.launch {
-                delay(260L)
-
-                mutableUiState.update {
-                    it.copy(
-                        isLoadingSuggestions =
-                            true
-                    )
-                }
-
-                try {
-                    val suggestions =
-                        repository.suggestSongs(
-                            cleanValue
-                        )
-
-                    mutableUiState.update {
-                        it.copy(
-                            suggestions =
-                                suggestions,
-                            isLoadingSuggestions =
-                                false,
-                            errorMessage = null
-                        )
-                    }
-                } catch (
-                    exception: CancellationException
-                ) {
-                    throw exception
-                } catch (
-                    exception: Exception
-                ) {
-                    mutableUiState.update {
-                        it.copy(
-                            suggestions =
-                                emptyList(),
-                            isLoadingSuggestions =
-                                false,
-                            errorMessage =
-                                exception.message
-                                    ?: "Không đọc được thư viện nhạc"
-                        )
-                    }
-                }
-            }
     }
-
     fun clearQuery() {
-        suggestionJob?.cancel()
-
         mutableUiState.update {
             it.copy(
                 query = "",
                 suggestions =
                     emptyList(),
+                searchResults =
+                    emptyList(),
+                selectedResult = null,
+                isLoadingSuggestions =
+                    false,
+                successMessage = null,
                 errorMessage = null
             )
         }
     }
-
     fun submitSearch() {
         val rawQuery =
             mutableUiState.value.query
@@ -260,10 +205,14 @@ class LyricsViewModel(
                 selectedResult = null,
                 searchResults =
                     emptyList(),
+                suggestions =
+                    emptyList(),
+                isLoadingSuggestions =
+                    false,
                 screen =
-                    LyricsScreen.RESULTS,
+                    LyricsScreen.LIBRARY,
                 readerBackScreen =
-                    LyricsScreen.RESULTS,
+                    LyricsScreen.LIBRARY,
                 successMessage = null,
                 errorMessage = null
             )
@@ -276,7 +225,6 @@ class LyricsViewModel(
                 "Không tìm thấy lyrics phù hợp"
         )
     }
-
     fun selectSong(
         song: LibrarySongCandidate
     ) {
@@ -347,14 +295,13 @@ class LyricsViewModel(
                 screen =
                     LyricsScreen.READER,
                 readerBackScreen =
-                    LyricsScreen.RESULTS,
+                    it.screen,
                 autoScrollEnabled = false,
                 successMessage = null,
                 errorMessage = null
             )
         }
     }
-
     fun editCurrentLyrics() {
         val state =
             mutableUiState.value
@@ -1539,7 +1486,6 @@ class LyricsViewModel(
     }
 
     override fun onCleared() {
-        suggestionJob?.cancel()
         lyricsSearchJob?.cancel()
         fileJob?.cancel()
         savedIndicatorJob?.cancel()

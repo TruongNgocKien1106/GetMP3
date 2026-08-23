@@ -1,6 +1,7 @@
 package com.ngoctien.getmp3.ui
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,13 +14,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Clear
-import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,15 +37,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.ngoctien.getmp3.lyrics.LibrarySongCandidate
-import com.ngoctien.getmp3.ui.components.AppActionButton
+import com.ngoctien.getmp3.lyrics.LyricsSearchResult
 import com.ngoctien.getmp3.ui.components.AppAnimatedStatusText
-import com.ngoctien.getmp3.ui.components.AppCard
-import com.ngoctien.getmp3.ui.components.AppEmptyState
 import com.ngoctien.getmp3.ui.components.AppErrorNotice
 import com.ngoctien.getmp3.ui.components.AppIconActionButton
 import com.ngoctien.getmp3.ui.design.LocalAppDesign
-import kotlin.math.roundToInt
+
 
 @Composable
 internal fun LyricsLibraryScreen(
@@ -53,7 +50,9 @@ internal fun LyricsLibraryScreen(
     onQueryChange: (String) -> Unit,
     onClear: () -> Unit,
     onSubmit: () -> Unit,
-    onSelectSong: (LibrarySongCandidate) -> Unit
+    onSelectResult:
+        (LyricsSearchResult) -> Unit,
+    onRetry: () -> Unit
 ) {
     val design =
         LocalAppDesign.current
@@ -65,7 +64,10 @@ internal fun LyricsLibraryScreen(
         LocalSoftwareKeyboardController.current
 
     fun submit() {
-        if (state.query.isBlank()) {
+        if (
+            state.query.isBlank() ||
+            state.isSearchingLyrics
+        ) {
             return
         }
 
@@ -85,36 +87,445 @@ internal fun LyricsLibraryScreen(
         contentPadding =
             PaddingValues(
                 bottom =
-                    design.spacing.extraLarge
+                    design
+                        .spacing
+                        .extraLarge
             ),
 
         verticalArrangement =
             Arrangement.spacedBy(
-                design.spacing.medium
+                design
+                    .spacing
+                    .medium
             )
     ) {
         item(
             key = "lyrics-search"
         ) {
-            AppCard(
+            Row(
                 modifier =
-                    Modifier.fillMaxWidth()
+                    Modifier.fillMaxWidth(),
+
+                verticalAlignment =
+                    Alignment.CenterVertically,
+
+                horizontalArrangement =
+                    Arrangement.spacedBy(
+                        design.spacing.small
+                    )
             ) {
-                Column(
-                    verticalArrangement =
-                        Arrangement.spacedBy(
-                            design.spacing.medium
-                        )
-                ) {
-                    Column(
-                        verticalArrangement =
-                            Arrangement.spacedBy(
-                                design.spacing.tiny
-                            )
-                    ) {
+                StableOutlinedTextField(
+                    value =
+                        state.query,
+
+                    onValueChange =
+                        onQueryChange,
+
+                    modifier =
+                        Modifier.weight(1f),
+
+                    singleLine =
+                        true,
+
+                    shape =
+                        RoundedCornerShape(
+                            18.dp
+                        ),
+
+                    placeholder = {
                         Text(
                             text =
-                                "Tìm lyrics",
+                                "Tên bài hát hoặc Artist",
+
+                            maxLines =
+                                1,
+
+                            overflow =
+                                TextOverflow.Ellipsis
+                        )
+                    },
+
+                    leadingIcon = {
+                        Icon(
+                            imageVector =
+                                Icons.Rounded.Search,
+
+                            contentDescription =
+                                null
+                        )
+                    },
+
+                    trailingIcon = {
+                        when {
+                            state.isSearchingLyrics -> {
+                                CircularProgressIndicator(
+                                    modifier =
+                                        Modifier.size(
+                                            20.dp
+                                        ),
+
+                                    strokeWidth =
+                                        2.dp
+                                )
+                            }
+
+                            state.query.isNotEmpty() -> {
+                                AppIconActionButton(
+                                    icon =
+                                        Icons.Rounded.Clear,
+
+                                    contentDescription =
+                                        "Xóa tìm kiếm",
+
+                                    onClick =
+                                        onClear,
+
+                                    haptic =
+                                        false
+                                )
+                            }
+                        }
+                    },
+
+                    keyboardOptions =
+                        KeyboardOptions(
+                            imeAction =
+                                ImeAction.Search
+                        ),
+
+                    keyboardActions =
+                        KeyboardActions(
+                            onSearch = {
+                                submit()
+                            }
+                        ),
+
+                    colors =
+                        OutlinedTextFieldDefaults
+                            .colors(
+                                focusedContainerColor =
+                                    MaterialTheme
+                                        .colorScheme
+                                        .surfaceVariant
+                                        .copy(
+                                            alpha =
+                                                0.18f
+                                        ),
+
+                                unfocusedContainerColor =
+                                    MaterialTheme
+                                        .colorScheme
+                                        .surfaceVariant
+                                        .copy(
+                                            alpha =
+                                                0.12f
+                                        ),
+
+                                focusedBorderColor =
+                                    MaterialTheme
+                                        .colorScheme
+                                        .primary
+                                        .copy(
+                                            alpha =
+                                                0.72f
+                                        ),
+
+                                unfocusedBorderColor =
+                                    MaterialTheme
+                                        .colorScheme
+                                        .outline
+                                        .copy(
+                                            alpha =
+                                                0.28f
+                                        )
+                            )
+                )
+
+                AppIconActionButton(
+                    icon =
+                        Icons.Rounded
+                            .ArrowForward,
+
+                    contentDescription =
+                        "Tìm lyrics",
+
+                    onClick = {
+                        submit()
+                    },
+
+                    enabled =
+                        state.query
+                            .isNotBlank() &&
+                            !state
+                                .isSearchingLyrics,
+
+                    haptic =
+                        true
+                )
+            }
+        }
+
+        when {
+            state.isSearchingLyrics -> {
+                item(
+                    key =
+                        "lyrics-online-loading"
+                ) {
+                    AppAnimatedStatusText(
+                        text =
+                            "Đang tìm lời bài hát...",
+
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                    )
+                }
+            }
+
+            state.searchResults
+                .isNotEmpty() -> {
+
+                item(
+                    key =
+                        "lyrics-online-header"
+                ) {
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+                        Row(
+                            modifier =
+                                Modifier.weight(1f),
+
+                            verticalAlignment =
+                                Alignment.CenterVertically,
+
+                            horizontalArrangement =
+                                Arrangement.spacedBy(
+                                    8.dp
+                                )
+                        ) {
+                            Surface(
+                                modifier =
+                                    Modifier.size(
+                                        7.dp
+                                    ),
+
+                                shape =
+                                    RoundedCornerShape(
+                                        99.dp
+                                    ),
+
+                                color =
+                                    MaterialTheme
+                                        .colorScheme
+                                        .primary
+                            ) {}
+
+                            Text(
+                                text =
+                                    "Kết quả",
+
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .titleMedium,
+
+                                fontWeight =
+                                    FontWeight.Black
+                            )
+                        }
+
+                        Surface(
+                            shape =
+                                RoundedCornerShape(
+                                    99.dp
+                                ),
+
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .primary
+                                    .copy(
+                                        alpha =
+                                            0.12f
+                                    ),
+
+                            border =
+                                BorderStroke(
+                                    1.dp,
+
+                                    MaterialTheme
+                                        .colorScheme
+                                        .primary
+                                        .copy(
+                                            alpha =
+                                                0.24f
+                                        )
+                                )
+                        ) {
+                            Text(
+                                text =
+                                    "${state.searchResults.size} kết quả",
+
+                                modifier =
+                                    Modifier.padding(
+                                        horizontal =
+                                            9.dp,
+
+                                        vertical =
+                                            5.dp
+                                    ),
+
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .labelSmall,
+
+                                fontWeight =
+                                    FontWeight.Bold,
+
+                                color =
+                                    MaterialTheme
+                                        .colorScheme
+                                        .primary
+                            )
+                        }
+                    }
+                }
+
+                items(
+                    items =
+                        state.searchResults,
+
+                    key = { result ->
+                        if (result.id > 0L) {
+                            result.id.toString()
+                        }
+                        else {
+                            buildString {
+                                append(
+                                    result.trackName
+                                )
+
+                                append('|')
+
+                                append(
+                                    result.artistName
+                                )
+
+                                append('|')
+
+                                append(
+                                    result.albumName
+                                )
+                            }
+                        }
+                    }
+                ) { result ->
+
+                    LyricsOnlineResultCard(
+                        result =
+                            result,
+
+                        onClick = {
+                            onSelectResult(
+                                result
+                            )
+                        }
+                    )
+                }
+            }
+
+            state.errorMessage
+                ?.isNotBlank() == true -> {
+
+                item(
+                    key =
+                        "lyrics-online-error"
+                ) {
+                    AppErrorNotice(
+                        text =
+                            state.errorMessage
+                                .orEmpty(),
+
+                        actionText =
+                            "Thử lại",
+
+                        onAction =
+                            onRetry
+                    )
+                }
+            }
+
+            state.query.isBlank() -> {
+                item(
+                    key =
+                        "lyrics-start-hint"
+                ) {
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    top = 24.dp
+                                ),
+
+                        horizontalAlignment =
+                            Alignment.CenterHorizontally,
+
+                        verticalArrangement =
+                            Arrangement.spacedBy(
+                                8.dp
+                            )
+                    ) {
+                        Surface(
+                            modifier =
+                                Modifier.size(
+                                    54.dp
+                                ),
+
+                            shape =
+                                RoundedCornerShape(
+                                    17.dp
+                                ),
+
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .primary
+                                    .copy(
+                                        alpha =
+                                            0.14f
+                                    )
+                        ) {
+                            Icon(
+                                imageVector =
+                                    Icons.Rounded
+                                        .MusicNote,
+
+                                contentDescription =
+                                    null,
+
+                                modifier =
+                                    Modifier.padding(
+                                        15.dp
+                                    ),
+
+                                tint =
+                                    MaterialTheme
+                                        .colorScheme
+                                        .primary
+                            )
+                        }
+
+                        Text(
+                            text =
+                                "Tìm lời để hát",
 
                             style =
                                 MaterialTheme
@@ -127,7 +538,7 @@ internal fun LyricsLibraryScreen(
 
                         Text(
                             text =
-                                "Nhập tên bài hát hoặc Artist. Bạn vẫn tự chọn đúng bài trước khi mở lyrics.",
+                                "Nhập tên bài hát hoặc Artist rồi chọn đúng phiên bản lyrics.",
 
                             style =
                                 MaterialTheme
@@ -140,207 +551,22 @@ internal fun LyricsLibraryScreen(
                                     .onSurfaceVariant
                         )
                     }
-
-                    StableOutlinedTextField(
-                        value =
-                            state.query,
-
-                        onValueChange =
-                            onQueryChange,
-
-                        modifier =
-                            Modifier.fillMaxWidth(),
-
-                        singleLine =
-                            true,
-
-                        shape =
-                            RoundedCornerShape(
-                                design
-                                    .shapes
-                                    .controlCorner
-                            ),
-
-                        label = {
-                            Text(
-                                "Tên bài hát hoặc Artist"
-                            )
-                        },
-
-                        placeholder = {
-                            Text(
-                                "Ví dụ: Nơi Này Có Anh"
-                            )
-                        },
-
-                        leadingIcon = {
-                            Icon(
-                                imageVector =
-                                    Icons.Rounded.Search,
-
-                                contentDescription =
-                                    null
-                            )
-                        },
-
-                        trailingIcon = {
-                            when {
-                                state
-                                    .isLoadingSuggestions -> {
-
-                                    CircularProgressIndicator(
-                                        modifier =
-                                            Modifier.size(
-                                                20.dp
-                                            ),
-
-                                        strokeWidth =
-                                            2.dp
-                                    )
-                                }
-
-                                state.query
-                                    .isNotEmpty() -> {
-
-                                    AppIconActionButton(
-                                        icon =
-                                            Icons.Rounded.Clear,
-
-                                        contentDescription =
-                                            "Xóa tìm kiếm",
-
-                                        onClick =
-                                            onClear,
-
-                                        haptic =
-                                            false
-                                    )
-                                }
-                            }
-                        },
-
-                        keyboardOptions =
-                            KeyboardOptions(
-                                imeAction =
-                                    ImeAction.Search
-                            ),
-
-                        keyboardActions =
-                            KeyboardActions(
-                                onSearch = {
-                                    submit()
-                                }
-                            ),
-
-                        colors =
-                            OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor =
-                                    MaterialTheme
-                                        .colorScheme
-                                        .surfaceVariant
-                                        .copy(
-                                            alpha = 0.20f
-                                        ),
-
-                                unfocusedContainerColor =
-                                    MaterialTheme
-                                        .colorScheme
-                                        .surfaceVariant
-                                        .copy(
-                                            alpha = 0.12f
-                                        )
-                            )
-                    )
-
-                    AppActionButton(
-                        label =
-                            "Tra lời bài hát",
-
-                        onClick = {
-                            submit()
-                        },
-
-                        modifier =
-                            Modifier.fillMaxWidth(),
-
-                        enabled =
-                            state.query.isNotBlank(),
-
-                        leadingIcon =
-                            Icons.Rounded.Search,
-
-                        haptic =
-                            true
-                    )
-                }
-            }
-        }
-
-        state.errorMessage
-            ?.takeIf(
-                String::isNotBlank
-            )
-            ?.let { message ->
-
-                item(
-                    key = "library-error"
-                ) {
-                    AppErrorNotice(
-                        text = message
-                    )
                 }
             }
 
-        when {
-            state.suggestions
-                .isNotEmpty() -> {
-
+            else -> {
                 item(
                     key =
-                        "library-suggestion-header"
+                        "lyrics-ready-hint"
                 ) {
-                    LyricsSectionHeader(
-                        title =
-                            "Gợi ý từ Library",
-
-                        subtitle =
-                            "Chạm đúng bài để tiếp tục",
-
-                        badge =
-                            "${state.suggestions.size} bài"
-                    )
-                }
-
-                items(
-                    items =
-                        state.suggestions,
-
-                    key =
-                        LibrarySongCandidate::uri
-                ) { song ->
-
-                    LibrarySongCard(
-                        song =
-                            song,
-
-                        onClick = {
-                            onSelectSong(
-                                song
-                            )
-                        }
-                    )
-                }
-            }
-
-            state.isLoadingSuggestions -> {
-
-                item(
-                    key =
-                        "library-loading"
-                ) {
-                    AppAnimatedStatusText(
+                    Text(
                         text =
-                            "Đang tìm bài phù hợp trong Library...",
+                            "Nhấn mũi tên hoặc Search trên bàn phím để tìm lời.",
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
 
                         color =
                             MaterialTheme
@@ -349,96 +575,111 @@ internal fun LyricsLibraryScreen(
                     )
                 }
             }
-
-            state.query.length < 2 -> {
-
-                item(
-                    key =
-                        "library-empty-start"
-                ) {
-                    AppEmptyState(
-                        icon =
-                            Icons.Rounded
-                                .LibraryMusic,
-
-                        title =
-                            "Tìm bài trong Library",
-
-                        description =
-                            "Nhập ít nhất 2 ký tự để xem đề xuất. App không tự chọn bài thay bạn."
-                    )
-                }
-            }
-
-            else -> {
-
-                item(
-                    key =
-                        "library-empty-result"
-                ) {
-                    AppEmptyState(
-                        icon =
-                            Icons.Rounded
-                                .LibraryMusic,
-
-                        title =
-                            "Không có bài phù hợp",
-
-                        description =
-                            "Bạn vẫn có thể nhấn Tra lời bài hát để tìm trực tiếp bằng tên đang nhập."
-                    )
-                }
-            }
         }
     }
 }
 
 
-
 @Composable
-private fun LibrarySongCard(
-    song: LibrarySongCandidate,
+private fun LyricsOnlineResultCard(
+    result: LyricsSearchResult,
     onClick: () -> Unit
 ) {
     val design =
         LocalAppDesign.current
 
-    AppCard(
+    val metadata =
+        buildString {
+            append(
+                result.artistName
+                    .ifBlank {
+                        "Không rõ Artist"
+                    }
+            )
+
+            if (
+                result.albumName
+                    .isNotBlank()
+            ) {
+                append(" · ")
+
+                append(
+                    result.albumName
+                )
+            }
+
+            if (
+                result.formattedDuration
+                    .isNotBlank() &&
+                result.formattedDuration !=
+                    "--:--"
+            ) {
+                append(" · ")
+
+                append(
+                    result.formattedDuration
+                )
+            }
+        }
+
+    Surface(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .animateContentSize(),
+                .animateContentSize()
+                .bouncyClickable(
+                    onClick =
+                        onClick
+                ),
 
-        onClick =
-            onClick,
+        shape =
+            RoundedCornerShape(
+                20.dp
+            ),
 
-        haptic =
-            true,
+        color =
+            MaterialTheme
+                .colorScheme
+                .surface
+                .copy(
+                    alpha = 0.82f
+                ),
 
-        contentPadding =
-            PaddingValues(
-                horizontal =
-                    design.spacing.medium,
+        contentColor =
+            MaterialTheme
+                .colorScheme
+                .onSurface,
 
-                vertical =
-                    design.spacing.small
+        border =
+            BorderStroke(
+                1.dp,
+
+                MaterialTheme
+                    .colorScheme
+                    .primary
+                    .copy(
+                        alpha = 0.24f
+                    )
             )
     ) {
         Row(
+            modifier =
+                Modifier.padding(
+                    12.dp
+                ),
+
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
             Surface(
                 modifier =
                     Modifier.size(
-                        46.dp
+                        64.dp
                     ),
 
                 shape =
                     RoundedCornerShape(
-                        design
-                            .shapes
-                            .controlCorner
+                        17.dp
                     ),
 
                 color =
@@ -461,7 +702,7 @@ private fun LibrarySongCard(
 
                     modifier =
                         Modifier.padding(
-                            design.spacing.medium
+                            19.dp
                         )
                 )
             }
@@ -475,18 +716,16 @@ private fun LibrarySongCard(
 
             Column(
                 modifier =
-                    Modifier.weight(
-                        1f
-                    ),
+                    Modifier.weight(1f),
 
                 verticalArrangement =
                     Arrangement.spacedBy(
-                        design.spacing.tiny
+                        4.dp
                     )
             ) {
                 Text(
                     text =
-                        song.title,
+                        result.trackName,
 
                     maxLines =
                         2,
@@ -494,16 +733,18 @@ private fun LibrarySongCard(
                     overflow =
                         TextOverflow.Ellipsis,
 
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleSmall,
+
                     fontWeight =
-                        FontWeight.SemiBold
+                        FontWeight.Black
                 )
 
                 Text(
                     text =
-                        song.artist
-                            .ifBlank {
-                                song.displayName
-                            },
+                        metadata,
 
                     maxLines =
                         1,
@@ -526,51 +767,24 @@ private fun LibrarySongCard(
             Spacer(
                 modifier =
                     Modifier.width(
-                        design.spacing.small
+                        8.dp
                     )
             )
 
-            Surface(
-                shape =
-                    CircleShape,
+            AppIconActionButton(
+                icon =
+                    Icons.Rounded
+                        .ArrowForward,
 
-                color =
-                    MaterialTheme
-                        .colorScheme
-                        .secondaryContainer,
+                contentDescription =
+                    "Mở lyrics",
 
-                contentColor =
-                    MaterialTheme
-                        .colorScheme
-                        .onSecondaryContainer
-            ) {
-                Text(
-                    text =
-                        "${
-                            (
-                                song.score *
-                                    100
-                            ).roundToInt()
-                        }%",
+                onClick =
+                    onClick,
 
-                    modifier =
-                        Modifier.padding(
-                            horizontal =
-                                design.spacing.small,
-
-                            vertical =
-                                design.spacing.tiny
-                        ),
-
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelMedium,
-
-                    fontWeight =
-                        FontWeight.Bold
-                )
-            }
+                haptic =
+                    true
+            )
         }
     }
 }
