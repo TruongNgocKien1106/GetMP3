@@ -8,10 +8,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -53,10 +53,12 @@ import com.ngoctien.getmp3.ui.design.appPressable
 import com.ngoctien.getmp3.viewmodel.YouTubeSearchUiState
 import com.ngoctien.getmp3.youtube.YouTubeSearchResult
 
+
 @Composable
 internal fun SearchResultsContent(
     state: YouTubeSearchUiState,
     downloadEnabled: Boolean,
+    bitrateKbps: Int = 128,
     onSearch: () -> Unit,
     onLoadMore: () -> Unit,
     onDownload:
@@ -81,7 +83,11 @@ internal fun SearchResultsContent(
             ) {
                 LinearProgressIndicator(
                     modifier =
-                        Modifier.fillMaxWidth()
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(
+                                CircleShape
+                            )
                 )
             }
         }
@@ -105,8 +111,6 @@ internal fun SearchResultsContent(
                     key = "loading"
                 ) {
                     PrototypeSearchMessage(
-                        icon =
-                            Icons.Rounded.Search,
                         title =
                             "Đang tìm trên YouTube",
                         description =
@@ -128,6 +132,8 @@ internal fun SearchResultsContent(
                             result,
                         downloadEnabled =
                             downloadEnabled,
+                        bitrateKbps =
+                            bitrateKbps,
                         onDownload = {
                             onDownload(
                                 result
@@ -180,8 +186,6 @@ internal fun SearchResultsContent(
                     key = "empty"
                 ) {
                     PrototypeSearchMessage(
-                        icon =
-                            Icons.Rounded.Search,
                         title =
                             "Tìm bài hát",
                         description =
@@ -204,35 +208,72 @@ private fun PrototypeResultsHeader(
         verticalAlignment =
             Alignment.CenterVertically
     ) {
-        Text(
-            text =
-                "Kết quả phù hợp nhất",
+        Column(
             modifier =
-                Modifier.weight(1f),
-            style =
-                MaterialTheme
-                    .typography
-                    .labelMedium,
-            fontWeight =
-                FontWeight.Bold,
-            color =
-                MaterialTheme
-                    .colorScheme
-                    .onSurfaceVariant
-        )
+                Modifier.weight(1f)
+        ) {
+            Text(
+                text =
+                    "Kết quả phù hợp nhất",
+                style =
+                    MaterialTheme
+                        .typography
+                        .titleSmall,
+                fontWeight =
+                    FontWeight.Black,
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onBackground
+            )
 
-        Text(
-            text =
-                "$count kết quả",
-            style =
-                MaterialTheme
-                    .typography
-                    .labelSmall,
+            Text(
+                text =
+                    "YouTube",
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelSmall,
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant
+            )
+        }
+
+        Surface(
+            shape =
+                RoundedCornerShape(
+                    99.dp
+                ),
             color =
                 MaterialTheme
                     .colorScheme
-                    .onSurfaceVariant
-        )
+                    .primary
+                    .copy(
+                        alpha = 0.13f
+                    )
+        ) {
+            Text(
+                text =
+                    "$count kết quả",
+                modifier =
+                    Modifier.padding(
+                        horizontal = 9.dp,
+                        vertical = 5.dp
+                    ),
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelSmall,
+                fontWeight =
+                    FontWeight.Bold,
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .primary
+            )
+        }
     }
 }
 
@@ -241,6 +282,7 @@ private fun PrototypeResultsHeader(
 private fun PrototypeYouTubeResultCard(
     result: YouTubeSearchResult,
     downloadEnabled: Boolean,
+    bitrateKbps: Int,
     onDownload: () -> Unit
 ) {
     val context =
@@ -273,20 +315,20 @@ private fun PrototypeYouTubeResultCard(
         )
     }
 
-    val cardShape =
+    val shape =
         RoundedCornerShape(24.dp)
 
     Surface(
         modifier =
             Modifier.fillMaxWidth(),
         shape =
-            cardShape,
+            shape,
         color =
             MaterialTheme
                 .colorScheme
                 .surface
                 .copy(
-                    alpha = 0.94f
+                    alpha = 0.92f
                 ),
         border =
             BorderStroke(
@@ -295,7 +337,7 @@ private fun PrototypeYouTubeResultCard(
                     .colorScheme
                     .primary
                     .copy(
-                        alpha = 0.24f
+                        alpha = 0.30f
                     )
             )
     ) {
@@ -304,37 +346,19 @@ private fun PrototypeYouTubeResultCard(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(174.dp)
+                        .aspectRatio(
+                            16f / 9f
+                        )
                         .background(
                             Brush.linearGradient(
                                 listOf(
-                                    Color(0xFF183D72),
-                                    Color(0xFF1A3159),
-                                    Color(0xFF271F58)
+                                    Color(0xFF163C6C),
+                                    Color(0xFF202D5C),
+                                    Color(0xFF3A275F)
                                 )
                             )
                         )
             ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(132.dp)
-                            .align(
-                                Alignment.BottomEnd
-                            )
-                            .offset(
-                                x = 42.dp,
-                                y = 48.dp
-                            )
-                            .background(
-                                Color(0xFF7768D7)
-                                    .copy(
-                                        alpha = 0.20f
-                                    ),
-                                CircleShape
-                            )
-                )
-
                 AsyncImage(
                     model =
                         result
@@ -347,9 +371,70 @@ private fun PrototypeYouTubeResultCard(
                         ContentScale.Crop
                 )
 
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(66.dp)
+                            .align(
+                                Alignment.BottomCenter
+                            )
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(
+                                            alpha = 0.64f
+                                        )
+                                    )
+                                )
+                            )
+                )
+
+                Surface(
+                    modifier =
+                        Modifier
+                            .align(
+                                Alignment.TopStart
+                            )
+                            .padding(10.dp),
+                    shape =
+                        RoundedCornerShape(
+                            9.dp
+                        ),
+                    color =
+                        Color.Black.copy(
+                            alpha = 0.52f
+                        ),
+                    border =
+                        BorderStroke(
+                            1.dp,
+                            Color.White.copy(
+                                alpha = 0.15f
+                            )
+                        )
+                ) {
+                    Text(
+                        text =
+                            "YOUTUBE",
+                        modifier =
+                            Modifier.padding(
+                                horizontal = 8.dp,
+                                vertical = 4.dp
+                            ),
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
+                        fontWeight =
+                            FontWeight.Black,
+                        color =
+                            Color.White
+                    )
+                }
+
                 if (
-                    result
-                        .formattedDuration
+                    result.formattedDuration
                         .isNotBlank()
                 ) {
                     Surface(
@@ -358,12 +443,14 @@ private fun PrototypeYouTubeResultCard(
                                 .align(
                                     Alignment.BottomEnd
                                 )
-                                .padding(9.dp),
+                                .padding(10.dp),
                         shape =
-                            RoundedCornerShape(8.dp),
+                            RoundedCornerShape(
+                                8.dp
+                            ),
                         color =
                             Color.Black.copy(
-                                alpha = 0.72f
+                                alpha = 0.76f
                             )
                     ) {
                         Text(
@@ -456,16 +543,16 @@ private fun PrototypeYouTubeResultCard(
 
                     Spacer(
                         modifier =
-                            Modifier.width(12.dp)
+                            Modifier.width(11.dp)
                     )
 
                     Surface(
                         modifier =
                             Modifier
-                                .height(40.dp)
+                                .height(42.dp)
                                 .appPressable(
                                     pressedScale =
-                                        0.94f,
+                                        0.93f,
                                     haptic =
                                         true,
                                     onClick = {
@@ -483,7 +570,9 @@ private fun PrototypeYouTubeResultCard(
                                     }
                                 ),
                         shape =
-                            RoundedCornerShape(12.dp),
+                            RoundedCornerShape(
+                                13.dp
+                            ),
                         color =
                             MaterialTheme
                                 .colorScheme
@@ -508,17 +597,18 @@ private fun PrototypeYouTubeResultCard(
                                     horizontal = 13.dp
                                 ),
                             horizontalArrangement =
-                                Arrangement.spacedBy(6.dp),
+                                Arrangement.spacedBy(5.dp),
                             verticalAlignment =
                                 Alignment.CenterVertically
                         ) {
                             Icon(
                                 imageVector =
-                                    Icons.Rounded.PlayArrow,
+                                    Icons.Rounded
+                                        .PlayArrow,
                                 contentDescription =
                                     null,
                                 modifier =
-                                    Modifier.size(17.dp),
+                                    Modifier.size(18.dp),
                                 tint =
                                     MaterialTheme
                                         .colorScheme
@@ -533,11 +623,7 @@ private fun PrototypeYouTubeResultCard(
                                         .typography
                                         .labelMedium,
                                 fontWeight =
-                                    FontWeight.Bold,
-                                color =
-                                    MaterialTheme
-                                        .colorScheme
-                                        .onSurface
+                                    FontWeight.Black
                             )
                         }
                     }
@@ -546,6 +632,8 @@ private fun PrototypeYouTubeResultCard(
                 PrototypeDownloadButton(
                     enabled =
                         downloadEnabled,
+                    bitrateKbps =
+                        bitrateKbps,
                     onClick =
                         onDownload
                 )
@@ -558,16 +646,17 @@ private fun PrototypeYouTubeResultCard(
 @Composable
 private fun PrototypeDownloadButton(
     enabled: Boolean,
+    bitrateKbps: Int,
     onClick: () -> Unit
 ) {
     val shape =
-        RoundedCornerShape(14.dp)
+        RoundedCornerShape(15.dp)
 
     Box(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(50.dp)
+                .height(56.dp)
                 .graphicsLayer {
                     alpha =
                         if (enabled) {
@@ -580,9 +669,9 @@ private fun PrototypeDownloadButton(
                 .background(
                     Brush.horizontalGradient(
                         listOf(
-                            Color(0xFF67C9FF),
-                            Color(0xFF72B6FF),
-                            Color(0xFF9A81FF)
+                            Color(0xFF61C9FF),
+                            Color(0xFF70A9FF),
+                            Color(0xFF9B7FFF)
                         )
                     )
                 )
@@ -590,7 +679,7 @@ private fun PrototypeDownloadButton(
                     enabled =
                         enabled,
                     pressedScale =
-                        0.985f,
+                        0.982f,
                     haptic =
                         true,
                     onClick =
@@ -601,33 +690,69 @@ private fun PrototypeDownloadButton(
     ) {
         Row(
             horizontalArrangement =
-                Arrangement.spacedBy(8.dp),
+                Arrangement.spacedBy(10.dp),
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector =
-                    Icons.Rounded.Download,
-                contentDescription =
-                    null,
+            Surface(
                 modifier =
-                    Modifier.size(19.dp),
-                tint =
-                    Color(0xFF071526)
-            )
-
-            Text(
-                text =
-                    "Tải MP3",
-                style =
-                    MaterialTheme
-                        .typography
-                        .labelLarge,
-                fontWeight =
-                    FontWeight.Black,
+                    Modifier.size(34.dp),
+                shape =
+                    RoundedCornerShape(
+                        11.dp
+                    ),
                 color =
-                    Color(0xFF071526)
-            )
+                    Color.White.copy(
+                        alpha = 0.24f
+                    )
+            ) {
+                Box(
+                    modifier =
+                        Modifier.fillMaxSize(),
+                    contentAlignment =
+                        Alignment.Center
+                ) {
+                    Icon(
+                        imageVector =
+                            Icons.Rounded.Download,
+                        contentDescription =
+                            null,
+                        modifier =
+                            Modifier.size(19.dp),
+                        tint =
+                            Color(0xFF071526)
+                    )
+                }
+            }
+
+            Column {
+                Text(
+                    text =
+                        "Tải MP3",
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelLarge,
+                    fontWeight =
+                        FontWeight.Black,
+                    color =
+                        Color(0xFF071526)
+                )
+
+                Text(
+                    text =
+                        "$bitrateKbps kbps • lưu vào Inbox",
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall,
+                    color =
+                        Color(0xFF071526)
+                            .copy(
+                                alpha = 0.72f
+                            )
+                )
+            }
         }
     }
 }
@@ -799,8 +924,6 @@ private fun PrototypeSearchError(
 
 @Composable
 private fun PrototypeSearchMessage(
-    icon:
-        androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     description: String
 ) {
@@ -814,7 +937,7 @@ private fun PrototypeSearchMessage(
                 .colorScheme
                 .surface
                 .copy(
-                    alpha = 0.62f
+                    alpha = 0.60f
                 ),
         border =
             BorderStroke(
@@ -831,25 +954,46 @@ private fun PrototypeSearchMessage(
             modifier =
                 Modifier.padding(
                     horizontal = 18.dp,
-                    vertical = 24.dp
+                    vertical = 26.dp
                 ),
             horizontalAlignment =
                 Alignment.CenterHorizontally,
             verticalArrangement =
                 Arrangement.spacedBy(8.dp)
         ) {
-            Icon(
-                imageVector =
-                    icon,
-                contentDescription =
-                    null,
+            Surface(
                 modifier =
-                    Modifier.size(28.dp),
-                tint =
+                    Modifier.size(46.dp),
+                shape =
+                    RoundedCornerShape(
+                        15.dp
+                    ),
+                color =
                     MaterialTheme
                         .colorScheme
                         .primary
-            )
+                        .copy(
+                            alpha = 0.14f
+                        )
+            ) {
+                Box(
+                    modifier =
+                        Modifier.fillMaxSize(),
+                    contentAlignment =
+                        Alignment.Center
+                ) {
+                    Icon(
+                        imageVector =
+                            Icons.Rounded.Search,
+                        contentDescription =
+                            null,
+                        tint =
+                            MaterialTheme
+                                .colorScheme
+                                .primary
+                    )
+                }
+            }
 
             Text(
                 text =
@@ -859,11 +1003,7 @@ private fun PrototypeSearchMessage(
                         .typography
                         .titleMedium,
                 fontWeight =
-                    FontWeight.Black,
-                color =
-                    MaterialTheme
-                        .colorScheme
-                        .onSurface
+                    FontWeight.Black
             )
 
             Text(
