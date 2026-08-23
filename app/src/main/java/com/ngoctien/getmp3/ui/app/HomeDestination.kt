@@ -1,10 +1,12 @@
 package com.ngoctien.getmp3.ui.app
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ngoctien.getmp3.settings.AppThemeMode
 import com.ngoctien.getmp3.ui.AppDestination
 import com.ngoctien.getmp3.ui.BentoHome
 import com.ngoctien.getmp3.ui.design.UiStyle
@@ -28,6 +30,9 @@ internal fun HomeDestination(
     onQuickDownloadFromClipboard: () -> Unit,
     onNavigate: (AppDestination) -> Unit
 ) {
+    val systemDarkTheme =
+        isSystemInDarkTheme()
+
     val downloadState by
         downloadViewModel
             .uiState
@@ -52,6 +57,18 @@ internal fun HomeDestination(
         settingsViewModel
             .libraryIndexState
             .collectAsStateWithLifecycle()
+
+    val isDarkTheme =
+        when (settings.themeMode) {
+            AppThemeMode.SYSTEM ->
+                systemDarkTheme
+
+            AppThemeMode.LIGHT ->
+                false
+
+            AppThemeMode.DARK ->
+                true
+        }
 
     LaunchedEffect(
         metadataRepairViewModel
@@ -112,6 +129,17 @@ internal fun HomeDestination(
         )
     }
 
+    val toggleTheme: () -> Unit = {
+        settingsViewModel
+            .setThemeMode(
+                if (isDarkTheme) {
+                    AppThemeMode.LIGHT
+                } else {
+                    AppThemeMode.DARK
+                }
+            )
+    }
+
     val syncLibrary: () -> Unit = {
         if (
             settings
@@ -155,6 +183,9 @@ internal fun HomeDestination(
                     libraryIndexState
                         .isScanning,
 
+                isDarkTheme =
+                    isDarkTheme,
+
                 modifier =
                     modifier,
 
@@ -175,6 +206,9 @@ internal fun HomeDestination(
 
                 onOpenSettings =
                     openSettings,
+
+                onToggleTheme =
+                    toggleTheme,
 
                 onSyncLibrary =
                     syncLibrary,

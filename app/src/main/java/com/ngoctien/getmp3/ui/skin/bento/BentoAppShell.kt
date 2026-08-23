@@ -12,13 +12,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import com.ngoctien.getmp3.ui.AppDestination
 import com.ngoctien.getmp3.ui.AppMotion
 
@@ -33,9 +33,12 @@ internal fun BentoAppShell(
             innerPadding: PaddingValues
         ) -> Unit
 ) {
+    val colors =
+        MaterialTheme.colorScheme
+
     Scaffold(
         containerColor =
-            Color.Transparent,
+            colors.background,
         contentWindowInsets =
             WindowInsets(
                 0,
@@ -57,10 +60,9 @@ internal fun BentoAppShell(
                     .background(
                         Brush.verticalGradient(
                             listOf(
-                                Color(0xFF081426),
-                                Color(0xFF060C17),
-                                Color(0xFF050810),
-                                Color(0xFF090715)
+                                colors.background,
+                                colors.surface,
+                                colors.background
                             )
                         )
                     )

@@ -16,9 +16,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,7 +33,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.MusicNote
@@ -70,6 +74,7 @@ internal fun BentoHome(
     attentionCount: Int,
     duplicateCount: Int?,
     isLibrarySyncing: Boolean,
+    isDarkTheme: Boolean,
     modifier: Modifier = Modifier,
     onOpenInbox: () -> Unit,
     onOpenLibrary: () -> Unit,
@@ -77,6 +82,7 @@ internal fun BentoHome(
     onOpenTagEditor: () -> Unit,
     onOpenCompare: () -> Unit,
     onOpenSettings: () -> Unit,
+    onToggleTheme: () -> Unit,
     onSyncLibrary: () -> Unit,
     onQuickDownloadFromClipboard: () -> Unit
 ) {
@@ -105,7 +111,8 @@ internal fun BentoHome(
         item {
             HomeHeader(
                 greeting = greeting,
-                onOpenSettings = onOpenSettings
+                isDarkTheme = isDarkTheme,
+                onToggleTheme = onToggleTheme
             )
         }
 
@@ -305,7 +312,8 @@ internal fun BentoHome(
 @Composable
 private fun HomeHeader(
     greeting: String,
-    onOpenSettings: () -> Unit
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit
 ) {
     Row(
         modifier =
@@ -329,7 +337,9 @@ private fun HomeHeader(
                 fontWeight =
                     FontWeight.Bold,
                 color =
-                    Color(0xFF82A9FF)
+                    MaterialTheme
+                        .colorScheme
+                        .primary
             )
 
             Text(
@@ -342,7 +352,9 @@ private fun HomeHeader(
                 fontWeight =
                     FontWeight.Black,
                 color =
-                    HomeTextPrimary
+                    MaterialTheme
+                        .colorScheme
+                        .onBackground
             )
         }
 
@@ -351,21 +363,25 @@ private fun HomeHeader(
                 Modifier
                     .size(46.dp)
                     .appPressable(
-                        pressedScale = 0.94f,
+                        pressedScale = 0.92f,
                         haptic = true,
                         onClick =
-                            onOpenSettings
+                            onToggleTheme
                     ),
             shape =
                 RoundedCornerShape(15.dp),
             color =
-                Color(0xFF0D1A2D),
+                MaterialTheme
+                    .colorScheme
+                    .surface,
             border =
                 BorderStroke(
                     1.dp,
-                    Color(0xFF6090E8)
+                    MaterialTheme
+                        .colorScheme
+                        .outline
                         .copy(
-                            alpha = 0.35f
+                            alpha = 0.58f
                         )
                 )
         ) {
@@ -377,19 +393,28 @@ private fun HomeHeader(
             ) {
                 Icon(
                     imageVector =
-                        Icons.Rounded.Settings,
+                        if (isDarkTheme) {
+                            Icons.Rounded.LightMode
+                        } else {
+                            Icons.Rounded.DarkMode
+                        },
                     contentDescription =
-                        "Cài đặt",
+                        if (isDarkTheme) {
+                            "Chuyển sang giao diện sáng"
+                        } else {
+                            "Chuyển sang giao diện tối"
+                        },
                     modifier =
                         Modifier.size(21.dp),
                     tint =
-                        Color(0xFFDDE8FF)
+                        MaterialTheme
+                            .colorScheme
+                            .onSurface
                 )
             }
         }
     }
 }
-
 @Composable
 private fun DownloadHero(
     inboxFolderName: String,
@@ -443,119 +468,131 @@ private fun DownloadHero(
                         ),
                         shape
                     )
-                    .padding(
-                        horizontal = 17.dp,
-                        vertical = 15.dp
-                    )
         ) {
-            Column(
+            PrototypeCardSheen(
+                delayMillis =
+                    3_400,
                 modifier =
-                    Modifier.align(
-                        Alignment.TopStart
-                    ),
-                verticalArrangement =
-                    Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    text =
-                        "QUICK DOWNLOAD",
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelSmall,
-                    fontWeight =
-                        FontWeight.Bold,
-                    color =
-                        Color(0xFFB3CCFF)
-                )
-
-                Text(
-                    text =
-                        "Tải nhạc",
-                    style =
-                        MaterialTheme
-                            .typography
-                            .headlineSmall,
-                    fontWeight =
-                        FontWeight.Black,
-                    color =
-                        Color.White
-                )
-
-                Text(
-                    text =
-                        "Dán link YouTube để tải.",
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodySmall,
-                    color =
-                        Color.White.copy(
-                            alpha = 0.86f
-                        )
-                )
-            }
-
-            HeroWave(
-                modifier =
-                    Modifier
-                        .align(
-                            Alignment.BottomStart
-                        )
-                        .padding(
-                            start = 8.dp,
-                            bottom = 3.dp
-                        )
+                    Modifier.fillMaxSize()
             )
 
-            Surface(
+            Box(
                 modifier =
                     Modifier
-                        .size(50.dp)
-                        .align(
-                            Alignment.CenterEnd
+                        .fillMaxSize()
+                        .padding(
+                            horizontal = 17.dp,
+                            vertical = 15.dp
                         )
-                        .appPressable(
-                            pressedScale = 0.92f,
-                            haptic = true,
-                            onClick =
-                                onQuickDownloadFromClipboard
-                        ),
-                shape =
-                    RoundedCornerShape(16.dp),
-                color =
-                    Color(0xFF3857A2),
-                border =
-                    BorderStroke(
-                        1.dp,
-                        Color(0xFF9AB9FF)
-                            .copy(
-                                alpha = 0.52f
-                            )
-                    )
             ) {
-                Box(
+                Column(
                     modifier =
-                        Modifier.fillMaxSize(),
-                    contentAlignment =
-                        Alignment.Center
+                        Modifier.align(
+                            Alignment.TopStart
+                        ),
+                    verticalArrangement =
+                        Arrangement.spacedBy(2.dp)
                 ) {
-                    Icon(
-                        imageVector =
-                            Icons.Rounded.Download,
-                        contentDescription =
-                            "Tải vào $targetFolder",
-                        modifier =
-                            Modifier.size(23.dp),
-                        tint =
+                    Text(
+                        text =
+                            "QUICK DOWNLOAD",
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
+                        fontWeight =
+                            FontWeight.Bold,
+                        color =
+                            Color(0xFFB3CCFF)
+                    )
+
+                    Text(
+                        text =
+                            "Tải nhạc",
+                        style =
+                            MaterialTheme
+                                .typography
+                                .headlineSmall,
+                        fontWeight =
+                            FontWeight.Black,
+                        color =
                             Color.White
                     )
+
+                    Text(
+                        text =
+                            "Dán link YouTube để tải.",
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodySmall,
+                        color =
+                            Color.White.copy(
+                                alpha = 0.86f
+                            )
+                    )
+                }
+
+                HeroWave(
+                    modifier =
+                        Modifier
+                            .align(
+                                Alignment.BottomStart
+                            )
+                            .padding(
+                                start = 8.dp,
+                                bottom = 3.dp
+                            )
+                )
+
+                Surface(
+                    modifier =
+                        Modifier
+                            .size(50.dp)
+                            .align(
+                                Alignment.CenterEnd
+                            )
+                            .appPressable(
+                                pressedScale = 0.92f,
+                                haptic = true,
+                                onClick =
+                                    onQuickDownloadFromClipboard
+                            ),
+                    shape =
+                        RoundedCornerShape(16.dp),
+                    color =
+                        Color(0xFF3857A2),
+                    border =
+                        BorderStroke(
+                            1.dp,
+                            Color(0xFF9AB9FF)
+                                .copy(
+                                    alpha = 0.52f
+                                )
+                        )
+                ) {
+                    Box(
+                        modifier =
+                            Modifier.fillMaxSize(),
+                        contentAlignment =
+                            Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector =
+                                Icons.Rounded.Download,
+                            contentDescription =
+                                "Tải vào $targetFolder",
+                            modifier =
+                                Modifier.size(23.dp),
+                            tint =
+                                Color.White
+                        )
+                    }
                 }
             }
         }
     }
 }
-
 @Composable
 private fun HeroWave(
     modifier: Modifier = Modifier
@@ -656,10 +693,11 @@ private fun HomeSectionTitle(
         fontWeight =
             FontWeight.Bold,
         color =
-            HomeTextPrimary
+            MaterialTheme
+                .colorScheme
+                .onBackground
     )
 }
-
 private enum class ExploreMotion {
     LIBRARY,
     LYRICS,
@@ -694,6 +732,21 @@ private fun ExploreCard(
                 HomeTextPrimary
         }
 
+    val sheenDelay =
+        when (motion) {
+            ExploreMotion.LIBRARY ->
+                2_900
+
+            ExploreMotion.LYRICS ->
+                3_900
+
+            ExploreMotion.TAGS ->
+                3_400
+
+            ExploreMotion.DUPLICATES ->
+                4_600
+        }
+
     val ambientTransition =
         rememberInfiniteTransition(
             label =
@@ -713,16 +766,16 @@ private fun ExploreCard(
                             durationMillis =
                                 when (motion) {
                                     ExploreMotion.LIBRARY ->
-                                        5200
+                                        5_200
 
                                     ExploreMotion.LYRICS ->
-                                        6100
+                                        6_100
 
                                     ExploreMotion.TAGS ->
-                                        5700
+                                        5_700
 
                                     ExploreMotion.DUPLICATES ->
-                                        6500
+                                        6_500
                                 },
                             easing =
                                 FastOutSlowInEasing
@@ -745,7 +798,7 @@ private fun ExploreCard(
                     animation =
                         tween(
                             durationMillis =
-                                4300,
+                                4_300,
                             easing =
                                 FastOutSlowInEasing
                         ),
@@ -789,15 +842,6 @@ private fun ExploreCard(
                         shape
                     )
         ) {
-            /*
-             * Prototype geometry:
-             * 108 x 108
-             * top = -53
-             * right = -35
-             *
-             * Keep this outside the card content padding so the
-             * circle remains clipped into the top-right corner.
-             */
             Box(
                 modifier =
                     Modifier
@@ -823,6 +867,13 @@ private fun ExploreCard(
                             accent,
                             CircleShape
                         )
+            )
+
+            PrototypeCardSheen(
+                delayMillis =
+                    sheenDelay,
+                modifier =
+                    Modifier.fillMaxSize()
             )
 
             Box(
@@ -893,13 +944,6 @@ private fun ExploreCard(
                     )
                 }
 
-                /*
-                 * Fixed title slot.
-                 *
-                 * Lyrics has no metric, but its title must remain
-                 * at exactly the same vertical position as the
-                 * other three cards.
-                 */
                 Text(
                     text =
                         title,
@@ -1012,6 +1056,91 @@ private fun ExploreCard(
     }
 }
 
+@Composable
+private fun PrototypeCardSheen(
+    delayMillis: Int,
+    modifier: Modifier = Modifier
+) {
+    val transition =
+        rememberInfiniteTransition(
+            label =
+                "prototype-sheen-$delayMillis"
+        )
+
+    val progress by
+        transition.animateFloat(
+            initialValue =
+                0f,
+            targetValue =
+                1f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation =
+                        tween(
+                            durationMillis =
+                                860,
+                            delayMillis =
+                                delayMillis,
+                            easing =
+                                FastOutSlowInEasing
+                        ),
+                    repeatMode =
+                        RepeatMode.Restart
+                ),
+            label =
+                "prototype-sheen-progress-$delayMillis"
+        )
+
+    BoxWithConstraints(
+        modifier =
+            modifier
+    ) {
+        val travelPx =
+            constraints
+                .maxWidth
+                .toFloat() +
+                220f
+
+        Box(
+            modifier =
+                Modifier
+                    .width(70.dp)
+                    .fillMaxHeight()
+                    .graphicsLayer {
+                        translationX =
+                            -150f +
+                                travelPx *
+                                    progress
+
+                        rotationZ =
+                            -14f
+
+                        alpha =
+                            0.92f
+                    }
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color.Transparent,
+                                Color.White.copy(
+                                    alpha = 0.018f
+                                ),
+                                Color.White.copy(
+                                    alpha = 0.075f
+                                ),
+                                Color.White.copy(
+                                    alpha = 0.22f
+                                ),
+                                Color.White.copy(
+                                    alpha = 0.07f
+                                ),
+                                Color.Transparent
+                            )
+                        )
+                    )
+        )
+    }
+}
 @Composable
 private fun ExploreCardMotion(
     motion: ExploreMotion,
