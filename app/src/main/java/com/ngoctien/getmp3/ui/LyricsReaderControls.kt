@@ -1,14 +1,10 @@
 package com.ngoctien.getmp3.ui
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,14 +33,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ngoctien.getmp3.viewmodel.LyricsUiState
@@ -115,95 +113,208 @@ internal fun ReaderControlBar(
             )
         }
 
-    Box(
-        modifier =
-            Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier =
-                Modifier.fillMaxWidth(),
-
-            horizontalArrangement =
-                Arrangement.spacedBy(
-                    design.spacing.small
-                )
-        ) {
-            AutoScrollAction(
-                enabled =
-                    state.autoScrollEnabled,
-
-                speed =
-                    state.autoScrollSpeed,
-
-                adjusting =
-                    isAdjustingSpeed,
-
-                modifier =
-                    Modifier.weight(
-                        1f
-                    ),
-
-                onClick =
-                    onToggleAutoScroll,
-
-                onSpeedChange =
-                    onScrollSpeedChange,
-
-                onAdjustingChange = {
-                        adjusting ->
-
-                    isAdjustingSpeed =
-                        adjusting
+    /*
+     * The dial alpha is animated independently from layout.
+     *
+     * The dial always exists as the second Layout child,
+     * therefore showing it never changes the measured height
+     * of the bottom controls.
+     */
+    val dialAlpha by
+        animateFloatAsState(
+            targetValue =
+                if (isAdjustingSpeed) {
+                    1f
                 }
-            )
+                else {
+                    0f
+                },
 
-            WriteLyricsAction(
-                isSaving =
-                    state.isSaving,
+            animationSpec =
+                tween(
+                    durationMillis =
+                        if (isAdjustingSpeed) {
+                            130
+                        }
+                        else {
+                            100
+                        }
+                ),
 
-                onClick =
-                    onWriteLyrics
+            label =
+                "lyrics-speed-dial-visibility"
+        )
+
+    Layout(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(
+                    78.dp
+                ),
+
+        content = {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(
+                            78.dp
+                        ),
+
+                horizontalArrangement =
+                    Arrangement.spacedBy(
+                        design.spacing.small
+                    )
+            ) {
+                AutoScrollAction(
+                    enabled =
+                        state.autoScrollEnabled,
+
+                    speed =
+                        state.autoScrollSpeed,
+
+                    adjusting =
+                        isAdjustingSpeed,
+
+                    modifier =
+                        Modifier.weight(
+                            1f
+                        ),
+
+                    onClick =
+                        onToggleAutoScroll,
+
+                    onSpeedChange =
+                        onScrollSpeedChange,
+
+                    onAdjustingChange = {
+                            adjusting ->
+
+                        isAdjustingSpeed =
+                            adjusting
+                    }
+                )
+
+                WriteLyricsAction(
+                    isSaving =
+                        state.isSaving,
+
+                    onClick =
+                        onWriteLyrics
+                )
+            }
+
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .alpha(
+                            dialAlpha
+                        )
+            ) {
+                CameraStyleSpeedDial(
+                    speed =
+                        state.autoScrollSpeed
+                )
+            }
+        }
+    ) {
+            measurables,
+            constraints ->
+
+        if (measurables.size != 2) {
+            error(
+                "ReaderControlBar requires exactly two layout children."
             )
         }
 
-        AnimatedVisibility(
-            visible =
-                isAdjustingSpeed,
+        val requestedControlHeight =
+            78.dp.roundToPx()
 
-            modifier =
-                Modifier
-                    .align(
-                        Alignment.BottomStart
-                    )
-                    .offset(
-                        y = (-194).dp
-                    )
-                    .fillMaxWidth(),
+        val controlHeight =
+            requestedControlHeight.coerceIn(
+                constraints.minHeight,
+                constraints.maxHeight
+            )
 
-            enter =
-                fadeIn(
-                    animationSpec =
-                        tween(
-                            durationMillis = 130
-                        )
-                ),
+        val dialGap =
+            12.dp.roundToPx()
 
-            exit =
-                fadeOut(
-                    animationSpec =
-                        tween(
-                            durationMillis = 110
-                        )
+        val controlPlaceable =
+            measurables[0].measure(
+                constraints.copy(
+                    minHeight =
+                        controlHeight,
+
+                    maxHeight =
+                        controlHeight
                 )
+            )
+
+        /*
+         * The dial may use its natural 184dp height.
+         *
+         * Crucially, this height is NOT returned by layout().
+         */
+        val dialPlaceable =
+            measurables[1].measure(
+                constraints.copy(
+                    minHeight =
+                        0,
+
+                    maxHeight =
+                        Constraints.Infinity
+                )
+            )
+
+        val layoutWidth =
+            if (
+                constraints.hasBoundedWidth
+            ) {
+                constraints.maxWidth
+            }
+            else {
+                maxOf(
+                    controlPlaceable.width,
+                    dialPlaceable.width
+                )
+            }
+
+        layout(
+            width =
+                layoutWidth,
+
+            height =
+                controlHeight
         ) {
-            CameraStyleSpeedDial(
-                speed =
-                    state.autoScrollSpeed
+            controlPlaceable.placeRelative(
+                x =
+                    0,
+
+                y =
+                    0
+            )
+
+            /*
+             * Keep the bottom of the dial exactly 12dp above
+             * the fixed control row.
+             *
+             * Hidden and visible states use the same geometry.
+             */
+            dialPlaceable.placeRelative(
+                x =
+                    0,
+
+                y =
+                    -(
+                        dialPlaceable.height +
+                            dialGap
+                        )
             )
         }
     }
 }
-
 @Composable
 private fun AutoScrollAction(
     enabled: Boolean,
@@ -352,7 +463,7 @@ private fun AutoScrollAction(
                         }
                     )
                 }
-                .bouncyClickable(
+                .clickable(
                     onClick =
                         onClick
                 ),
