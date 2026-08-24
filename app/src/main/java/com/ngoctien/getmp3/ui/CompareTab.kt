@@ -32,6 +32,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,6 +68,8 @@ private enum class CompareSection {
     METADATA_ERRORS
 }
 
+
+@Suppress("UNUSED_PARAMETER")
 @Composable
 fun CompareTab(
     state: CompareUiState,
@@ -121,6 +124,33 @@ fun CompareTab(
     val selected =
         state.selectedPair
 
+    val firstPendingPair =
+        state.exactPairs
+            .firstOrNull()
+            ?: state.nearPairs
+                .firstOrNull()
+
+    /*
+     * CompareViewModel normally selects the first pair.
+     * This is a defensive UI fallback so the old list
+     * never becomes the visible entry screen.
+     */
+    LaunchedEffect(
+        selected?.id,
+        firstPendingPair?.id,
+        state.isLoading
+    ) {
+        if (
+            selected == null &&
+            firstPendingPair != null &&
+            !state.isLoading
+        ) {
+            onOpenPair(
+                firstPendingPair
+            )
+        }
+    }
+
     if (selected != null) {
         CompareDetail(
             state =
@@ -129,8 +159,8 @@ fun CompareTab(
             modifier =
                 modifier,
 
-            onBack =
-                onClosePair,
+            onSelectPair =
+                onOpenPair,
 
             onTogglePreview =
                 onTogglePreview,
@@ -148,14 +178,6 @@ fun CompareTab(
         return
     }
 
-    var selectedSection by
-        rememberSaveable {
-            mutableStateOf(
-                CompareSection
-                    .DUPLICATES
-            )
-        }
-
     AppScreenBackdrop(
         modifier =
             modifier
@@ -165,106 +187,176 @@ fun CompareTab(
                 Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
+                    .padding(
+                        horizontal =
+                            18.dp,
+
+                        vertical =
+                            18.dp
+                    ),
+
+            horizontalAlignment =
+                Alignment.CenterHorizontally
         ) {
-            CompareSectionTabs(
-                selected =
-                    selectedSection,
-
-                errorCount =
-                    repairState
-                        .errorCount,
-
-                onSelected = {
-                    selectedSection =
-                        it
-
-                    if (
-                        it ==
-                        CompareSection
-                            .METADATA_ERRORS
-                    ) {
-                        onEnsureRepair()
-                    }
-                }
-            )
-
-            Box(
+            Row(
                 modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .weight(
+                    Modifier.fillMaxWidth(),
+
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier =
+                        Modifier.weight(
                             1f
                         )
-            ) {
-                when (
-                    selectedSection
                 ) {
-                    CompareSection
-                        .DUPLICATES -> {
+                    Text(
+                        text =
+                            "DUPLICATE REVIEW",
 
-                        CompareList(
-                            state =
-                                state,
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
 
-                            modifier =
-                                Modifier
-                                    .fillMaxSize(),
+                        fontWeight =
+                            FontWeight.Black,
 
-                            onRefresh =
-                                onRefresh,
+                        color =
+                            com.ngoctien.getmp3.ui.theme
+                                .BrandPink
+                    )
 
-                            onOpenPair =
-                                onOpenPair
-                        )
-                    }
+                    Text(
+                        text =
+                            if (state.isLoading) {
+                                "Đang đối chiếu"
+                            }
+                            else {
+                                "Đã xử lý xong"
+                            },
 
-                    CompareSection
-                        .METADATA_ERRORS -> {
+                        style =
+                            MaterialTheme
+                                .typography
+                                .titleLarge,
 
-                        MetadataRepairTab(
-                            state =
-                                repairState,
-
-                            modifier =
-                                Modifier
-                                    .fillMaxSize(),
-
-                            onRefresh =
-                                onRefreshRepair,
-
-                            onFilterChange =
-                                onRepairFilterChange,
-
-                            onDownloadReplacement =
-                                onDownloadRepairReplacement,
-
-                            onYearChange =
-                                onRepairYearChange,
-
-                            onLookupYear =
-                                onLookupRepairYear,
-
-                            onSelect =
-                                onSelectRepair,
-
-                            onDismissEditor =
-                                onDismissRepair,
-
-                            onTitleChange =
-                                onRepairTitleChange,
-
-                            onArtistChange =
-                                onRepairArtistChange,
-
-                            onAlbumChange =
-                                onRepairAlbumChange,
-
-                            onSave =
-                                onSaveRepair
-                        )
-                    }
+                        fontWeight =
+                            FontWeight.Black
+                    )
                 }
             }
+
+            Spacer(
+                modifier =
+                    Modifier.weight(
+                        1f
+                    )
+            )
+
+            if (state.isLoading) {
+                CircularProgressIndicator()
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            12.dp
+                        )
+                )
+
+                Text(
+                    text =
+                        "Đang tìm các cặp có độ trùng từ 90% trở lên.",
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                )
+            }
+            else {
+                Icon(
+                    imageVector =
+                        Icons.Rounded
+                            .CheckCircle,
+
+                    contentDescription =
+                        null,
+
+                    modifier =
+                        Modifier.size(
+                            44.dp
+                        )
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            10.dp
+                        )
+                )
+
+                Text(
+                    text =
+                        state.errorMessage
+                            ?: "Không còn cặp trùng nào cần xử lý.",
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodyMedium
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            14.dp
+                        )
+                )
+
+                OutlinedButton(
+                    onClick =
+                        onRefresh
+                ) {
+                    Icon(
+                        imageVector =
+                            Icons.Rounded
+                                .Refresh,
+
+                        contentDescription =
+                            null,
+
+                        modifier =
+                            Modifier.size(
+                                17.dp
+                            )
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(
+                                6.dp
+                            )
+                    )
+
+                    Text(
+                        "Đối chiếu lại"
+                    )
+                }
+            }
+
+            Spacer(
+                modifier =
+                    Modifier.weight(
+                        1f
+                    )
+            )
         }
     }
 }
@@ -1632,7 +1724,7 @@ private fun ComparePairRow(
 private fun CompareDetail(
     state: CompareUiState,
     modifier: Modifier,
-    onBack: () -> Unit,
+    onSelectPair: (ComparePair) -> Unit,
     onTogglePreview: (CompareSide) -> Unit,
     onKeepCurrent: () -> Unit,
     onKeepReference: () -> Unit,
@@ -1657,6 +1749,347 @@ private fun CompareDetail(
                 )
                 .roundToInt()
         }
+
+
+    val pendingPairs =
+        remember(
+            state.exactPairs,
+            state.nearPairs
+        ) {
+            state.exactPairs +
+                state.nearPairs
+        }
+
+    var showPairPicker by
+        remember {
+            mutableStateOf(
+                false
+            )
+        }
+
+    if (showPairPicker) {
+        AlertDialog(
+            onDismissRequest = {
+                showPairPicker =
+                    false
+            },
+
+            title = {
+                Column {
+                    Text(
+                        text =
+                            "Bài đang trùng",
+
+                        fontWeight =
+                            FontWeight.Black
+                    )
+
+                    Text(
+                        text =
+                            "${pendingPairs.size} cặp đang chờ xử lý",
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelMedium,
+
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                    )
+                }
+            },
+
+            text = {
+                LazyColumn(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(
+                                360.dp
+                            ),
+
+                    verticalArrangement =
+                        Arrangement.spacedBy(
+                            8.dp
+                        )
+                ) {
+                    items(
+                        items =
+                            pendingPairs,
+
+                        key = {
+                            it.id
+                        }
+                    ) {
+                            candidate ->
+
+                        val candidateSelected =
+                            candidate.id ==
+                                pair.id
+
+                        val candidateScore =
+                            if (
+                                candidate.kind ==
+                                    CompareMatchKind.EXACT
+                            ) {
+                                100
+                            }
+                            else {
+                                (
+                                    candidate.score *
+                                        100
+                                    )
+                                    .roundToInt()
+                            }
+
+                        Surface(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .bouncyClickable(
+                                        pressedScale =
+                                            0.975f
+                                    ) {
+                                        showPairPicker =
+                                            false
+
+                                        if (
+                                            candidate.id !=
+                                                pair.id
+                                        ) {
+                                            onSelectPair(
+                                                candidate
+                                            )
+                                        }
+                                    },
+
+                            shape =
+                                RoundedCornerShape(
+                                    18.dp
+                                ),
+
+                            color =
+                                if (candidateSelected) {
+                                    MaterialTheme
+                                        .colorScheme
+                                        .primaryContainer
+                                        .copy(
+                                            alpha =
+                                                0.86f
+                                        )
+                                }
+                                else {
+                                    MaterialTheme
+                                        .colorScheme
+                                        .surfaceVariant
+                                        .copy(
+                                            alpha =
+                                                0.58f
+                                        )
+                                },
+
+                            border =
+                                BorderStroke(
+                                    width =
+                                        if (candidateSelected) {
+                                            1.5.dp
+                                        }
+                                        else {
+                                            1.dp
+                                        },
+
+                                    color =
+                                        if (candidateSelected) {
+                                            MaterialTheme
+                                                .colorScheme
+                                                .primary
+                                        }
+                                        else {
+                                            MaterialTheme
+                                                .colorScheme
+                                                .outlineVariant
+                                        }
+                                ),
+
+                            tonalElevation =
+                                if (candidateSelected) {
+                                    5.dp
+                                }
+                                else {
+                                    2.dp
+                                }
+                        ) {
+                            Row(
+                                modifier =
+                                    Modifier.padding(
+                                        9.dp
+                                    ),
+
+                                verticalAlignment =
+                                    Alignment.CenterVertically
+                            ) {
+                                IndexedCover(
+                                    coverPath =
+                                        candidate.current
+                                            .coverPath,
+
+                                    title =
+                                        candidate.current
+                                            .title,
+
+                                    size =
+                                        52
+                                )
+
+                                Spacer(
+                                    modifier =
+                                        Modifier.width(
+                                            9.dp
+                                        )
+                                )
+
+                                Column(
+                                    modifier =
+                                        Modifier.weight(
+                                            1f
+                                        ),
+
+                                    verticalArrangement =
+                                        Arrangement.spacedBy(
+                                            2.dp
+                                        )
+                                ) {
+                                    Text(
+                                        text =
+                                            candidate.current
+                                                .title
+                                                .ifBlank {
+                                                    "Chưa có Title"
+                                                },
+
+                                        maxLines =
+                                            1,
+
+                                        overflow =
+                                            TextOverflow
+                                                .Ellipsis,
+
+                                        fontWeight =
+                                            FontWeight.Black
+                                    )
+
+                                    Text(
+                                        text =
+                                            candidate.current
+                                                .artist
+                                                .ifBlank {
+                                                    "Chưa có Artist"
+                                                },
+
+                                        maxLines =
+                                            1,
+
+                                        overflow =
+                                            TextOverflow
+                                                .Ellipsis,
+
+                                        style =
+                                            MaterialTheme
+                                                .typography
+                                                .bodySmall,
+
+                                        color =
+                                            MaterialTheme
+                                                .colorScheme
+                                                .onSurfaceVariant
+                                    )
+
+                                    if (candidateSelected) {
+                                        Text(
+                                            text =
+                                                "Đang xử lý",
+
+                                            style =
+                                                MaterialTheme
+                                                    .typography
+                                                    .labelSmall,
+
+                                            fontWeight =
+                                                FontWeight.Bold,
+
+                                            color =
+                                                MaterialTheme
+                                                    .colorScheme
+                                                    .primary
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    shape =
+                                        RoundedCornerShape(
+                                            99.dp
+                                        ),
+
+                                    color =
+                                        MaterialTheme
+                                            .colorScheme
+                                            .surface
+                                            .copy(
+                                                alpha =
+                                                    0.56f
+                                            ),
+
+                                    border =
+                                        BorderStroke(
+                                            width =
+                                                1.dp,
+
+                                            color =
+                                                MaterialTheme
+                                                    .colorScheme
+                                                    .outlineVariant
+                                        )
+                                ) {
+                                    Text(
+                                        text =
+                                            "$candidateScore%",
+
+                                        modifier =
+                                            Modifier.padding(
+                                                horizontal =
+                                                    9.dp,
+
+                                                vertical =
+                                                    5.dp
+                                            ),
+
+                                        fontWeight =
+                                            FontWeight.Black
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showPairPicker =
+                            false
+                    }
+                ) {
+                    Text(
+                        "Đóng"
+                    )
+                }
+            }
+        )
+    }
 
     var pendingAction by
         remember {
@@ -1759,6 +2192,7 @@ private fun CompareDetail(
                     8.dp
                 )
         ) {
+
             Row(
                 modifier =
                     Modifier.fillMaxWidth(),
@@ -1766,65 +2200,43 @@ private fun CompareDetail(
                 verticalAlignment =
                     Alignment.CenterVertically
             ) {
-                TextButton(
-                    onClick =
-                        onBack,
+                Text(
+                    text =
+                        "DUPLICATE REVIEW",
 
-                    enabled =
-                        !state.isWorking
-                ) {
-                    Text(
-                        "←"
-                    )
-                }
-
-                Column(
                     modifier =
                         Modifier.weight(
                             1f
-                        )
-                ) {
-                    Text(
-                        text =
-                            "DUPLICATE REVIEW",
+                        ),
 
-                        style =
-                            MaterialTheme
-                                .typography
-                                .labelSmall,
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelMedium,
 
-                        fontWeight =
-                            FontWeight.ExtraBold,
+                    fontWeight =
+                        FontWeight.Black,
 
-                        color =
-                            MaterialTheme
-                                .colorScheme
-                                .error
-                    )
-
-                    Text(
-                        text =
-                            pair.current
-                                .title,
-
-                        maxLines =
-                            1,
-
-                        overflow =
-                            TextOverflow
-                                .Ellipsis,
-
-                        style =
-                            MaterialTheme
-                                .typography
-                                .titleLarge,
-
-                        fontWeight =
-                            FontWeight.ExtraBold
-                    )
-                }
+                    color =
+                        com.ngoctien.getmp3.ui.theme
+                            .BrandPink
+                )
 
                 Surface(
+                    modifier =
+                        Modifier
+                            .bouncyClickable(
+                                enabled =
+                                    !state.isWorking &&
+                                        pendingPairs.isNotEmpty(),
+
+                                pressedScale =
+                                    0.94f
+                            ) {
+                                showPairPicker =
+                                    true
+                            },
+
                     shape =
                         RoundedCornerShape(
                             99.dp
@@ -1836,30 +2248,70 @@ private fun CompareDetail(
                             .surfaceVariant
                             .copy(
                                 alpha =
-                                    0.70f
-                            )
-                ) {
-                    Text(
-                        text =
-                            "${state.totalPairCount} cặp",
+                                    0.76f
+                            ),
 
+                    border =
+                        BorderStroke(
+                            width =
+                                1.dp,
+
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .outlineVariant
+                        ),
+
+                    tonalElevation =
+                        4.dp,
+
+                    shadowElevation =
+                        4.dp
+                ) {
+                    Row(
                         modifier =
                             Modifier.padding(
                                 horizontal =
-                                    10.dp,
+                                    12.dp,
 
                                 vertical =
-                                    6.dp
+                                    7.dp
                             ),
 
-                        style =
-                            MaterialTheme
-                                .typography
-                                .labelMedium,
+                        verticalAlignment =
+                            Alignment.CenterVertically,
 
-                        fontWeight =
-                            FontWeight.Bold
-                    )
+                        horizontalArrangement =
+                            Arrangement.spacedBy(
+                                5.dp
+                            )
+                    ) {
+                        Text(
+                            text =
+                                "${state.totalPairCount} cặp",
+
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelMedium,
+
+                            fontWeight =
+                                FontWeight.Black
+                        )
+
+                        Text(
+                            text =
+                                "⌄",
+
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .primary,
+
+                            fontWeight =
+                                FontWeight.Black
+                        )
+                    }
                 }
             }
 
@@ -2042,7 +2494,7 @@ private fun CompareDetail(
             ) {
                 DuplicateVersionPanel(
                     label =
-                        "HIỆN TẠI",
+                        "CURRENT",
 
                     file =
                         pair.current,
