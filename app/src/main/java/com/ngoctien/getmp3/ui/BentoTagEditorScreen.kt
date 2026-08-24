@@ -345,6 +345,50 @@ internal fun BentoTagEditorScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                BrandCyan
+                                    .copy(
+                                        alpha =
+                                            0.08f
+                                    ),
+                                BrandBlue
+                                    .copy(
+                                        alpha =
+                                            0.10f
+                                    ),
+                                Color.Transparent,
+                                BrandViolet
+                                    .copy(
+                                        alpha =
+                                            0.14f
+                                    ),
+                                BrandPink
+                                    .copy(
+                                        alpha =
+                                            0.07f
+                                    )
+                            )
+                        )
+                    )
+                    .background(
+                        Brush.radialGradient(
+                            listOf(
+                                BrandBlue
+                                    .copy(
+                                        alpha =
+                                            0.12f
+                                    ),
+                                BrandViolet
+                                    .copy(
+                                        alpha =
+                                            0.06f
+                                    ),
+                                Color.Transparent
+                            )
+                        )
+                    )
                     .statusBarsPadding()
                     .navigationBarsPadding()
                     .padding(
@@ -675,7 +719,7 @@ private fun MetadataEditorCard(
                 .surface
                 .copy(
                     alpha =
-                        0.88f
+                        0.72f
                 ),
 
         border =
@@ -702,6 +746,35 @@ private fun MetadataEditorCard(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                BrandBlue
+                                    .copy(
+                                        alpha =
+                                            0.08f
+                                    ),
+                                Color.Transparent,
+                                BrandViolet
+                                    .copy(
+                                        alpha =
+                                            0.08f
+                                    )
+                            )
+                        )
+                    )
+                    .background(
+                        Brush.radialGradient(
+                            listOf(
+                                BrandCyan
+                                    .copy(
+                                        alpha =
+                                            0.055f
+                                    ),
+                                Color.Transparent
+                            )
+                        )
+                    )
                     .padding(
                         10.dp
                     ),
@@ -916,7 +989,7 @@ private fun SongPreviewCard(
                 Modifier
                     .fillMaxWidth()
                     .height(
-                        158.dp
+                        148.dp
                     ),
 
             shape =
@@ -954,18 +1027,37 @@ private fun SongPreviewCard(
                         .background(
                             Brush.linearGradient(
                                 listOf(
+                                    colors
+                                        .surfaceVariant,
                                     BrandBlue
                                         .copy(
                                             alpha =
-                                                0.46f
+                                                0.44f
                                         ),
                                     BrandViolet
                                         .copy(
                                             alpha =
-                                                0.32f
+                                                0.36f
                                         ),
                                     colors
                                         .surfaceVariant
+                                )
+                            )
+                        )
+                        .background(
+                            Brush.radialGradient(
+                                listOf(
+                                    BrandCyan
+                                        .copy(
+                                            alpha =
+                                                0.20f
+                                        ),
+                                    BrandViolet
+                                        .copy(
+                                            alpha =
+                                                0.10f
+                                        ),
+                                    Color.Transparent
                                 )
                             )
                         )
@@ -982,10 +1074,17 @@ private fun SongPreviewCard(
 
                     modifier =
                         Modifier
-                            .fillMaxSize(),
+                            .fillMaxSize()
+                            .padding(
+                                horizontal =
+                                    10.dp,
+
+                                vertical =
+                                    5.dp
+                            ),
 
                     contentScale =
-                        ContentScale.Crop
+                        ContentScale.Inside
                 )
 
                 /*
