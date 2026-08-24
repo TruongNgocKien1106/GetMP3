@@ -4,11 +4,15 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ngoctien.getmp3.settings.AppThemeMode
 import com.ngoctien.getmp3.ui.AppDestination
 import com.ngoctien.getmp3.ui.BentoHome
+import com.ngoctien.getmp3.ui.LibrarySyncProgressScreen
 import com.ngoctien.getmp3.ui.design.UiStyle
 import com.ngoctien.getmp3.ui.skin.AppSkinContent
 import com.ngoctien.getmp3.ui.skin.compact.CompactHome
@@ -30,6 +34,13 @@ internal fun HomeDestination(
     onQuickDownloadFromClipboard: () -> Unit,
     onNavigate: (AppDestination) -> Unit
 ) {
+    var showLibrarySyncProgress by
+        rememberSaveable {
+            mutableStateOf(
+                false
+            )
+        }
+
     val systemDarkTheme =
         isSystemInDarkTheme()
 
@@ -145,8 +156,20 @@ internal fun HomeDestination(
             settings
                 .hasLibraryFolder
         ) {
-            settingsViewModel
-                .rebuildLibraryIndex()
+            showLibrarySyncProgress =
+                true
+
+            /*
+             * When a scan is already running, tapping Sync only
+             * reopens the progress screen. It must not restart it.
+             */
+            if (
+                !libraryIndexState
+                    .isScanning
+            ) {
+                settingsViewModel
+                    .rebuildLibraryIndex()
+            }
         } else {
             openSettings()
         }
@@ -164,58 +187,83 @@ internal fun HomeDestination(
             uiStyle,
 
         bento = {
-            BentoHome(
-                inboxFolderName =
-                    settings.inboxFolderName,
+            if (
+                showLibrarySyncProgress
+            ) {
+                LibrarySyncProgressScreen(
+                    state =
+                        libraryIndexState,
 
-                librarySongCount =
-                    libraryIndexState
-                        .totalFiles,
+                    libraryFolderName =
+                        settings.libraryFolderName,
 
-                attentionCount =
-                    repairState
-                        .attentionCount,
+                    modifier =
+                        modifier,
 
-                duplicateCount =
-                    duplicateCount,
+                    onClose = {
+                        showLibrarySyncProgress =
+                            false
+                    },
 
-                isLibrarySyncing =
-                    libraryIndexState
-                        .isScanning,
+                    onRetry = {
+                        settingsViewModel
+                            .rebuildLibraryIndex()
+                    }
+                )
+            } else {
+                BentoHome(
+                    inboxFolderName =
+                        settings.inboxFolderName,
 
-                isDarkTheme =
-                    isDarkTheme,
+                    librarySongCount =
+                        libraryIndexState
+                            .totalFiles,
 
-                modifier =
-                    modifier,
+                    attentionCount =
+                        repairState
+                            .attentionCount,
 
-                onOpenInbox =
-                    openInbox,
+                    duplicateCount =
+                        duplicateCount,
 
-                onOpenLibrary =
-                    openLibrary,
+                    isLibrarySyncing =
+                        libraryIndexState
+                            .isScanning,
 
-                onOpenLyrics =
-                    openLyrics,
+                    isDarkTheme =
+                        isDarkTheme,
 
-                onOpenTagEditor =
-                    openTagEditor,
+                    modifier =
+                        modifier,
 
-                onOpenCompare =
-                    openCompare,
+                    onOpenInbox =
+                        openInbox,
 
-                onOpenSettings =
-                    openSettings,
+                    onOpenLibrary =
+                        openLibrary,
 
-                onToggleTheme =
-                    toggleTheme,
+                    onOpenLyrics =
+                        openLyrics,
 
-                onSyncLibrary =
-                    syncLibrary,
+                    onOpenTagEditor =
+                        openTagEditor,
 
-                onQuickDownloadFromClipboard =
-                    onQuickDownloadFromClipboard
-            )
+                    onOpenCompare =
+                        openCompare,
+
+                    onOpenSettings =
+                        openSettings,
+
+                    onToggleTheme =
+                        toggleTheme,
+
+                    onSyncLibrary =
+                        syncLibrary,
+
+                    onQuickDownloadFromClipboard =
+                        onQuickDownloadFromClipboard
+                )
+            }
         },
 
         compact = {

@@ -290,8 +290,10 @@ internal fun BentoHome(
                         Icons.Rounded.Sync,
                     accent =
                         Color(0xFF6495FF),
+                    // Keep this card tappable so an active scan
+                    // can reopen the progress screen.
                     enabled =
-                        !isLibrarySyncing,
+                        true,
                     isDarkTheme =
                         isDarkTheme,
                     modifier =
