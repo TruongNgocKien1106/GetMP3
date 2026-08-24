@@ -7,6 +7,8 @@ data class MediaIndexProgress(
     val changedFiles: Int = 0,
     val skippedFiles: Int = 0,
     val failedFiles: Int = 0,
+    val compliantFiles: Int = 0,
+    val normalizationFiles: Int = 0,
     val currentFileName: String = ""
 ) {
     val progressFraction: Float

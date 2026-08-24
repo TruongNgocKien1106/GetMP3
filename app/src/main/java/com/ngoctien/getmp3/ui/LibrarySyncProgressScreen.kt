@@ -695,12 +695,12 @@ private fun SyncStatsGrid(
             ) {
                 SyncStatCard(
                     label =
-                        "Đã quét",
+                        "Chuẩn",
                     value =
-                        state.processedFiles
+                        state.compliantFiles
                             .toString(),
                     accent =
-                        BrandBlue,
+                        BrandCyan,
                     modifier =
                         Modifier.width(
                             cardWidth
@@ -709,12 +709,14 @@ private fun SyncStatsGrid(
 
                 SyncStatCard(
                     label =
-                        "Tổng file",
+                        "Cần chuẩn hóa",
                     value =
-                        state.totalFiles
+                        state.normalizationFiles
                             .toString(),
                     accent =
-                        BrandViolet,
+                        MaterialTheme
+                            .colorScheme
+                            .tertiary,
                     modifier =
                         Modifier.width(
                             cardWidth
@@ -734,7 +736,7 @@ private fun SyncStatsGrid(
                     value =
                         "${state.newFiles} / ${state.changedFiles}",
                     accent =
-                        BrandCyan,
+                        BrandBlue,
                     modifier =
                         Modifier.width(
                             cardWidth
@@ -743,9 +745,9 @@ private fun SyncStatsGrid(
 
                 SyncStatCard(
                     label =
-                        "Bỏ qua / lỗi",
+                        "Lỗi / bỏ qua",
                     value =
-                        "${state.skippedFiles} / ${state.failedFiles}",
+                        "${state.failedFiles} / ${state.skippedFiles}",
                     accent =
                         if (
                             state.failedFiles > 0
@@ -754,7 +756,7 @@ private fun SyncStatsGrid(
                                 .colorScheme
                                 .error
                         } else {
-                            BrandBlue
+                            BrandViolet
                         },
                     modifier =
                         Modifier.width(

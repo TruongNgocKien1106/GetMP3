@@ -62,6 +62,10 @@ interface MediaIndexDao {
             OR TRIM(tagArtist) = ''
             OR TRIM(album) = ''
             OR TRIM(year) = ''
+            OR (
+                metadataErrorFields IS NOT NULL
+                AND TRIM(metadataErrorFields) <> ''
+            )
         ORDER BY
             CASE source
                 WHEN 'REFERENCE' THEN 0

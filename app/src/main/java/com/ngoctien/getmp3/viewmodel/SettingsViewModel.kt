@@ -31,6 +31,8 @@ data class CompareIndexUiState(
     val changedFiles: Int = 0,
     val skippedFiles: Int = 0,
     val failedFiles: Int = 0,
+    val compliantFiles: Int = 0,
+    val normalizationFiles: Int = 0,
     val coverFiles: Int = 0,
     val artistCount: Int = 0,
     val albumCount: Int = 0,
@@ -278,6 +280,8 @@ fun setDownloadFolder(
                             changedFiles = 0,
                             skippedFiles = 0,
                             failedFiles = 0,
+                            compliantFiles = 0,
+                            normalizationFiles = 0,
                             currentFileName = "",
                             message =
                                 "Đang kiểm tra Library...",
@@ -379,6 +383,10 @@ fun setDownloadFolder(
                         progress.skippedFiles,
                     failedFiles =
                         progress.failedFiles,
+                    compliantFiles =
+                        progress.compliantFiles,
+                    normalizationFiles =
+                        progress.normalizationFiles,
                     currentFileName =
                         progress.currentFileName,
                     message =
@@ -405,6 +413,10 @@ fun setDownloadFolder(
                 mediaIndexRepository
                     .referenceSummary()
 
+            val complianceSummary =
+                mediaIndexRepository
+                    .referenceComplianceSummary()
+
             mutableCompareIndexState.value =
                 if (
                     summary != null &&
@@ -417,7 +429,14 @@ fun setDownloadFolder(
                         processedFiles =
                             summary.totalFiles,
                         failedFiles =
-                            summary.failedFiles,
+                            complianceSummary
+                                .brokenFiles,
+                        compliantFiles =
+                            complianceSummary
+                                .compliantFiles,
+                        normalizationFiles =
+                            complianceSummary
+                                .normalizationFiles,
                         coverFiles =
                             summary.coverFiles,
                         artistCount =

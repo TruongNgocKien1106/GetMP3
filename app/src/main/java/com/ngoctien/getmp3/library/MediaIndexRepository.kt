@@ -214,6 +214,20 @@ class MediaIndexRepository(
             )
         }
 
+    suspend fun referenceComplianceSummary():
+        MediaComplianceSummary =
+        withContext(
+            Dispatchers.IO
+        ) {
+            MediaCompliancePolicy
+                .summarize(
+                    dao.getBySource(
+                        MediaIndexSource
+                            .REFERENCE
+                    )
+                )
+        }
+
     // ========================================================
     // DOWNLOAD / CURRENT LIBRARY
     // ========================================================
@@ -1411,6 +1425,8 @@ class MediaIndexRepository(
         var changedFiles = 0
         var skippedFiles = 0
         var failedFiles = 0
+        var compliantFiles = 0
+        var normalizationFiles = 0
 
         val pending =
             ArrayList<IndexedMediaEntity>(
@@ -1464,9 +1480,20 @@ class MediaIndexRepository(
                 if (unchanged) {
                     skippedFiles++
 
-                    old.copy(
-                        scanGeneration =
-                            generation
+                    applyCompliance(
+                        entity =
+                            old.copy(
+                                scanGeneration =
+                                    generation
+                            ),
+
+                        id3MajorVersion =
+                            readId3MajorVersion(
+                                item.uri
+                            ),
+
+                        id3AuditKnown =
+                            true
                     )
                 } else {
                     try {
@@ -1505,12 +1532,22 @@ class MediaIndexRepository(
                     }
                 }
 
-            if (
-                MediaMetadataStatus.isError(
-                    entity.metadataStatus
-                )
+            when (
+                MediaCompliancePolicy
+                    .evaluate(entity)
+                    .level
             ) {
-                failedFiles++
+                MediaComplianceLevel
+                    .COMPLIANT ->
+                    compliantFiles++
+
+                MediaComplianceLevel
+                    .NEEDS_NORMALIZATION ->
+                    normalizationFiles++
+
+                MediaComplianceLevel
+                    .BROKEN ->
+                    failedFiles++
             }
 
             pending.add(entity)
@@ -1550,6 +1587,12 @@ class MediaIndexRepository(
 
                         failedFiles =
                             failedFiles,
+
+                        compliantFiles =
+                            compliantFiles,
+
+                        normalizationFiles =
+                            normalizationFiles,
 
                         currentFileName =
                             item.displayName
@@ -1592,6 +1635,8 @@ class MediaIndexRepository(
                 changedFiles = changedFiles,
                 skippedFiles = skippedFiles,
                 failedFiles = failedFiles,
+                compliantFiles = compliantFiles,
+                normalizationFiles = normalizationFiles,
                 currentFileName = ""
             )
         )
@@ -1964,7 +2009,8 @@ class MediaIndexRepository(
                     oldCoverPath
             )
 
-        return buildEntity(
+        val entity =
+            buildEntity(
             source =
                 source,
 
@@ -2040,6 +2086,125 @@ class MediaIndexRepository(
             coverPath =
                 coverPath
         )
+
+        return applyCompliance(
+            entity =
+                entity,
+
+            id3MajorVersion =
+                id3.majorVersion,
+
+            id3AuditKnown =
+                true
+        )
+    }
+
+
+
+    private fun applyCompliance(
+        entity: IndexedMediaEntity,
+        id3MajorVersion: Int?,
+        id3AuditKnown: Boolean
+    ): IndexedMediaEntity {
+
+        val compliance =
+            MediaCompliancePolicy
+                .evaluate(
+                    item =
+                        entity,
+
+                    id3MajorVersion =
+                        id3MajorVersion,
+
+                    id3AuditKnown =
+                        id3AuditKnown
+                )
+
+        val existingStructuralError =
+            entity.metadataErrorCode
+                ?.takeUnless {
+                    it ==
+                    "NON_COMPLIANT"
+                }
+
+        val existingStructuralMessage =
+            entity.metadataErrorMessage
+                ?.takeIf {
+                    existingStructuralError !=
+                        null
+                }
+
+        return entity.copy(
+            metadataErrorCode =
+                existingStructuralError
+                    ?: compliance
+                        .issues
+                        .takeIf {
+                            it.isNotEmpty()
+                        }
+                        ?.let {
+                            "NON_COMPLIANT"
+                        },
+
+            metadataErrorFields =
+                compliance
+                    .issueFields,
+
+            metadataErrorMessage =
+                existingStructuralMessage
+                    ?: compliance
+                        .message
+        )
+    }
+
+
+    private fun readId3MajorVersion(
+        uriText: String
+    ): Int? {
+
+        return runCatching {
+            resolver.openInputStream(
+                Uri.parse(
+                    uriText
+                )
+            )?.use { stream ->
+
+                val header =
+                    ByteArray(4)
+
+                val count =
+                    readFully(
+                        input =
+                            stream,
+
+                        buffer =
+                            header,
+
+                        offset =
+                            0,
+
+                        length =
+                            header.size
+                    )
+
+                if (
+                    count < 4 ||
+                    header[0].toInt() !=
+                    'I'.code ||
+                    header[1].toInt() !=
+                    'D'.code ||
+                    header[2].toInt() !=
+                    '3'.code
+                ) {
+                    null
+                } else {
+                    header[3]
+                        .toInt() and
+                        0xff
+                }
+            }
+        }
+            .getOrNull()
     }
 
 
@@ -2167,6 +2332,11 @@ class MediaIndexRepository(
                     )
                 }
 
+
+                val id3MajorVersion =
+                    header[3]
+                        .toInt() and
+                        0xff
 
                 // =============================================
                 // SYNCHSAFE ID3 SIZE
@@ -2539,6 +2709,9 @@ class MediaIndexRepository(
 
                     pictureData =
                         pictureData,
+
+                    majorVersion =
+                        id3MajorVersion,
 
                     status =
                         if (missing) {
@@ -3294,6 +3467,9 @@ class MediaIndexRepository(
             null,
 
         val pictureData: ByteArray? =
+            null,
+
+        val majorVersion: Int? =
             null,
 
         val status: String =
