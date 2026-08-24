@@ -123,7 +123,8 @@ fun CompareTab(
 
     if (selected != null) {
         CompareDetail(
-            state = state,
+            state =
+                state,
 
             modifier =
                 modifier,
@@ -155,108 +156,113 @@ fun CompareTab(
             )
         }
 
-    Column(
+    AppScreenBackdrop(
         modifier =
             modifier
-                .fillMaxSize()
-                .statusBarsPadding()
     ) {
-        CompareSectionTabs(
-            selected =
-                selectedSection,
-
-            errorCount =
-                repairState
-                    .errorCount,
-
-            onSelected = {
-                selectedSection =
-                    it
-
-                if (
-                    it ==
-                    CompareSection
-                        .METADATA_ERRORS
-                ) {
-                    onEnsureRepair()
-                }
-            }
-        )
-
-        Box(
+        Column(
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .weight(
-                        1f
-                    )
+                    .fillMaxSize()
+                    .statusBarsPadding()
         ) {
-            when (
-                selectedSection
-            ) {
-                CompareSection
-                    .DUPLICATES -> {
+            CompareSectionTabs(
+                selected =
+                    selectedSection,
 
-                    CompareList(
-                        state =
-                            state,
+                errorCount =
+                    repairState
+                        .errorCount,
 
-                        modifier =
-                            Modifier
-                                .fillMaxSize(),
+                onSelected = {
+                    selectedSection =
+                        it
 
-                        onRefresh =
-                            onRefresh,
-
-                        onOpenPair =
-                            onOpenPair
-                    )
+                    if (
+                        it ==
+                        CompareSection
+                            .METADATA_ERRORS
+                    ) {
+                        onEnsureRepair()
+                    }
                 }
+            )
 
-                CompareSection
-                    .METADATA_ERRORS -> {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(
+                            1f
+                        )
+            ) {
+                when (
+                    selectedSection
+                ) {
+                    CompareSection
+                        .DUPLICATES -> {
 
-                    MetadataRepairTab(
-                        state =
-                            repairState,
+                        CompareList(
+                            state =
+                                state,
 
-                        modifier =
-                            Modifier
-                                .fillMaxSize(),
+                            modifier =
+                                Modifier
+                                    .fillMaxSize(),
 
-                        onRefresh =
-                            onRefreshRepair,
+                            onRefresh =
+                                onRefresh,
 
-                        onFilterChange =
-                            onRepairFilterChange,
+                            onOpenPair =
+                                onOpenPair
+                        )
+                    }
 
-                        onDownloadReplacement =
-                            onDownloadRepairReplacement,
+                    CompareSection
+                        .METADATA_ERRORS -> {
 
-                        onYearChange =
-                            onRepairYearChange,
+                        MetadataRepairTab(
+                            state =
+                                repairState,
 
-                        onLookupYear =
-                            onLookupRepairYear,
+                            modifier =
+                                Modifier
+                                    .fillMaxSize(),
 
-                        onSelect =
-                            onSelectRepair,
+                            onRefresh =
+                                onRefreshRepair,
 
-                        onDismissEditor =
-                            onDismissRepair,
+                            onFilterChange =
+                                onRepairFilterChange,
 
-                        onTitleChange =
-                            onRepairTitleChange,
+                            onDownloadReplacement =
+                                onDownloadRepairReplacement,
 
-                        onArtistChange =
-                            onRepairArtistChange,
+                            onYearChange =
+                                onRepairYearChange,
 
-                        onAlbumChange =
-                            onRepairAlbumChange,
+                            onLookupYear =
+                                onLookupRepairYear,
 
-                        onSave =
-                            onSaveRepair
-                    )
+                            onSelect =
+                                onSelectRepair,
+
+                            onDismissEditor =
+                                onDismissRepair,
+
+                            onTitleChange =
+                                onRepairTitleChange,
+
+                            onArtistChange =
+                                onRepairArtistChange,
+
+                            onAlbumChange =
+                                onRepairAlbumChange,
+
+                            onSave =
+                                onSaveRepair
+                        )
+                    }
                 }
             }
         }
@@ -785,6 +791,11 @@ private fun CompareSectionHeader(
     expanded: Boolean,
     onClick: (() -> Unit)?
 ) {
+    val exact =
+        title.startsWith(
+            "Trùng hoàn toàn"
+        )
+
     Surface(
         modifier =
             Modifier
@@ -792,50 +803,122 @@ private fun CompareSectionHeader(
                 .then(
                     if (onClick != null) {
                         Modifier.bouncyClickable(
-                            onClick = onClick
+                            onClick =
+                                onClick
                         )
-                    } else {
+                    }
+                    else {
                         Modifier
                     }
                 ),
+
         shape =
-            RoundedCornerShape(16.dp),
+            RoundedCornerShape(
+                17.dp
+            ),
+
         color =
-            MaterialTheme
-                .colorScheme
-                .primaryContainer
+            if (exact) {
+                MaterialTheme
+                    .colorScheme
+                    .primaryContainer
+                    .copy(
+                        alpha =
+                            0.72f
+                    )
+            }
+            else {
+                MaterialTheme
+                    .colorScheme
+                    .surfaceVariant
+                    .copy(
+                        alpha =
+                            0.58f
+                    )
+            },
+
+        border =
+            BorderStroke(
+                width =
+                    1.dp,
+
+                color =
+                    if (exact) {
+                        MaterialTheme
+                            .colorScheme
+                            .primary
+                            .copy(
+                                alpha =
+                                    0.38f
+                            )
+                    }
+                    else {
+                        MaterialTheme
+                            .colorScheme
+                            .outlineVariant
+                    }
+            ),
+
+        tonalElevation =
+            2.dp
     ) {
         Row(
             modifier =
                 Modifier.padding(
-                    horizontal = 13.dp,
-                    vertical = 9.dp
+                    horizontal =
+                        14.dp,
+
+                    vertical =
+                        9.dp
                 ),
+
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
             Column(
                 modifier =
-                    Modifier.weight(1f)
+                    Modifier.weight(
+                        1f
+                    )
             ) {
                 Text(
-                    text = "$title · $count",
+                    text =
+                        "$title · $count",
+
                     fontWeight =
-                        FontWeight.Bold
+                        FontWeight.ExtraBold
                 )
 
                 Text(
-                    text = subtitle,
+                    text =
+                        subtitle,
+
                     style =
                         MaterialTheme
                             .typography
-                            .labelSmall
+                            .labelSmall,
+
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
                 )
             }
 
             if (onClick != null) {
                 Text(
-                    if (expanded) "▲" else "▼"
+                    text =
+                        if (expanded) {
+                            "▲"
+                        }
+                        else {
+                            "▼"
+                        },
+
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
                 )
             }
         }
@@ -847,71 +930,149 @@ private fun ComparePairRow(
     pair: ComparePair,
     onClick: () -> Unit
 ) {
+    val exact =
+        pair.kind ==
+            CompareMatchKind.EXACT
+
+    val score =
+        if (exact) {
+            100
+        }
+        else {
+            (
+                pair.score *
+                    100
+                )
+                .roundToInt()
+        }
+
     Surface(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .bouncyClickable(onClick = onClick),
+                .bouncyClickable(
+                    onClick =
+                        onClick
+                ),
+
         shape =
-            RoundedCornerShape(18.dp),
-        tonalElevation = 3.dp,
+            RoundedCornerShape(
+                19.dp
+            ),
+
+        color =
+            MaterialTheme
+                .colorScheme
+                .surface
+                .copy(
+                    alpha =
+                        0.74f
+                ),
+
+        tonalElevation =
+            3.dp,
+
+        shadowElevation =
+            4.dp,
+
         border =
             BorderStroke(
-                width = 1.dp,
+                width =
+                    1.dp,
+
                 color =
-                    MaterialTheme
-                        .colorScheme
-                        .outlineVariant
+                    if (exact) {
+                        MaterialTheme
+                            .colorScheme
+                            .primary
+                            .copy(
+                                alpha =
+                                    0.38f
+                            )
+                    }
+                    else {
+                        MaterialTheme
+                            .colorScheme
+                            .outlineVariant
+                    }
             )
     ) {
         Row(
             modifier =
-                Modifier.padding(9.dp),
+                Modifier.padding(
+                    9.dp
+                ),
+
             verticalAlignment =
                 Alignment.CenterVertically
         ) {
             IndexedCover(
                 coverPath =
-                    pair.current.coverPath,
+                    pair.current
+                        .coverPath,
+
                 title =
-                    pair.current.title,
-                size = 58
+                    pair.current
+                        .title,
+
+                size =
+                    58
             )
 
             Spacer(
                 modifier =
-                    Modifier.width(10.dp)
+                    Modifier.width(
+                        10.dp
+                    )
             )
 
             Column(
                 modifier =
-                    Modifier.weight(1f),
+                    Modifier.weight(
+                        1f
+                    ),
+
                 verticalArrangement =
-                    Arrangement.spacedBy(2.dp)
+                    Arrangement.spacedBy(
+                        2.dp
+                    )
             ) {
                 Text(
                     text =
-                        pair.current.title,
-                    maxLines = 1,
+                        pair.current
+                            .title,
+
+                    maxLines =
+                        1,
+
                     overflow =
-                        TextOverflow.Ellipsis,
+                        TextOverflow
+                            .Ellipsis,
+
                     fontWeight =
-                        FontWeight.Bold
+                        FontWeight.ExtraBold
                 )
 
                 Text(
                     text =
-                        pair.current.artist
+                        pair.current
+                            .artist
                             .ifBlank {
                                 "Chưa xác định Artist"
                             },
-                    maxLines = 1,
+
+                    maxLines =
+                        1,
+
                     overflow =
-                        TextOverflow.Ellipsis,
+                        TextOverflow
+                            .Ellipsis,
+
                     style =
                         MaterialTheme
                             .typography
                             .bodySmall,
+
                     color =
                         MaterialTheme
                             .colorScheme
@@ -920,15 +1081,43 @@ private fun ComparePairRow(
 
                 Text(
                     text =
-                        "Album: ${pair.current.album.ifBlank { "Chưa có" }} · " +
-                            "Year: ${pair.current.year.ifBlank { "—" }}",
-                    maxLines = 1,
+                        buildString {
+                            append(
+                                pair.current
+                                    .album
+                                    .ifBlank {
+                                        "Chưa có Album"
+                                    }
+                            )
+
+                            val year =
+                                pair.current
+                                    .year
+                                    .trim()
+
+                            if (year.isNotBlank()) {
+                                append(
+                                    " · "
+                                )
+
+                                append(
+                                    year
+                                )
+                            }
+                        },
+
+                    maxLines =
+                        1,
+
                     overflow =
-                        TextOverflow.Ellipsis,
+                        TextOverflow
+                            .Ellipsis,
+
                     style =
                         MaterialTheme
                             .typography
                             .labelSmall,
+
                     color =
                         MaterialTheme
                             .colorScheme
@@ -938,33 +1127,49 @@ private fun ComparePairRow(
 
             Surface(
                 shape =
-                    RoundedCornerShape(12.dp),
+                    RoundedCornerShape(
+                        99.dp
+                    ),
+
                 color =
-                    MaterialTheme
-                        .colorScheme
-                        .secondaryContainer
+                    if (exact) {
+                        MaterialTheme
+                            .colorScheme
+                            .secondaryContainer
+                    }
+                    else {
+                        MaterialTheme
+                            .colorScheme
+                            .surfaceVariant
+                    }
             ) {
                 Text(
                     text =
-                        if (
-                            pair.kind ==
-                            CompareMatchKind.EXACT
-                        ) {
-                            "100%"
-                        } else {
-                            "${(pair.score * 100).roundToInt()}%"
-                        },
+                        "$score%",
+
                     modifier =
                         Modifier.padding(
-                            horizontal = 8.dp,
-                            vertical = 4.dp
+                            horizontal =
+                                10.dp,
+
+                            vertical =
+                                6.dp
                         ),
+
                     fontWeight =
-                        FontWeight.Bold,
+                        FontWeight.ExtraBold,
+
                     color =
-                        MaterialTheme
-                            .colorScheme
-                            .onSecondaryContainer
+                        if (exact) {
+                            MaterialTheme
+                                .colorScheme
+                                .onSecondaryContainer
+                        }
+                        else {
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                        }
                 )
             }
         }
@@ -985,6 +1190,22 @@ private fun CompareDetail(
         state.selectedPair
             ?: return
 
+    val exact =
+        pair.kind ==
+            CompareMatchKind.EXACT
+
+    val similarity =
+        if (exact) {
+            100
+        }
+        else {
+            (
+                pair.score *
+                    100
+                )
+                .roundToInt()
+        }
+
     var pendingAction by
         remember {
             mutableStateOf<PendingCompareAction?>(
@@ -993,415 +1214,1127 @@ private fun CompareDetail(
         }
 
     pendingAction
-        ?.let { action ->
-            val keepNew =
+        ?.let {
+                action ->
+
+            val keepCurrent =
                 action ==
                     PendingCompareAction
                         .KEEP_CURRENT
 
             AlertDialog(
                 onDismissRequest = {
-                    pendingAction = null
+                    pendingAction =
+                        null
                 },
+
                 title = {
                     Text(
-                        if (keepNew) {
-                            "Giữ bản mới?"
-                        } else {
-                            "Giữ bản cũ?"
+                        if (keepCurrent) {
+                            "Giữ bản hiện tại?"
+                        }
+                        else {
+                            "Giữ bản Library?"
                         }
                     )
                 },
+
                 text = {
                     Text(
-                        if (keepNew) {
-                            "Bản mới sẽ thay file trong kho đối chiếu. App copy + kiểm tra đủ byte trước khi bỏ bản cũ."
-                        } else {
-                            "Bản mới trong thư mục tải sẽ bị xóa; bản trong kho giữ nguyên."
+                        if (keepCurrent) {
+                            "Bản hiện tại sẽ thay file trong Library sau khi copy và kiểm tra hoàn tất."
+                        }
+                        else {
+                            "Bản hiện tại sẽ bị loại và file trong Library được giữ nguyên."
                         }
                     )
                 },
+
                 confirmButton = {
                     Button(
                         onClick = {
-                            pendingAction = null
+                            pendingAction =
+                                null
 
-                            if (keepNew) {
+                            if (keepCurrent) {
                                 onKeepCurrent()
-                            } else {
+                            }
+                            else {
                                 onKeepReference()
                             }
                         }
                     ) {
-                        Text("Xác nhận")
+                        Text(
+                            "Xác nhận"
+                        )
                     }
                 },
+
                 dismissButton = {
                     TextButton(
                         onClick = {
-                            pendingAction = null
+                            pendingAction =
+                                null
                         }
                     ) {
-                        Text("Hủy")
+                        Text(
+                            "Hủy"
+                        )
                     }
                 }
             )
         }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(
-                horizontal = 12.dp,
-                vertical = 4.dp
-            ),
-        verticalArrangement =
-            Arrangement.spacedBy(7.dp)
+    AppScreenBackdrop(
+        modifier =
+            modifier
     ) {
-        Row(
+        Column(
             modifier =
-                Modifier.fillMaxWidth(),
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
-            TextButton(
-                onClick = onBack,
-                enabled =
-                    !state.isWorking
-            ) {
-                Text("←")
-            }
+                Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(
+                        horizontal =
+                            12.dp,
 
-            Column(
-                modifier =
-                    Modifier.weight(1f)
-            ) {
-                Text(
-                    text =
-                        pair.current.title,
-                    maxLines = 1,
-                    overflow =
-                        TextOverflow.Ellipsis,
-                    style =
-                        MaterialTheme
-                            .typography
-                            .titleMedium,
-                    fontWeight =
-                        FontWeight.Bold
+                        vertical =
+                            7.dp
+                    ),
+
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    8.dp
                 )
+        ) {
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
 
-                Text(
-                    text =
-                        if (
-                            pair.kind ==
-                            CompareMatchKind.EXACT
-                        ) {
-                            "${pair.current.artist} · Trùng hoàn toàn"
-                        } else {
-                            "${pair.current.artist} · ${(pair.score * 100).roundToInt()}%"
-                        },
-                    maxLines = 1,
-                    overflow =
-                        TextOverflow.Ellipsis,
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelSmall,
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+                TextButton(
+                    onClick =
+                        onBack,
+
+                    enabled =
+                        !state.isWorking
+                ) {
+                    Text(
+                        "←"
+                    )
+                }
+
+                Column(
+                    modifier =
+                        Modifier.weight(
+                            1f
+                        )
+                ) {
+                    Text(
+                        text =
+                            "DUPLICATE REVIEW",
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
+
+                        fontWeight =
+                            FontWeight.ExtraBold,
+
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .error
+                    )
+
+                    Text(
+                        text =
+                            pair.current
+                                .title,
+
+                        maxLines =
+                            1,
+
+                        overflow =
+                            TextOverflow
+                                .Ellipsis,
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .titleLarge,
+
+                        fontWeight =
+                            FontWeight.ExtraBold
+                    )
+                }
+
+                Surface(
+                    shape =
+                        RoundedCornerShape(
+                            99.dp
+                        ),
+
                     color =
                         MaterialTheme
                             .colorScheme
-                            .onSurfaceVariant
-                )
+                            .surfaceVariant
+                            .copy(
+                                alpha =
+                                    0.70f
+                            )
+                ) {
+                    Text(
+                        text =
+                            "${state.totalPairCount} cặp",
+
+                        modifier =
+                            Modifier.padding(
+                                horizontal =
+                                    10.dp,
+
+                                vertical =
+                                    6.dp
+                            ),
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelMedium,
+
+                        fontWeight =
+                            FontWeight.Bold
+                    )
+                }
             }
-        }
 
-        VersionCard(
-            label = "BẢN MỚI",
-            file = pair.current,
-            playing =
-                state.playingSide ==
-                    CompareSide.CURRENT,
-            enabled =
-                !state.isWorking,
-            onPlay = {
-                onTogglePreview(
-                    CompareSide.CURRENT
-                )
-            }
-        )
+            Surface(
+                modifier =
+                    Modifier.fillMaxWidth(),
 
-        VersionCard(
-            label = "BẢN CŨ / ĐỐI CHIẾU",
-            file = pair.reference,
-            playing =
-                state.playingSide ==
-                    CompareSide.REFERENCE,
-            enabled =
-                !state.isWorking,
-            onPlay = {
-                onTogglePreview(
-                    CompareSide.REFERENCE
-                )
-            }
-        )
+                shape =
+                    RoundedCornerShape(
+                        20.dp
+                    ),
 
-        Spacer(
-            modifier =
-                Modifier.weight(1f)
-        )
-
-        Button(
-            onClick = {
-                val next =
-                    if (
-                        state.playingSide ==
-                        CompareSide.CURRENT
-                    ) {
-                        CompareSide.REFERENCE
-                    } else {
-                        CompareSide.CURRENT
+                color =
+                    if (exact) {
+                        MaterialTheme
+                            .colorScheme
+                            .primaryContainer
+                            .copy(
+                                alpha =
+                                    0.70f
+                            )
                     }
+                    else {
+                        MaterialTheme
+                            .colorScheme
+                            .errorContainer
+                            .copy(
+                                alpha =
+                                    0.42f
+                            )
+                    },
 
-                onTogglePreview(next)
-            },
-            enabled =
-                !state.isWorking,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(40.dp)
-        ) {
-            Text("⇆ Đổi nhanh A / B")
-        }
+                border =
+                    BorderStroke(
+                        width =
+                            1.dp,
 
-        Row(
-            modifier =
-                Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.spacedBy(7.dp)
-        ) {
-            Button(
+                        color =
+                            if (exact) {
+                                MaterialTheme
+                                    .colorScheme
+                                    .primary
+                                    .copy(
+                                        alpha =
+                                            0.46f
+                                    )
+                            }
+                            else {
+                                MaterialTheme
+                                    .colorScheme
+                                    .error
+                                    .copy(
+                                        alpha =
+                                            0.38f
+                                    )
+                            }
+                    ),
+
+                tonalElevation =
+                    3.dp
+            ) {
+                Row(
+                    modifier =
+                        Modifier.padding(
+                            horizontal =
+                                14.dp,
+
+                            vertical =
+                                11.dp
+                        ),
+
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+                    Text(
+                        text =
+                            "Similarity",
+
+                        modifier =
+                            Modifier.weight(
+                                1f
+                            ),
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelMedium,
+
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                    )
+
+                    Text(
+                        text =
+                            "$similarity%",
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .headlineSmall,
+
+                        fontWeight =
+                            FontWeight.ExtraBold,
+
+                        color =
+                            if (exact) {
+                                MaterialTheme
+                                    .colorScheme
+                                    .primary
+                            }
+                            else {
+                                MaterialTheme
+                                    .colorScheme
+                                    .error
+                            }
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(
+                                10.dp
+                            )
+                    )
+
+                    Surface(
+                        shape =
+                            RoundedCornerShape(
+                                99.dp
+                            ),
+
+                        color =
+                            MaterialTheme
+                                .colorScheme
+                                .surface
+                                .copy(
+                                    alpha =
+                                        0.34f
+                                )
+                    ) {
+                        Text(
+                            text =
+                                if (exact) {
+                                    "TRÙNG"
+                                }
+                                else {
+                                    "GẦN"
+                                },
+
+                            modifier =
+                                Modifier.padding(
+                                    horizontal =
+                                        9.dp,
+
+                                    vertical =
+                                        4.dp
+                                ),
+
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .labelSmall,
+
+                            fontWeight =
+                                FontWeight.ExtraBold
+                        )
+                    }
+                }
+            }
+
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                horizontalArrangement =
+                    Arrangement.spacedBy(
+                        8.dp
+                    )
+            ) {
+                DuplicateVersionPanel(
+                    label =
+                        "HIỆN TẠI",
+
+                    file =
+                        pair.current,
+
+                    playing =
+                        state.playingSide ==
+                            CompareSide.CURRENT,
+
+                    enabled =
+                        !state.isWorking,
+
+                    modifier =
+                        Modifier.weight(
+                            1f
+                        ),
+
+                    onPlay = {
+                        onTogglePreview(
+                            CompareSide.CURRENT
+                        )
+                    }
+                )
+
+                DuplicateVersionPanel(
+                    label =
+                        "LIBRARY",
+
+                    file =
+                        pair.reference,
+
+                    playing =
+                        state.playingSide ==
+                            CompareSide.REFERENCE,
+
+                    enabled =
+                        !state.isWorking,
+
+                    modifier =
+                        Modifier.weight(
+                            1f
+                        ),
+
+                    onPlay = {
+                        onTogglePreview(
+                            CompareSide.REFERENCE
+                        )
+                    }
+                )
+            }
+
+            DuplicateMatchStrip(
+                pair =
+                    pair
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.weight(
+                        1f
+                    )
+            )
+
+            OutlinedButton(
                 onClick = {
                     pendingAction =
                         PendingCompareAction
                             .KEEP_CURRENT
                 },
+
                 enabled =
                     !state.isWorking,
+
                 modifier =
                     Modifier
-                        .weight(1f)
-                        .height(42.dp)
+                        .fillMaxWidth()
+                        .height(
+                            44.dp
+                        )
             ) {
-                Text("Giữ bản mới")
+                Text(
+                    "Giữ bản hiện tại"
+                )
             }
 
-            OutlinedButton(
+            Button(
                 onClick = {
                     pendingAction =
                         PendingCompareAction
                             .KEEP_REFERENCE
                 },
+
                 enabled =
                     !state.isWorking,
+
                 modifier =
                     Modifier
-                        .weight(1f)
-                        .height(42.dp)
+                        .fillMaxWidth()
+                        .height(
+                            46.dp
+                        )
             ) {
-                Text("Giữ bản cũ")
-            }
-        }
-
-        OutlinedButton(
-            onClick = onKeepBoth,
-            enabled =
-                !state.isWorking,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(40.dp)
-        ) {
-            Text("Giữ cả hai · Không hiện lại")
-        }
-
-        if (state.isWorking) {
-            Row(
-                modifier =
-                    Modifier.fillMaxWidth(),
-                horizontalArrangement =
-                    Arrangement.Center,
-                verticalAlignment =
-                    Alignment.CenterVertically
-            ) {
-                CircularProgressIndicator(
-                    modifier =
-                        Modifier.size(15.dp),
-                    strokeWidth = 2.dp
-                )
-
-                Spacer(
-                    modifier =
-                        Modifier.width(6.dp)
-                )
-
                 Text(
-                    text = "Đang xử lý...",
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelSmall
+                    "Giữ bản Library"
                 )
+            }
+
+            OutlinedButton(
+                onClick =
+                    onKeepBoth,
+
+                enabled =
+                    !state.isWorking,
+
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(
+                            44.dp
+                        )
+            ) {
+                Text(
+                    "Giữ cả hai"
+                )
+            }
+
+            if (state.isWorking) {
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+
+                    horizontalArrangement =
+                        Arrangement.Center,
+
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier =
+                            Modifier.size(
+                                15.dp
+                            ),
+
+                        strokeWidth =
+                            2.dp
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(
+                                6.dp
+                            )
+                    )
+
+                    Text(
+                        text =
+                            "Đang xử lý...",
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall
+                    )
+                }
             }
         }
     }
 }
 
+
 @Composable
-private fun VersionCard(
+private fun DuplicateVersionPanel(
     label: String,
     file: CompareFile,
     playing: Boolean,
     enabled: Boolean,
+    modifier: Modifier,
     onPlay: () -> Unit
 ) {
     Surface(
         modifier =
-            Modifier.fillMaxWidth(),
+            modifier,
+
         shape =
-            RoundedCornerShape(18.dp),
-        tonalElevation = 4.dp,
+            RoundedCornerShape(
+                19.dp
+            ),
+
+        color =
+            MaterialTheme
+                .colorScheme
+                .surface
+                .copy(
+                    alpha =
+                        0.74f
+                ),
+
         border =
             BorderStroke(
-                1.dp,
-                MaterialTheme
-                    .colorScheme
-                    .outlineVariant
+                width =
+                    if (playing) {
+                        1.5.dp
+                    }
+                    else {
+                        1.dp
+                    },
+
+                color =
+                    if (playing) {
+                        MaterialTheme
+                            .colorScheme
+                            .primary
+                    }
+                    else {
+                        MaterialTheme
+                            .colorScheme
+                            .outlineVariant
+                    }
+            ),
+
+        tonalElevation =
+            if (playing) {
+                5.dp
+            }
+            else {
+                3.dp
+            }
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(
+                    10.dp
+                ),
+
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    5.dp
+                )
+        ) {
+            Text(
+                text =
+                    label,
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelSmall,
+
+                fontWeight =
+                    FontWeight.ExtraBold,
+
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .primary
+            )
+
+            Box(
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                contentAlignment =
+                    Alignment.Center
+            ) {
+                IndexedCover(
+                    coverPath =
+                        file.coverPath,
+
+                    title =
+                        file.title,
+
+                    size =
+                        82
+                )
+
+                Surface(
+                    modifier =
+                        Modifier
+                            .align(
+                                Alignment.BottomEnd
+                            )
+                            .size(
+                                36.dp
+                            )
+                            .bouncyClickable(
+                                enabled =
+                                    enabled
+                            ) {
+                                onPlay()
+                            },
+
+                    shape =
+                        RoundedCornerShape(
+                            18.dp
+                        ),
+
+                    color =
+                        if (playing) {
+                            MaterialTheme
+                                .colorScheme
+                                .primary
+                        }
+                        else {
+                            MaterialTheme
+                                .colorScheme
+                                .surfaceVariant
+                        },
+
+                    tonalElevation =
+                        5.dp
+                ) {
+                    Box(
+                        modifier =
+                            Modifier.fillMaxSize(),
+
+                        contentAlignment =
+                            Alignment.Center
+                    ) {
+                        Text(
+                            text =
+                                if (playing) {
+                                    "Ⅱ"
+                                }
+                                else {
+                                    "▶"
+                                },
+
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Text(
+                text =
+                    file.title
+                        .ifBlank {
+                            "Chưa có Title"
+                        },
+
+                maxLines =
+                    2,
+
+                overflow =
+                    TextOverflow
+                        .Ellipsis,
+
+                fontWeight =
+                    FontWeight.ExtraBold
+            )
+
+            Text(
+                text =
+                    file.artist
+                        .ifBlank {
+                            "Chưa có Artist"
+                        },
+
+                maxLines =
+                    1,
+
+                overflow =
+                    TextOverflow
+                        .Ellipsis,
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodySmall,
+
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant
+            )
+
+            Text(
+                text =
+                    file.album
+                        .ifBlank {
+                            "Chưa có Album"
+                        },
+
+                maxLines =
+                    1,
+
+                overflow =
+                    TextOverflow
+                        .Ellipsis,
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelSmall,
+
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant
+            )
+
+            Text(
+                text =
+                    file.year
+                        .ifBlank {
+                            "Year —"
+                        },
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelSmall,
+
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant
+            )
+        }
+    }
+}
+
+
+@Composable
+private fun DuplicateMatchStrip(
+    pair: ComparePair
+) {
+    val currentCover =
+        !pair.current
+            .coverPath
+            .isNullOrBlank()
+
+    val referenceCover =
+        !pair.reference
+            .coverPath
+            .isNullOrBlank()
+
+    Surface(
+        modifier =
+            Modifier.fillMaxWidth(),
+
+        shape =
+            RoundedCornerShape(
+                17.dp
+            ),
+
+        color =
+            MaterialTheme
+                .colorScheme
+                .surfaceVariant
+                .copy(
+                    alpha =
+                        0.50f
+                ),
+
+        border =
+            BorderStroke(
+                width =
+                    1.dp,
+
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .outlineVariant
             )
     ) {
         Row(
             modifier =
-                Modifier.padding(9.dp),
-            verticalAlignment =
-                Alignment.CenterVertically
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal =
+                            5.dp,
+
+                        vertical =
+                            8.dp
+                    ),
+
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    2.dp
+                )
         ) {
-            IndexedCover(
-                coverPath = file.coverPath,
-                title = file.title,
-                size = 74
+            DuplicateMatchCell(
+                label =
+                    "Cover",
+
+                value =
+                    when {
+                        currentCover &&
+                            referenceCover ->
+                            "Có"
+
+                        currentCover ||
+                            referenceCover ->
+                            "Thiếu"
+
+                        else ->
+                            "—"
+                    },
+
+                positive =
+                    currentCover &&
+                        referenceCover,
+
+                modifier =
+                    Modifier.weight(
+                        1f
+                    )
             )
 
-            Spacer(
+            DuplicateMatchCell(
+                label =
+                    "Title",
+
+                value =
+                    if (
+                        compareTextSame(
+                            pair.current.title,
+                            pair.reference.title
+                        )
+                    ) {
+                        "Trùng"
+                    }
+                    else {
+                        "Khác"
+                    },
+
+                positive =
+                    compareTextSame(
+                        pair.current.title,
+                        pair.reference.title
+                    ),
+
                 modifier =
-                    Modifier.width(10.dp)
+                    Modifier.weight(
+                        1f
+                    )
             )
 
-            Column(
+            DuplicateMatchCell(
+                label =
+                    "Artist",
+
+                value =
+                    if (
+                        compareTextSame(
+                            pair.current.artist,
+                            pair.reference.artist
+                        )
+                    ) {
+                        "Trùng"
+                    }
+                    else {
+                        "Khác"
+                    },
+
+                positive =
+                    compareTextSame(
+                        pair.current.artist,
+                        pair.reference.artist
+                    ),
+
                 modifier =
-                    Modifier.weight(1f),
-                verticalArrangement =
-                    Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    text = label,
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelSmall,
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .primary,
-                    fontWeight =
-                        FontWeight.Bold
-                )
+                    Modifier.weight(
+                        1f
+                    )
+            )
 
-                Text(
-                    text = file.title,
-                    maxLines = 1,
-                    overflow =
-                        TextOverflow.Ellipsis,
-                    fontWeight =
-                        FontWeight.Bold
-                )
+            DuplicateMatchCell(
+                label =
+                    "Album",
 
-                Text(
-                    text =
-                        file.artist.ifBlank {
-                            "Chưa xác định Artist"
-                        },
-                    maxLines = 1,
-                    overflow =
-                        TextOverflow.Ellipsis,
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodySmall
-                )
+                value =
+                    if (
+                        compareTextSame(
+                            pair.current.album,
+                            pair.reference.album
+                        )
+                    ) {
+                        "Trùng"
+                    }
+                    else {
+                        "Khác"
+                    },
 
-                Text(
-                    text =
-                        "Album: ${file.album.ifBlank { "Chưa có" }} · " +
-                            "Year: ${file.year.ifBlank { "—" }}",
-                    maxLines = 1,
-                    overflow =
-                        TextOverflow.Ellipsis,
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelSmall,
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant
-                )
+                positive =
+                    compareTextSame(
+                        pair.current.album,
+                        pair.reference.album
+                    ),
 
-                Text(
-                    text =
-                        buildString {
-                            append(
-                                file.durationSeconds
-                                    ?.let(::formatDuration)
-                                    ?: "--:--"
-                            )
-                            append(" · ")
-                            append(
-                                formatBytes(
-                                    file.sizeBytes
-                                )
-                            )
-                            append(" · ")
-                            append(
-                                file.bitrateKbps
-                                    ?.let {
-                                        "$it kbps"
-                                    }
-                                    ?: "? kbps"
-                            )
-                        },
-                    maxLines = 1,
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelSmall,
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant
-                )
-            }
+                modifier =
+                    Modifier.weight(
+                        1f
+                    )
+            )
 
-            OutlinedButton(
-                onClick = onPlay,
-                enabled = enabled
-            ) {
-                Text(
-                    if (playing) "Ⅱ" else "▶"
-                )
-            }
+            DuplicateMatchCell(
+                label =
+                    "Year",
+
+                value =
+                    if (
+                        compareTextSame(
+                            pair.current.year,
+                            pair.reference.year
+                        )
+                    ) {
+                        "Trùng"
+                    }
+                    else {
+                        "Khác"
+                    },
+
+                positive =
+                    compareTextSame(
+                        pair.current.year,
+                        pair.reference.year
+                    ),
+
+                modifier =
+                    Modifier.weight(
+                        1f
+                    )
+            )
         }
     }
+}
+
+
+@Composable
+private fun DuplicateMatchCell(
+    label: String,
+    value: String,
+    positive: Boolean,
+    modifier: Modifier
+) {
+    Column(
+        modifier =
+            modifier,
+
+        horizontalAlignment =
+            Alignment.CenterHorizontally,
+
+        verticalArrangement =
+            Arrangement.spacedBy(
+                3.dp
+            )
+    ) {
+        Text(
+            text =
+                label,
+
+            maxLines =
+                1,
+
+            style =
+                MaterialTheme
+                    .typography
+                    .labelSmall,
+
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        )
+
+        Surface(
+            shape =
+                RoundedCornerShape(
+                    99.dp
+                ),
+
+            color =
+                if (positive) {
+                    MaterialTheme
+                        .colorScheme
+                        .primaryContainer
+                }
+                else {
+                    MaterialTheme
+                        .colorScheme
+                        .errorContainer
+                        .copy(
+                            alpha =
+                                0.72f
+                        )
+                }
+        ) {
+            Text(
+                text =
+                    value,
+
+                modifier =
+                    Modifier.padding(
+                        horizontal =
+                            6.dp,
+
+                        vertical =
+                            3.dp
+                    ),
+
+                maxLines =
+                    1,
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelSmall,
+
+                fontWeight =
+                    FontWeight.Bold,
+
+                color =
+                    if (positive) {
+                        MaterialTheme
+                            .colorScheme
+                            .onPrimaryContainer
+                    }
+                    else {
+                        MaterialTheme
+                            .colorScheme
+                            .onErrorContainer
+                    }
+            )
+        }
+    }
+}
+
+
+private fun compareTextSame(
+    left: String,
+    right: String
+): Boolean {
+    return left
+        .trim()
+        .equals(
+            right
+                .trim(),
+
+            ignoreCase =
+                true
+        )
 }
 
 @Composable

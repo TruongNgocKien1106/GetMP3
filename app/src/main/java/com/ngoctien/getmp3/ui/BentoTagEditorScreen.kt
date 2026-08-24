@@ -345,50 +345,6 @@ internal fun BentoTagEditorScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                BrandCyan
-                                    .copy(
-                                        alpha =
-                                            0.08f
-                                    ),
-                                BrandBlue
-                                    .copy(
-                                        alpha =
-                                            0.10f
-                                    ),
-                                Color.Transparent,
-                                BrandViolet
-                                    .copy(
-                                        alpha =
-                                            0.14f
-                                    ),
-                                BrandPink
-                                    .copy(
-                                        alpha =
-                                            0.07f
-                                    )
-                            )
-                        )
-                    )
-                    .background(
-                        Brush.radialGradient(
-                            listOf(
-                                BrandBlue
-                                    .copy(
-                                        alpha =
-                                            0.12f
-                                    ),
-                                BrandViolet
-                                    .copy(
-                                        alpha =
-                                            0.06f
-                                    ),
-                                Color.Transparent
-                            )
-                        )
-                    )
                     .statusBarsPadding()
                     .navigationBarsPadding()
                     .padding(
@@ -523,9 +479,7 @@ internal fun BentoTagEditorScreen(
                                 onYearChange,
 
                             modifier =
-                                Modifier.weight(
-                                    1f
-                                )
+                                Modifier.fillMaxWidth()
                         )
 
                         AnimatedVisibility(
@@ -574,6 +528,13 @@ internal fun BentoTagEditorScreen(
                                     )
                                 }
                         }
+
+                        Spacer(
+                            modifier =
+                                Modifier.weight(
+                                    1f
+                                )
+                        )
 
                         TagEditorActionDock(
                             knownArtistCount =
@@ -701,262 +662,189 @@ private fun MetadataEditorCard(
         )
     }
 
-    val colors =
-        MaterialTheme.colorScheme
-
-    Surface(
+    Column(
         modifier =
             modifier
-                .fillMaxWidth(),
-
-        shape =
-            RoundedCornerShape(
-                23.dp
-            ),
-
-        color =
-            colors
-                .surface
-                .copy(
-                    alpha =
-                        0.72f
+                .fillMaxWidth()
+                .padding(
+                    horizontal =
+                        2.dp
                 ),
 
-        border =
-            BorderStroke(
-                width =
-                    1.dp,
-
-                color =
-                    colors
-                        .outline
-                        .copy(
-                            alpha =
-                                0.24f
-                        )
-            ),
-
-        tonalElevation =
-            5.dp,
-
-        shadowElevation =
-            7.dp
+        verticalArrangement =
+            Arrangement.spacedBy(
+                6.dp
+            )
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(
-                            listOf(
-                                BrandBlue
-                                    .copy(
-                                        alpha =
-                                            0.08f
-                                    ),
-                                Color.Transparent,
-                                BrandViolet
-                                    .copy(
-                                        alpha =
-                                            0.08f
-                                    )
-                            )
-                        )
-                    )
-                    .background(
-                        Brush.radialGradient(
-                            listOf(
-                                BrandCyan
-                                    .copy(
-                                        alpha =
-                                            0.055f
-                                    ),
-                                Color.Transparent
-                            )
-                        )
-                    )
-                    .padding(
-                        10.dp
-                    ),
+        StableOutlinedTextField(
+            value =
+                state.title,
 
-            verticalArrangement =
+            onValueChange =
+                onTitleChange,
+
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            label = {
+                Text(
+                    "Title"
+                )
+            },
+
+            placeholder = {
+                Text(
+                    "Nhập Title"
+                )
+            },
+
+            singleLine =
+                true,
+
+            shape =
+                RoundedCornerShape(
+                    16.dp
+                ),
+
+            keyboardOptions =
+                KeyboardOptions(
+                    capitalization =
+                        KeyboardCapitalization
+                            .Words
+                ),
+
+            trailingIcon = {
+                if (
+                    state.title
+                        .isNotEmpty()
+                ) {
+                    IconButton(
+                        onClick =
+                            onClearTitle
+                    ) {
+                        Icon(
+                            imageVector =
+                                Icons.Rounded
+                                    .Clear,
+
+                            contentDescription =
+                                "Xóa Title"
+                        )
+                    }
+                }
+            }
+        )
+
+        StableOutlinedTextField(
+            value =
+                state.artist,
+
+            onValueChange =
+                onArtistChange,
+
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            label = {
+                Text(
+                    "Artist"
+                )
+            },
+
+            placeholder = {
+                Text(
+                    "Nhập Artist"
+                )
+            },
+
+            singleLine =
+                true,
+
+            shape =
+                RoundedCornerShape(
+                    16.dp
+                ),
+
+            trailingIcon = {
+                if (
+                    state.artist
+                        .isNotEmpty()
+                ) {
+                    IconButton(
+                        onClick =
+                            onClearArtist
+                    ) {
+                        Icon(
+                            imageVector =
+                                Icons.Rounded
+                                    .Clear,
+
+                            contentDescription =
+                                "Xóa Artist"
+                        )
+                    }
+                }
+            }
+        )
+
+        ArtistCaseSegmentedControl(
+            selectedMode =
+                state.artistCaseMode,
+
+            onSelected =
+                onArtistCaseModeChange
+        )
+
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+
+            horizontalArrangement =
                 Arrangement.spacedBy(
-                    6.dp
+                    8.dp
                 )
         ) {
-            StableOutlinedTextField(
-                value =
-                    state.title,
+            CompactMetadataPicker(
+                label =
+                    "Album",
 
-                onValueChange =
-                    onTitleChange,
+                value =
+                    state.selectedAlbum
+                        .ifBlank {
+                            "Chưa phân loại"
+                        },
 
                 modifier =
-                    Modifier
-                        .fillMaxWidth(),
-
-                label = {
-                    Text(
-                        "Title"
-                    )
-                },
-
-                placeholder = {
-                    Text(
-                        "Nhập Title"
-                    )
-                },
-
-                singleLine =
-                    true,
-
-                shape =
-                    RoundedCornerShape(
-                        16.dp
+                    Modifier.weight(
+                        1.55f
                     ),
 
-                keyboardOptions =
-                    KeyboardOptions(
-                        capitalization =
-                            KeyboardCapitalization
-                                .Words
-                    ),
-
-                trailingIcon = {
-                    if (
-                        state.title
-                            .isNotEmpty()
-                    ) {
-                        IconButton(
-                            onClick =
-                                onClearTitle
-                        ) {
-                            Icon(
-                                imageVector =
-                                    Icons.Rounded
-                                        .Clear,
-
-                                contentDescription =
-                                    "Xóa Title"
-                            )
-                        }
-                    }
+                onClick = {
+                    showAlbumPicker =
+                        true
                 }
             )
 
-            StableOutlinedTextField(
-                value =
-                    state.artist,
+            CompactMetadataPicker(
+                label =
+                    "Year",
 
-                onValueChange =
-                    onArtistChange,
+                value =
+                    state.year
+                        .ifBlank {
+                            "Chọn năm"
+                        },
 
                 modifier =
-                    Modifier
-                        .fillMaxWidth(),
-
-                label = {
-                    Text(
-                        "Artist"
-                    )
-                },
-
-                placeholder = {
-                    Text(
-                        "Nhập Artist"
-                    )
-                },
-
-                singleLine =
-                    true,
-
-                shape =
-                    RoundedCornerShape(
-                        16.dp
+                    Modifier.weight(
+                        0.85f
                     ),
 
-                trailingIcon = {
-                    if (
-                        state.artist
-                            .isNotEmpty()
-                    ) {
-                        IconButton(
-                            onClick =
-                                onClearArtist
-                        ) {
-                            Icon(
-                                imageVector =
-                                    Icons.Rounded
-                                        .Clear,
-
-                                contentDescription =
-                                    "Xóa Artist"
-                            )
-                        }
-                    }
+                onClick = {
+                    showYearPicker =
+                        true
                 }
             )
-
-            ArtistCaseSegmentedControl(
-                selectedMode =
-                    state.artistCaseMode,
-
-                onSelected =
-                    onArtistCaseModeChange
-            )
-
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth(),
-
-                horizontalArrangement =
-                    Arrangement.spacedBy(
-                        8.dp
-                    )
-            ) {
-                CompactMetadataPicker(
-                    label =
-                        "Album",
-
-                    value =
-                        state.selectedAlbum
-                            .ifBlank {
-                                "Chưa phân loại"
-                            },
-
-                    modifier =
-                        Modifier.weight(
-                            1.55f
-                        ),
-
-                    onClick = {
-                        showAlbumPicker =
-                            true
-                    }
-                )
-
-                CompactMetadataPicker(
-                    label =
-                        "Year",
-
-                    value =
-                        state.year
-                            .ifBlank {
-                                "Chọn năm"
-                            },
-
-                    modifier =
-                        Modifier.weight(
-                            0.85f
-                        ),
-
-                    onClick = {
-                        showYearPicker =
-                            true
-                    }
-                )
-            }
         }
     }
 }
@@ -978,18 +866,12 @@ private fun SongPreviewCard(
                 6.dp
             )
     ) {
-        /*
-         * Large cover preview.
-         *
-         * Keep this compact enough to preserve the fixed viewport,
-         * but large enough to make the artwork a primary element.
-         */
         Surface(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .height(
-                        148.dp
+                        120.dp
                     ),
 
             shape =
@@ -999,205 +881,10 @@ private fun SongPreviewCard(
 
             color =
                 colors
-                    .surfaceVariant,
-
-            border =
-                BorderStroke(
-                    width =
-                        1.dp,
-
-                    color =
-                        BrandSky
-                            .copy(
-                                alpha =
-                                    0.28f
-                            )
-                ),
-
-            tonalElevation =
-                5.dp,
-
-            shadowElevation =
-                9.dp
-        ) {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.linearGradient(
-                                listOf(
-                                    colors
-                                        .surfaceVariant,
-                                    BrandBlue
-                                        .copy(
-                                            alpha =
-                                                0.44f
-                                        ),
-                                    BrandViolet
-                                        .copy(
-                                            alpha =
-                                                0.36f
-                                        ),
-                                    colors
-                                        .surfaceVariant
-                                )
-                            )
-                        )
-                        .background(
-                            Brush.radialGradient(
-                                listOf(
-                                    BrandCyan
-                                        .copy(
-                                            alpha =
-                                                0.20f
-                                        ),
-                                    BrandViolet
-                                        .copy(
-                                            alpha =
-                                                0.10f
-                                        ),
-                                    Color.Transparent
-                                )
-                            )
-                        )
-            ) {
-                AsyncImage(
-                    model =
-                        coverPath
-                            ?.let(
-                                ::File
-                            ),
-
-                    contentDescription =
-                        "Cover bài hát",
-
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(
-                                horizontal =
-                                    10.dp,
-
-                                vertical =
-                                    5.dp
-                            ),
-
-                    contentScale =
-                        ContentScale.Inside
-                )
-
-                /*
-                 * Very light bottom fade keeps the cover premium
-                 * without placing extra labels over the artwork.
-                 */
-                Box(
-                    modifier =
-                        Modifier
-                            .align(
-                                Alignment.BottomCenter
-                            )
-                            .fillMaxWidth()
-                            .height(
-                                42.dp
-                            )
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(
-                                        Color.Transparent,
-                                        Color.Black
-                                            .copy(
-                                                alpha =
-                                                    0.22f
-                                            )
-                                    )
-                                )
-                            )
-                )
-
-                /*
-                 * Visible fallback when the file has no artwork.
-                 */
-                if (
-                    coverPath.isNullOrBlank()
-                ) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize(),
-
-                        contentAlignment =
-                            Alignment.Center
-                    ) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .size(
-                                        58.dp
-                                    )
-                                    .clip(
-                                        RoundedCornerShape(
-                                            18.dp
-                                        )
-                                    )
-                                    .background(
-                                        BrandViolet
-                                            .copy(
-                                                alpha =
-                                                    0.48f
-                                            )
-                                    ),
-
-                            contentAlignment =
-                                Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector =
-                                    Icons.Rounded
-                                        .MusicNote,
-
-                                contentDescription =
-                                    null,
-
-                                modifier =
-                                    Modifier.size(
-                                        31.dp
-                                    ),
-
-                                tint =
-                                    Color.White
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        /*
-         * File preview is deliberately separate from the cover.
-         *
-         * This mirrors the prototype hierarchy:
-         * artwork first -> file identity -> editable metadata.
-         */
-        Surface(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(
-                        48.dp
-                    ),
-
-            shape =
-                RoundedCornerShape(
-                    16.dp
-                ),
-
-            color =
-                colors
                     .surface
                     .copy(
                         alpha =
-                            0.88f
+                            0.42f
                     ),
 
             border =
@@ -1210,15 +897,153 @@ private fun SongPreviewCard(
                             .outline
                             .copy(
                                 alpha =
-                                    0.22f
+                                    0.20f
                             )
                 ),
 
             tonalElevation =
-                3.dp,
+                2.dp,
 
             shadowElevation =
                 4.dp
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.radialGradient(
+                                listOf(
+                                    BrandBlue
+                                        .copy(
+                                            alpha =
+                                                0.12f
+                                        ),
+                                    BrandViolet
+                                        .copy(
+                                            alpha =
+                                                0.07f
+                                        ),
+                                    Color.Transparent
+                                )
+                            )
+                        ),
+
+                contentAlignment =
+                    Alignment.Center
+            ) {
+                if (
+                    !coverPath.isNullOrBlank()
+                ) {
+                    AsyncImage(
+                        model =
+                            File(
+                                coverPath
+                            ),
+
+                        contentDescription =
+                            "Cover bài hát",
+
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(
+                                    0.78f
+                                )
+                                .height(
+                                    108.dp
+                                )
+                                .clip(
+                                    RoundedCornerShape(
+                                        15.dp
+                                    )
+                                ),
+
+                        contentScale =
+                            ContentScale.Fit
+                    )
+                }
+                else {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(
+                                    58.dp
+                                )
+                                .clip(
+                                    RoundedCornerShape(
+                                        18.dp
+                                    )
+                                )
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(
+                                            BrandBlue,
+                                            BrandViolet
+                                        )
+                                    )
+                                ),
+
+                        contentAlignment =
+                            Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector =
+                                Icons.Rounded
+                                    .MusicNote,
+
+                            contentDescription =
+                                null,
+
+                            modifier =
+                                Modifier.size(
+                                    30.dp
+                                ),
+
+                            tint =
+                                Color.White
+                        )
+                    }
+                }
+            }
+        }
+
+        Surface(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(
+                        46.dp
+                    ),
+
+            shape =
+                RoundedCornerShape(
+                    16.dp
+                ),
+
+            color =
+                colors
+                    .surface
+                    .copy(
+                        alpha =
+                            0.70f
+                    ),
+
+            border =
+                BorderStroke(
+                    width =
+                        1.dp,
+
+                    color =
+                        colors
+                            .outline
+                            .copy(
+                                alpha =
+                                    0.18f
+                            )
+                ),
+
+            tonalElevation =
+                2.dp
         ) {
             Row(
                 modifier =
@@ -1284,10 +1109,7 @@ private fun SongPreviewCard(
                     modifier =
                         Modifier.weight(
                             1f
-                        ),
-
-                    verticalArrangement =
-                        Arrangement.Center
+                        )
                 ) {
                     Text(
                         text =
@@ -1320,11 +1142,7 @@ private fun SongPreviewCard(
                                 .bodyMedium,
 
                         fontWeight =
-                            FontWeight.Bold,
-
-                        color =
-                            colors
-                                .onSurface
+                            FontWeight.Bold
                     )
                 }
             }
