@@ -446,9 +446,6 @@ internal fun BentoTagEditorScreen(
                             song ->
 
                         SongPreviewCard(
-                            fileName =
-                                state.previewFileName,
-
                             coverPath =
                                 song.coverPath
                         )
@@ -571,6 +568,7 @@ internal fun BentoTagEditorScreen(
     }
 }
 
+
 @Composable
 private fun MetadataEditorCard(
     state: TagEditorUiState,
@@ -662,6 +660,26 @@ private fun MetadataEditorCard(
         )
     }
 
+    val colors =
+        MaterialTheme.colorScheme
+
+    val transparentFieldColors =
+        androidx.compose.material3
+            .OutlinedTextFieldDefaults
+            .colors(
+                focusedBorderColor =
+                    Color.Transparent,
+
+                unfocusedBorderColor =
+                    Color.Transparent,
+
+                focusedContainerColor =
+                    Color.Transparent,
+
+                unfocusedContainerColor =
+                    Color.Transparent
+            )
+
     Column(
         modifier =
             modifier
@@ -673,119 +691,193 @@ private fun MetadataEditorCard(
 
         verticalArrangement =
             Arrangement.spacedBy(
-                6.dp
+                7.dp
             )
     ) {
-        StableOutlinedTextField(
-            value =
-                state.title,
+        PremiumMetadataFieldFrame(
+            accentStart =
+                BrandCyan,
 
-            onValueChange =
-                onTitleChange,
+            accentEnd =
+                BrandBlue
+        ) {
+            StableOutlinedTextField(
+                value =
+                    state.previewFileName,
 
-            modifier =
-                Modifier.fillMaxWidth(),
+                onValueChange = {},
 
-            label = {
-                Text(
-                    "Title"
-                )
-            },
+                readOnly =
+                    true,
 
-            placeholder = {
-                Text(
-                    "Nhập Title"
-                )
-            },
+                modifier =
+                    Modifier.fillMaxWidth(),
 
-            singleLine =
-                true,
+                label = {
+                    Text(
+                        "Filename"
+                    )
+                },
 
-            shape =
-                RoundedCornerShape(
-                    16.dp
-                ),
+                leadingIcon = {
+                    Icon(
+                        imageVector =
+                            Icons.Rounded
+                                .MusicNote,
 
-            keyboardOptions =
-                KeyboardOptions(
-                    capitalization =
-                        KeyboardCapitalization
-                            .Words
-                ),
+                        contentDescription =
+                            null,
 
-            trailingIcon = {
-                if (
-                    state.title
-                        .isNotEmpty()
-                ) {
-                    IconButton(
-                        onClick =
-                            onClearTitle
+                        tint =
+                            BrandSky
+                    )
+                },
+
+                singleLine =
+                    true,
+
+                shape =
+                    RoundedCornerShape(
+                        17.dp
+                    ),
+
+                colors =
+                    transparentFieldColors
+            )
+        }
+
+        PremiumMetadataFieldFrame(
+            accentStart =
+                BrandSky,
+
+            accentEnd =
+                BrandBlue
+        ) {
+            StableOutlinedTextField(
+                value =
+                    state.title,
+
+                onValueChange =
+                    onTitleChange,
+
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                label = {
+                    Text(
+                        "Title"
+                    )
+                },
+
+                placeholder = {
+                    Text(
+                        "Nhập Title"
+                    )
+                },
+
+                singleLine =
+                    true,
+
+                shape =
+                    RoundedCornerShape(
+                        17.dp
+                    ),
+
+                keyboardOptions =
+                    KeyboardOptions(
+                        capitalization =
+                            KeyboardCapitalization
+                                .Words
+                    ),
+
+                trailingIcon = {
+                    if (
+                        state.title
+                            .isNotEmpty()
                     ) {
-                        Icon(
-                            imageVector =
-                                Icons.Rounded
-                                    .Clear,
+                        IconButton(
+                            onClick =
+                                onClearTitle
+                        ) {
+                            Icon(
+                                imageVector =
+                                    Icons.Rounded
+                                        .Clear,
 
-                            contentDescription =
-                                "Xóa Title"
-                        )
+                                contentDescription =
+                                    "Xóa Title"
+                            )
+                        }
                     }
-                }
-            }
-        )
+                },
 
-        StableOutlinedTextField(
-            value =
-                state.artist,
+                colors =
+                    transparentFieldColors
+            )
+        }
 
-            onValueChange =
-                onArtistChange,
+        PremiumMetadataFieldFrame(
+            accentStart =
+                BrandBlue,
 
-            modifier =
-                Modifier.fillMaxWidth(),
+            accentEnd =
+                BrandViolet
+        ) {
+            StableOutlinedTextField(
+                value =
+                    state.artist,
 
-            label = {
-                Text(
-                    "Artist"
-                )
-            },
+                onValueChange =
+                    onArtistChange,
 
-            placeholder = {
-                Text(
-                    "Nhập Artist"
-                )
-            },
+                modifier =
+                    Modifier.fillMaxWidth(),
 
-            singleLine =
-                true,
+                label = {
+                    Text(
+                        "Artist"
+                    )
+                },
 
-            shape =
-                RoundedCornerShape(
-                    16.dp
-                ),
+                placeholder = {
+                    Text(
+                        "Nhập Artist"
+                    )
+                },
 
-            trailingIcon = {
-                if (
-                    state.artist
-                        .isNotEmpty()
-                ) {
-                    IconButton(
-                        onClick =
-                            onClearArtist
+                singleLine =
+                    true,
+
+                shape =
+                    RoundedCornerShape(
+                        17.dp
+                    ),
+
+                trailingIcon = {
+                    if (
+                        state.artist
+                            .isNotEmpty()
                     ) {
-                        Icon(
-                            imageVector =
-                                Icons.Rounded
-                                    .Clear,
+                        IconButton(
+                            onClick =
+                                onClearArtist
+                        ) {
+                            Icon(
+                                imageVector =
+                                    Icons.Rounded
+                                        .Clear,
 
-                            contentDescription =
-                                "Xóa Artist"
-                        )
+                                contentDescription =
+                                    "Xóa Artist"
+                            )
+                        }
                     }
-                }
-            }
-        )
+                },
+
+                colors =
+                    transparentFieldColors
+            )
+        }
 
         ArtistCaseSegmentedControl(
             selectedMode =
@@ -849,228 +941,230 @@ private fun MetadataEditorCard(
     }
 }
 
+
+@Composable
+private fun PremiumMetadataFieldFrame(
+    accentStart: Color,
+    accentEnd: Color,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    val colors =
+        MaterialTheme.colorScheme
+
+    val shape =
+        RoundedCornerShape(
+            19.dp
+        )
+
+    val innerShape =
+        RoundedCornerShape(
+            18.dp
+        )
+
+    Surface(
+        modifier =
+            modifier.fillMaxWidth(),
+
+        shape =
+            shape,
+
+        color =
+            Color.Transparent,
+
+        tonalElevation =
+            4.dp,
+
+        shadowElevation =
+            7.dp
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(
+                        shape
+                    )
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                accentStart
+                                    .copy(
+                                        alpha =
+                                            0.72f
+                                    ),
+
+                                accentEnd
+                                    .copy(
+                                        alpha =
+                                            0.56f
+                                    ),
+
+                                BrandViolet
+                                    .copy(
+                                        alpha =
+                                            0.32f
+                                    )
+                            )
+                        )
+                    )
+                    .padding(
+                        1.dp
+                    )
+                    .clip(
+                        innerShape
+                    )
+                    .background(
+                        colors
+                            .surface
+                            .copy(
+                                alpha =
+                                    0.94f
+                            )
+                    )
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.linearGradient(
+                                listOf(
+                                    accentStart
+                                        .copy(
+                                            alpha =
+                                                0.055f
+                                        ),
+
+                                    Color.Transparent,
+
+                                    accentEnd
+                                        .copy(
+                                            alpha =
+                                                0.075f
+                                        )
+                                )
+                            )
+                        )
+            ) {
+                content()
+            }
+        }
+    }
+}
+
+
 @Composable
 private fun SongPreviewCard(
-    fileName: String,
     coverPath: String?
 ) {
     val colors =
         MaterialTheme.colorScheme
 
-    Column(
+    Surface(
         modifier =
-            Modifier.fillMaxWidth(),
+            Modifier
+                .fillMaxWidth()
+                .height(
+                    120.dp
+                ),
 
-        verticalArrangement =
-            Arrangement.spacedBy(
-                6.dp
-            )
+        shape =
+            RoundedCornerShape(
+                22.dp
+            ),
+
+        color =
+            Color.Transparent,
+
+        tonalElevation =
+            4.dp,
+
+        shadowElevation =
+            7.dp
     ) {
-        Surface(
+        Box(
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .height(
-                        120.dp
-                    ),
+                    .fillMaxSize()
+                    .clip(
+                        RoundedCornerShape(
+                            22.dp
+                        )
+                    )
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                BrandBlue
+                                    .copy(
+                                        alpha =
+                                            0.32f
+                                    ),
 
-            shape =
-                RoundedCornerShape(
-                    22.dp
-                ),
+                                colors.surface
+                                    .copy(
+                                        alpha =
+                                            0.88f
+                                    ),
 
-            color =
-                colors
-                    .surface
-                    .copy(
-                        alpha =
-                            0.42f
-                    ),
-
-            border =
-                BorderStroke(
-                    width =
-                        1.dp,
-
-                    color =
-                        colors
-                            .outline
-                            .copy(
-                                alpha =
-                                    0.20f
+                                BrandViolet
+                                    .copy(
+                                        alpha =
+                                            0.30f
+                                    )
                             )
-                ),
+                        )
+                    ),
 
-            tonalElevation =
-                2.dp,
-
-            shadowElevation =
-                4.dp
+            contentAlignment =
+                Alignment.Center
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.radialGradient(
-                                listOf(
-                                    BrandBlue
-                                        .copy(
-                                            alpha =
-                                                0.12f
-                                        ),
-                                    BrandViolet
-                                        .copy(
-                                            alpha =
-                                                0.07f
-                                        ),
-                                    Color.Transparent
-                                )
-                            )
+            if (
+                !coverPath.isNullOrBlank()
+            ) {
+                AsyncImage(
+                    model =
+                        File(
+                            coverPath
                         ),
 
-                contentAlignment =
-                    Alignment.Center
-            ) {
-                if (
-                    !coverPath.isNullOrBlank()
-                ) {
-                    AsyncImage(
-                        model =
-                            File(
-                                coverPath
+                    contentDescription =
+                        "Cover bài hát",
+
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(
+                                0.80f
+                            )
+                            .height(
+                                106.dp
+                            )
+                            .clip(
+                                RoundedCornerShape(
+                                    16.dp
+                                )
                             ),
 
-                        contentDescription =
-                            "Cover bài hát",
-
-                        modifier =
-                            Modifier
-                                .fillMaxWidth(
-                                    0.78f
-                                )
-                                .height(
-                                    108.dp
-                                )
-                                .clip(
-                                    RoundedCornerShape(
-                                        15.dp
-                                    )
-                                ),
-
-                        contentScale =
-                            ContentScale.Fit
-                    )
-                }
-                else {
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(
-                                    58.dp
-                                )
-                                .clip(
-                                    RoundedCornerShape(
-                                        18.dp
-                                    )
-                                )
-                                .background(
-                                    Brush.linearGradient(
-                                        listOf(
-                                            BrandBlue,
-                                            BrandViolet
-                                        )
-                                    )
-                                ),
-
-                        contentAlignment =
-                            Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector =
-                                Icons.Rounded
-                                    .MusicNote,
-
-                            contentDescription =
-                                null,
-
-                            modifier =
-                                Modifier.size(
-                                    30.dp
-                                ),
-
-                            tint =
-                                Color.White
-                        )
-                    }
-                }
+                    contentScale =
+                        ContentScale.Fit
+                )
             }
-        }
-
-        Surface(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(
-                        46.dp
-                    ),
-
-            shape =
-                RoundedCornerShape(
-                    16.dp
-                ),
-
-            color =
-                colors
-                    .surface
-                    .copy(
-                        alpha =
-                            0.70f
-                    ),
-
-            border =
-                BorderStroke(
-                    width =
-                        1.dp,
-
-                    color =
-                        colors
-                            .outline
-                            .copy(
-                                alpha =
-                                    0.18f
-                            )
-                ),
-
-            tonalElevation =
-                2.dp
-        ) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(
-                            horizontal =
-                                10.dp
-                        ),
-
-                verticalAlignment =
-                    Alignment.CenterVertically
-            ) {
+            else {
                 Box(
                     modifier =
                         Modifier
                             .size(
-                                32.dp
+                                64.dp
                             )
                             .clip(
                                 RoundedCornerShape(
-                                    10.dp
+                                    20.dp
                                 )
                             )
                             .background(
                                 Brush.linearGradient(
                                     listOf(
+                                        BrandCyan,
                                         BrandBlue,
                                         BrandViolet
                                     )
@@ -1090,62 +1184,35 @@ private fun SongPreviewCard(
 
                         modifier =
                             Modifier.size(
-                                18.dp
+                                31.dp
                             ),
 
                         tint =
                             Color.White
                     )
                 }
-
-                Spacer(
-                    modifier =
-                        Modifier.width(
-                            9.dp
-                        )
-                )
-
-                Column(
-                    modifier =
-                        Modifier.weight(
-                            1f
-                        )
-                ) {
-                    Text(
-                        text =
-                            "File MP3",
-
-                        style =
-                            MaterialTheme
-                                .typography
-                                .labelSmall,
-
-                        color =
-                            colors
-                                .onSurfaceVariant
-                    )
-
-                    Text(
-                        text =
-                            fileName,
-
-                        maxLines =
-                            1,
-
-                        overflow =
-                            TextOverflow
-                                .Ellipsis,
-
-                        style =
-                            MaterialTheme
-                                .typography
-                                .bodyMedium,
-
-                        fontWeight =
-                            FontWeight.Bold
-                    )
-                }
             }
+
+            Box(
+                modifier =
+                    Modifier
+                        .align(
+                            Alignment.TopCenter
+                        )
+                        .fillMaxWidth(
+                            0.72f
+                        )
+                        .height(
+                            1.dp
+                        )
+                        .background(
+                            Color.White
+                                .copy(
+                                    alpha =
+                                        0.25f
+                                )
+                        )
+            )
         }
     }
 }
@@ -1481,6 +1548,7 @@ private fun PremiumTagEditorHeader(
 }
 
 
+
 @Composable
 private fun ArtistCaseSegmentedControl(
     selectedMode: ArtistCaseMode,
@@ -1489,97 +1557,134 @@ private fun ArtistCaseSegmentedControl(
     val colors =
         MaterialTheme.colorScheme
 
+    val shape =
+        RoundedCornerShape(
+            15.dp
+        )
+
     Surface(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .height(
-                    38.dp
+                    40.dp
                 ),
 
         shape =
-            RoundedCornerShape(
-                14.dp
-            ),
+            shape,
 
         color =
-            colors
-                .surfaceVariant
-                .copy(
-                    alpha =
-                        0.64f
-                ),
+            Color.Transparent,
 
-        border =
-            BorderStroke(
-                width =
-                    1.dp,
+        tonalElevation =
+            3.dp,
 
-                color =
-                    colors
-                        .outline
-                        .copy(
-                            alpha =
-                                0.20f
-                        )
-            )
+        shadowElevation =
+            5.dp
     ) {
-        Row(
+        Box(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .clip(
+                        shape
+                    )
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                BrandBlue
+                                    .copy(
+                                        alpha =
+                                            0.34f
+                                    ),
+
+                                BrandViolet
+                                    .copy(
+                                        alpha =
+                                            0.34f
+                                    ),
+
+                                BrandPink
+                                    .copy(
+                                        alpha =
+                                            0.20f
+                                    )
+                            )
+                        )
+                    )
+                    .padding(
+                        1.dp
+                    )
+                    .clip(
+                        RoundedCornerShape(
+                            14.dp
+                        )
+                    )
+                    .background(
+                        colors
+                            .surfaceVariant
+                            .copy(
+                                alpha =
+                                    0.76f
+                            )
+                    )
                     .padding(
                         3.dp
-                    ),
-
-            horizontalArrangement =
-                Arrangement.spacedBy(
-                    3.dp
-                )
+                    )
         ) {
-            ArtistCaseSegment(
-                text =
-                    "Viết hoa chữ đầu",
-
-                selected =
-                    selectedMode ==
-                        ArtistCaseMode
-                            .CAPITALIZE_WORDS,
-
+            Row(
                 modifier =
-                    Modifier.weight(
-                        1.25f
-                    ),
+                    Modifier.fillMaxSize(),
 
-                onClick = {
-                    onSelected(
-                        ArtistCaseMode
-                            .CAPITALIZE_WORDS
+                horizontalArrangement =
+                    Arrangement.spacedBy(
+                        4.dp
                     )
-                }
-            )
+            ) {
+                ArtistCaseSegment(
+                    text =
+                        "Viết hoa chữ đầu",
 
-            ArtistCaseSegment(
-                text =
-                    "Giữ nguyên",
+                    selected =
+                        selectedMode ==
+                            ArtistCaseMode
+                                .CAPITALIZE_WORDS,
 
-                selected =
-                    selectedMode ==
-                        ArtistCaseMode
-                            .KEEP_ORIGINAL,
+                    modifier =
+                        Modifier.weight(
+                            1.25f
+                        ),
 
-                modifier =
-                    Modifier.weight(
-                        0.85f
-                    ),
+                    onClick = {
+                        onSelected(
+                            ArtistCaseMode
+                                .CAPITALIZE_WORDS
+                        )
+                    }
+                )
 
-                onClick = {
-                    onSelected(
-                        ArtistCaseMode
-                            .KEEP_ORIGINAL
-                    )
-                }
-            )
+                ArtistCaseSegment(
+                    text =
+                        "Giữ nguyên",
+
+                    selected =
+                        selectedMode ==
+                            ArtistCaseMode
+                                .KEEP_ORIGINAL,
+
+                    modifier =
+                        Modifier.weight(
+                            0.85f
+                        ),
+
+                    onClick = {
+                        onSelected(
+                            ArtistCaseMode
+                                .KEEP_ORIGINAL
+                        )
+                    }
+                )
+            }
         }
     }
 }
@@ -1592,41 +1697,38 @@ private fun ArtistCaseSegment(
     modifier: Modifier,
     onClick: () -> Unit
 ) {
+    val shape =
+        RoundedCornerShape(
+            11.dp
+        )
+
     Surface(
         modifier =
             modifier
                 .fillMaxSize()
                 .bouncyClickable(
                     pressedScale =
-                        0.975f,
+                        0.965f,
 
                     onClick =
                         onClick
                 ),
 
         shape =
-            RoundedCornerShape(
-                11.dp
-            ),
+            shape,
 
         color =
-            if (selected) {
-                BrandViolet
-                    .copy(
-                        alpha =
-                            0.46f
-                    )
-            }
-            else {
-                Color.Transparent
-            },
-
-        contentColor =
-            MaterialTheme
-                .colorScheme
-                .onSurface,
+            Color.Transparent,
 
         tonalElevation =
+            if (selected) {
+                5.dp
+            }
+            else {
+                0.dp
+            },
+
+        shadowElevation =
             if (selected) {
                 4.dp
             }
@@ -1636,7 +1738,29 @@ private fun ArtistCaseSegment(
     ) {
         Box(
             modifier =
-                Modifier.fillMaxSize(),
+                Modifier
+                    .fillMaxSize()
+                    .clip(
+                        shape
+                    )
+                    .then(
+                        if (selected) {
+                            Modifier.background(
+                                Brush.linearGradient(
+                                    listOf(
+                                        BrandBlue,
+                                        BrandViolet,
+                                        BrandPink
+                                    )
+                                )
+                            )
+                        }
+                        else {
+                            Modifier.background(
+                                Color.Transparent
+                            )
+                        }
+                    ),
 
             contentAlignment =
                 Alignment.Center
@@ -1656,6 +1780,16 @@ private fun ArtistCaseSegment(
                     }
                     else {
                         FontWeight.Medium
+                    },
+
+                color =
+                    if (selected) {
+                        Color.White
+                    }
+                    else {
+                        MaterialTheme
+                            .colorScheme
+                            .onSurface
                     }
             )
         }
@@ -1673,127 +1807,226 @@ private fun CompactMetadataPicker(
     val colors =
         MaterialTheme.colorScheme
 
+    val shape =
+        RoundedCornerShape(
+            17.dp
+        )
+
+    val accentStart =
+        if (
+            label == "Year"
+        ) {
+            BrandViolet
+        }
+        else {
+            BrandBlue
+        }
+
+    val accentEnd =
+        if (
+            label == "Year"
+        ) {
+            BrandPink
+        }
+        else {
+            BrandCyan
+        }
+
     Surface(
         modifier =
             modifier
                 .height(
-                    54.dp
+                    56.dp
                 )
                 .bouncyClickable(
                     pressedScale =
-                        0.98f,
+                        0.965f,
 
                     onClick =
                         onClick
                 ),
 
         shape =
-            RoundedCornerShape(
-                16.dp
-            ),
+            shape,
 
         color =
-            colors
-                .surfaceVariant
-                .copy(
-                    alpha =
-                        0.64f
-                ),
-
-        border =
-            BorderStroke(
-                width =
-                    1.dp,
-
-                color =
-                    colors
-                        .outline
-                        .copy(
-                            alpha =
-                                0.25f
-                        )
-            ),
+            Color.Transparent,
 
         tonalElevation =
-            2.dp
+            4.dp,
+
+        shadowElevation =
+            6.dp
     ) {
-        Row(
+        Box(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .clip(
+                        shape
+                    )
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                accentStart
+                                    .copy(
+                                        alpha =
+                                            0.58f
+                                    ),
+
+                                accentEnd
+                                    .copy(
+                                        alpha =
+                                            0.36f
+                                    ),
+
+                                BrandViolet
+                                    .copy(
+                                        alpha =
+                                            0.22f
+                                    )
+                            )
+                        )
+                    )
                     .padding(
-                        horizontal =
-                            11.dp
-                    ),
+                        1.dp
+                    )
+                    .clip(
+                        RoundedCornerShape(
+                            16.dp
+                        )
+                    )
+                    .background(
+                        colors
+                            .surface
+                            .copy(
+                                alpha =
+                                    0.91f
+                            )
+                    )
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                accentStart
+                                    .copy(
+                                        alpha =
+                                            0.075f
+                                    ),
 
-            verticalAlignment =
-                Alignment.CenterVertically
+                                Color.Transparent,
+
+                                accentEnd
+                                    .copy(
+                                        alpha =
+                                            0.065f
+                                    )
+                            )
+                        )
+                    )
         ) {
-            Column(
+            Row(
                 modifier =
-                    Modifier.weight(
-                        1f
-                    ),
+                    Modifier
+                        .fillMaxSize()
+                        .padding(
+                            horizontal =
+                                11.dp
+                        ),
 
-                verticalArrangement =
-                    Arrangement.Center
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
-                Text(
-                    text =
-                        label,
+                Column(
+                    modifier =
+                        Modifier.weight(
+                            1f
+                        ),
 
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelSmall,
+                    verticalArrangement =
+                        Arrangement.Center
+                ) {
+                    Text(
+                        text =
+                            label,
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
+
+                        color =
+                            colors
+                                .onSurfaceVariant
+                    )
+
+                    Text(
+                        text =
+                            value,
+
+                        maxLines =
+                            1,
+
+                        overflow =
+                            TextOverflow
+                                .Ellipsis,
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .bodyMedium,
+
+                        fontWeight =
+                            FontWeight.Black
+                    )
+                }
+
+                Surface(
+                    modifier =
+                        Modifier.size(
+                            28.dp
+                        ),
+
+                    shape =
+                        RoundedCornerShape(
+                            10.dp
+                        ),
 
                     color =
-                        colors
-                            .onSurfaceVariant
-                )
+                        accentStart
+                            .copy(
+                                alpha =
+                                    0.18f
+                            ),
 
-                Text(
-                    text =
-                        value,
+                    contentColor =
+                        accentEnd
+                ) {
+                    Box(
+                        modifier =
+                            Modifier.fillMaxSize(),
 
-                    maxLines =
-                        1,
+                        contentAlignment =
+                            Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector =
+                                Icons.Rounded
+                                    .ExpandMore,
 
-                    overflow =
-                        TextOverflow
-                            .Ellipsis,
+                            contentDescription =
+                                null,
 
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodyMedium,
-
-                    fontWeight =
-                        FontWeight.Bold
-                )
+                            modifier =
+                                Modifier.size(
+                                    18.dp
+                                )
+                        )
+                    }
+                }
             }
-
-            Icon(
-                imageVector =
-                    Icons.Rounded
-                        .ExpandMore,
-
-                contentDescription =
-                    null,
-
-                modifier =
-                    Modifier.size(
-                        19.dp
-                    ),
-
-                tint =
-                    colors
-                        .onSurfaceVariant
-            )
         }
     }
 }
-
 
 @Composable
 private fun TagEditorActionDock(

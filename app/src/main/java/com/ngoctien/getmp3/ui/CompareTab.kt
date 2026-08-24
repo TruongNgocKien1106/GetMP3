@@ -469,6 +469,7 @@ private fun CompareSectionTabs(
         }
     }
 }
+
 @Composable
 private fun CompareList(
     state: CompareUiState,
@@ -478,52 +479,82 @@ private fun CompareList(
 ) {
     var nearCollapsed by
         rememberSaveable {
-            mutableStateOf(true)
+            mutableStateOf(
+                false
+            )
         }
 
     LazyColumn(
-        modifier = modifier
-            .fillMaxSize(),
+        modifier =
+            modifier.fillMaxSize(),
+
         contentPadding =
             androidx.compose.foundation.layout
                 .PaddingValues(
                     start = 12.dp,
-                    top = 8.dp,
+                    top = 9.dp,
                     end = 12.dp,
-                    bottom = 14.dp
+                    bottom = 16.dp
                 ),
+
         verticalArrangement =
-            Arrangement.spacedBy(8.dp)
+            Arrangement.spacedBy(
+                9.dp
+            )
     ) {
         item {
             Row(
                 modifier =
                     Modifier.fillMaxWidth(),
+
                 verticalAlignment =
                     Alignment.CenterVertically
             ) {
                 Column(
                     modifier =
-                        Modifier.weight(1f)
+                        Modifier.weight(
+                            1f
+                        )
                 ) {
                     Text(
-                        text = "Đối chiếu",
+                        text =
+                            "DUPLICATE REVIEW",
+
                         style =
                             MaterialTheme
                                 .typography
-                                .headlineSmall,
+                                .labelSmall,
+
                         fontWeight =
-                            FontWeight.ExtraBold
+                            FontWeight.Black,
+
+                        color =
+                            com.ngoctien.getmp3.ui.theme
+                                .BrandPink
                     )
 
                     Text(
                         text =
-                            "${state.exactPairs.size} trùng hoàn toàn · " +
-                                "${state.nearPairs.size} gần trùng ≥90%",
+                            "Đối chiếu",
+
                         style =
                             MaterialTheme
                                 .typography
-                                .bodySmall,
+                                .headlineSmall,
+
+                        fontWeight =
+                            FontWeight.Black
+                    )
+
+                    Text(
+                        text =
+                            "Chỉ hiển thị cặp có độ trùng từ 90% trở lên",
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
+
                         color =
                             MaterialTheme
                                 .colorScheme
@@ -532,7 +563,9 @@ private fun CompareList(
                 }
 
                 OutlinedButton(
-                    onClick = onRefresh,
+                    onClick =
+                        onRefresh,
+
                     enabled =
                         !state.isLoading &&
                             !state.isWorking
@@ -540,25 +573,171 @@ private fun CompareList(
                     if (state.isLoading) {
                         CircularProgressIndicator(
                             modifier =
-                                Modifier.size(17.dp),
-                            strokeWidth = 2.dp
+                                Modifier.size(
+                                    17.dp
+                                ),
+
+                            strokeWidth =
+                                2.dp
                         )
-                    } else {
+                    }
+                    else {
                         Icon(
                             imageVector =
-                                Icons.Rounded.Refresh,
-                            contentDescription = null,
+                                Icons.Rounded
+                                    .Refresh,
+
+                            contentDescription =
+                                null,
+
                             modifier =
-                                Modifier.size(17.dp)
+                                Modifier.size(
+                                    17.dp
+                                )
                         )
                     }
 
                     Spacer(
                         modifier =
-                            Modifier.width(6.dp)
+                            Modifier.width(
+                                6.dp
+                            )
                     )
 
-                    Text("Đối chiếu lại")
+                    Text(
+                        "Đối chiếu lại"
+                    )
+                }
+            }
+        }
+
+        item {
+            val shape =
+                RoundedCornerShape(
+                    20.dp
+                )
+
+            Surface(
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                shape =
+                    shape,
+
+                color =
+                    Color.Transparent,
+
+                tonalElevation =
+                    4.dp,
+
+                shadowElevation =
+                    6.dp
+            ) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(
+                                shape
+                            )
+                            .background(
+                                androidx.compose.ui.graphics
+                                    .Brush
+                                    .linearGradient(
+                                        listOf(
+                                            com.ngoctien.getmp3.ui.theme
+                                                .BrandBlue
+                                                .copy(
+                                                    alpha =
+                                                        0.44f
+                                                ),
+
+                                            com.ngoctien.getmp3.ui.theme
+                                                .BrandViolet
+                                                .copy(
+                                                    alpha =
+                                                        0.34f
+                                                ),
+
+                                            com.ngoctien.getmp3.ui.theme
+                                                .BrandPink
+                                                .copy(
+                                                    alpha =
+                                                        0.20f
+                                                )
+                                        )
+                                    )
+                            )
+                            .padding(
+                                1.dp
+                            )
+                            .clip(
+                                RoundedCornerShape(
+                                    19.dp
+                                )
+                            )
+                            .background(
+                                MaterialTheme
+                                    .colorScheme
+                                    .surface
+                                    .copy(
+                                        alpha =
+                                            0.90f
+                                    )
+                            )
+                            .padding(
+                                horizontal =
+                                    14.dp,
+
+                                vertical =
+                                    11.dp
+                            )
+                ) {
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+
+                        horizontalArrangement =
+                            Arrangement.spacedBy(
+                                10.dp
+                            )
+                    ) {
+                        DuplicateCountStat(
+                            label =
+                                "Trùng hoàn toàn",
+
+                            value =
+                                state.exactPairs
+                                    .size,
+
+                            accent =
+                                com.ngoctien.getmp3.ui.theme
+                                    .BrandSky,
+
+                            modifier =
+                                Modifier.weight(
+                                    1f
+                                )
+                        )
+
+                        DuplicateCountStat(
+                            label =
+                                "Gần trùng",
+
+                            value =
+                                state.nearPairs
+                                    .size,
+
+                            accent =
+                                com.ngoctien.getmp3.ui.theme
+                                    .BrandPink,
+
+                            modifier =
+                                Modifier.weight(
+                                    1f
+                                )
+                        )
+                    }
                 }
             }
         }
@@ -568,27 +747,49 @@ private fun CompareList(
                 Surface(
                     modifier =
                         Modifier.fillMaxWidth(),
+
                     shape =
-                        RoundedCornerShape(16.dp),
-                    tonalElevation = 2.dp
+                        RoundedCornerShape(
+                            17.dp
+                        ),
+
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .surfaceVariant
+                            .copy(
+                                alpha =
+                                    0.58f
+                            )
                 ) {
                     Row(
                         modifier =
-                            Modifier.padding(12.dp),
+                            Modifier.padding(
+                                12.dp
+                            ),
+
                         verticalAlignment =
                             Alignment.CenterVertically,
+
                         horizontalArrangement =
-                            Arrangement.spacedBy(9.dp)
+                            Arrangement.spacedBy(
+                                9.dp
+                            )
                     ) {
                         CircularProgressIndicator(
                             modifier =
-                                Modifier.size(18.dp),
-                            strokeWidth = 2.dp
+                                Modifier.size(
+                                    18.dp
+                                ),
+
+                            strokeWidth =
+                                2.dp
                         )
 
                         Text(
                             text =
-                                "Đang so thư mục tải với dữ liệu đã chuẩn bị...",
+                                "Đang đối chiếu Library...",
+
                             style =
                                 MaterialTheme
                                     .typography
@@ -600,41 +801,37 @@ private fun CompareList(
         }
 
         state.errorMessage
-            ?.let { message ->
+            ?.let {
+                    message ->
+
                 item {
                     Surface(
                         modifier =
                             Modifier.fillMaxWidth(),
+
                         shape =
-                            RoundedCornerShape(16.dp),
+                            RoundedCornerShape(
+                                17.dp
+                            ),
+
                         color =
                             MaterialTheme
                                 .colorScheme
                                 .errorContainer
+                                .copy(
+                                    alpha =
+                                        0.72f
+                                )
                     ) {
-                        Column(
-                            modifier =
-                                Modifier.padding(13.dp),
-                            verticalArrangement =
-                                Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = message,
-                                color =
-                                    MaterialTheme
-                                        .colorScheme
-                                        .onErrorContainer
-                            )
+                        Text(
+                            text =
+                                message,
 
-                            Text(
-                                text =
-                                    "Nếu chưa có data, vào Cài đặt → Chuẩn bị dữ liệu.",
-                                style =
-                                    MaterialTheme
-                                        .typography
-                                        .labelSmall
-                            )
-                        }
+                            modifier =
+                                Modifier.padding(
+                                    13.dp
+                                )
+                        )
                     }
                 }
             }
@@ -649,44 +846,58 @@ private fun CompareList(
                 Surface(
                     modifier =
                         Modifier.fillMaxWidth(),
+
                     shape =
-                        RoundedCornerShape(20.dp),
-                    tonalElevation = 3.dp
+                        RoundedCornerShape(
+                            20.dp
+                        ),
+
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .surfaceVariant
+                            .copy(
+                                alpha =
+                                    0.52f
+                            ),
+
+                    tonalElevation =
+                        3.dp
                 ) {
                     Column(
                         modifier =
-                            Modifier.padding(20.dp),
+                            Modifier.padding(
+                                20.dp
+                            ),
+
                         horizontalAlignment =
                             Alignment.CenterHorizontally,
+
                         verticalArrangement =
-                            Arrangement.spacedBy(7.dp)
+                            Arrangement.spacedBy(
+                                7.dp
+                            )
                     ) {
                         Icon(
                             imageVector =
-                                Icons.Rounded.CheckCircle,
-                            contentDescription = null,
+                                Icons.Rounded
+                                    .CheckCircle,
+
+                            contentDescription =
+                                null,
+
                             modifier =
-                                Modifier.size(34.dp)
+                                Modifier.size(
+                                    34.dp
+                                )
                         )
 
                         Text(
                             text =
                                 "Không có bài cần xử lý",
-                            fontWeight =
-                                FontWeight.Bold
-                        )
 
-                        Text(
-                            text =
-                                "Nút Đối chiếu lại chỉ cập nhật thư mục tải; kho đối chiếu không bị quét lại.",
-                            style =
-                                MaterialTheme
-                                    .typography
-                                    .bodySmall,
-                            color =
-                                MaterialTheme
-                                    .colorScheme
-                                    .onSurfaceVariant
+                            fontWeight =
+                                FontWeight.Black
                         )
                     }
                 }
@@ -696,26 +907,41 @@ private fun CompareList(
         if (state.exactPairs.isNotEmpty()) {
             item {
                 CompareSectionHeader(
-                    title = "Trùng hoàn toàn",
+                    title =
+                        "Trùng hoàn toàn",
+
                     count =
                         state.exactPairs.size,
+
                     subtitle =
                         "Tên file chuẩn hóa giống 100%",
-                    expanded = true,
-                    onClick = null
+
+                    expanded =
+                        true,
+
+                    onClick =
+                        null
                 )
             }
 
             items(
-                items = state.exactPairs,
+                items =
+                    state.exactPairs,
+
                 key = {
                     "exact-${it.id}"
                 }
-            ) { pair ->
+            ) {
+                    pair ->
+
                 ComparePairRow(
-                    pair = pair,
+                    pair =
+                        pair,
+
                     onClick = {
-                        onOpenPair(pair)
+                        onOpenPair(
+                            pair
+                        )
                     }
                 )
             }
@@ -724,17 +950,18 @@ private fun CompareList(
         if (state.nearPairs.isNotEmpty()) {
             item {
                 CompareSectionHeader(
-                    title = "Có thể trùng ≥ 90%",
+                    title =
+                        "Có thể trùng",
+
                     count =
                         state.nearPairs.size,
+
                     subtitle =
-                        if (nearCollapsed) {
-                            "Nhấn để xem"
-                        } else {
-                            "Nhấn để thu gọn"
-                        },
+                        "Độ giống từ 90% đến dưới 100%",
+
                     expanded =
                         !nearCollapsed,
+
                     onClick = {
                         nearCollapsed =
                             !nearCollapsed
@@ -744,15 +971,23 @@ private fun CompareList(
 
             if (!nearCollapsed) {
                 items(
-                    items = state.nearPairs,
+                    items =
+                        state.nearPairs,
+
                     key = {
                         "near-${it.id}"
                     }
-                ) { pair ->
+                ) {
+                        pair ->
+
                     ComparePairRow(
-                        pair = pair,
+                        pair =
+                            pair,
+
                         onClick = {
-                            onOpenPair(pair)
+                            onOpenPair(
+                                pair
+                            )
                         }
                     )
                 }
@@ -764,15 +999,21 @@ private fun CompareList(
                 Text(
                     text =
                         "Đã ẩn ${state.ignoredPairCount} cặp được chọn Giữ cả hai.",
+
                     modifier =
                         Modifier.padding(
-                            horizontal = 3.dp,
-                            vertical = 4.dp
+                            horizontal =
+                                3.dp,
+
+                            vertical =
+                                4.dp
                         ),
+
                     style =
                         MaterialTheme
                             .typography
                             .labelSmall,
+
                     color =
                         MaterialTheme
                             .colorScheme
@@ -782,6 +1023,98 @@ private fun CompareList(
         }
     }
 }
+
+
+@Composable
+private fun DuplicateCountStat(
+    label: String,
+    value: Int,
+    accent: Color,
+    modifier: Modifier
+) {
+    Surface(
+        modifier =
+            modifier,
+
+        shape =
+            RoundedCornerShape(
+                15.dp
+            ),
+
+        color =
+            accent
+                .copy(
+                    alpha =
+                        0.13f
+                ),
+
+        border =
+            BorderStroke(
+                width =
+                    1.dp,
+
+                color =
+                    accent
+                        .copy(
+                            alpha =
+                                0.34f
+                        )
+            )
+    ) {
+        Row(
+            modifier =
+                Modifier.padding(
+                    horizontal =
+                        11.dp,
+
+                    vertical =
+                        9.dp
+                ),
+
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            Column(
+                modifier =
+                    Modifier.weight(
+                        1f
+                    )
+            ) {
+                Text(
+                    text =
+                        label,
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall,
+
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                )
+
+                Text(
+                    text =
+                        value.toString(),
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleLarge,
+
+                    fontWeight =
+                        FontWeight.Black,
+
+                    color =
+                        accent
+                )
+            }
+        }
+    }
+}
+
 
 @Composable
 private fun CompareSectionHeader(
@@ -794,6 +1127,31 @@ private fun CompareSectionHeader(
     val exact =
         title.startsWith(
             "Trùng hoàn toàn"
+        )
+
+    val startColor =
+        if (exact) {
+            com.ngoctien.getmp3.ui.theme
+                .BrandBlue
+        }
+        else {
+            com.ngoctien.getmp3.ui.theme
+                .BrandViolet
+        }
+
+    val endColor =
+        if (exact) {
+            com.ngoctien.getmp3.ui.theme
+                .BrandViolet
+        }
+        else {
+            com.ngoctien.getmp3.ui.theme
+                .BrandPink
+        }
+
+    val shape =
+        RoundedCornerShape(
+            18.dp
         )
 
     Surface(
@@ -813,117 +1171,153 @@ private fun CompareSectionHeader(
                 ),
 
         shape =
-            RoundedCornerShape(
-                17.dp
-            ),
+            shape,
 
         color =
-            if (exact) {
-                MaterialTheme
-                    .colorScheme
-                    .primaryContainer
-                    .copy(
-                        alpha =
-                            0.72f
-                    )
-            }
-            else {
-                MaterialTheme
-                    .colorScheme
-                    .surfaceVariant
-                    .copy(
-                        alpha =
-                            0.58f
-                    )
-            },
-
-        border =
-            BorderStroke(
-                width =
-                    1.dp,
-
-                color =
-                    if (exact) {
-                        MaterialTheme
-                            .colorScheme
-                            .primary
-                            .copy(
-                                alpha =
-                                    0.38f
-                            )
-                    }
-                    else {
-                        MaterialTheme
-                            .colorScheme
-                            .outlineVariant
-                    }
-            ),
+            Color.Transparent,
 
         tonalElevation =
-            2.dp
+            4.dp,
+
+        shadowElevation =
+            5.dp
     ) {
-        Row(
+        Box(
             modifier =
-                Modifier.padding(
-                    horizontal =
-                        14.dp,
-
-                    vertical =
-                        9.dp
-                ),
-
-            verticalAlignment =
-                Alignment.CenterVertically
-        ) {
-            Column(
-                modifier =
-                    Modifier.weight(
-                        1f
+                Modifier
+                    .fillMaxWidth()
+                    .clip(
+                        shape
                     )
+                    .background(
+                        androidx.compose.ui.graphics
+                            .Brush
+                            .linearGradient(
+                                listOf(
+                                    startColor
+                                        .copy(
+                                            alpha =
+                                                0.78f
+                                        ),
+
+                                    endColor
+                                        .copy(
+                                            alpha =
+                                                0.58f
+                                        )
+                                )
+                            )
+                    )
+                    .padding(
+                        horizontal =
+                            14.dp,
+
+                        vertical =
+                            10.dp
+                    )
+        ) {
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
-                Text(
-                    text =
-                        "$title · $count",
+                Column(
+                    modifier =
+                        Modifier.weight(
+                            1f
+                        )
+                ) {
+                    Text(
+                        text =
+                            title,
 
-                    fontWeight =
-                        FontWeight.ExtraBold
-                )
+                        fontWeight =
+                            FontWeight.Black,
 
-                Text(
-                    text =
-                        subtitle,
+                        color =
+                            Color.White
+                    )
 
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelSmall,
+                    Text(
+                        text =
+                            subtitle,
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
+
+                        color =
+                            Color.White
+                                .copy(
+                                    alpha =
+                                        0.74f
+                                )
+                    )
+                }
+
+                Surface(
+                    shape =
+                        RoundedCornerShape(
+                            99.dp
+                        ),
 
                     color =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant
-                )
-            }
+                        Color.Black
+                            .copy(
+                                alpha =
+                                    0.20f
+                            )
+                ) {
+                    Text(
+                        text =
+                            "$count",
 
-            if (onClick != null) {
-                Text(
-                    text =
-                        if (expanded) {
-                            "▲"
-                        }
-                        else {
-                            "▼"
-                        },
+                        modifier =
+                            Modifier.padding(
+                                horizontal =
+                                    10.dp,
 
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant
-                )
+                                vertical =
+                                    5.dp
+                            ),
+
+                        fontWeight =
+                            FontWeight.Black,
+
+                        color =
+                            Color.White
+                    )
+                }
+
+                if (onClick != null) {
+                    Spacer(
+                        modifier =
+                            Modifier.width(
+                                8.dp
+                            )
+                    )
+
+                    Text(
+                        text =
+                            if (expanded) {
+                                "▲"
+                            }
+                            else {
+                                "▼"
+                            },
+
+                        color =
+                            Color.White
+                    )
+                }
             }
         }
     }
 }
+
 
 @Composable
 private fun ComparePairRow(
@@ -946,230 +1340,288 @@ private fun ComparePairRow(
                 .roundToInt()
         }
 
+    val accentStart =
+        if (exact) {
+            com.ngoctien.getmp3.ui.theme
+                .BrandBlue
+        }
+        else {
+            com.ngoctien.getmp3.ui.theme
+                .BrandViolet
+        }
+
+    val accentEnd =
+        if (exact) {
+            com.ngoctien.getmp3.ui.theme
+                .BrandCyan
+        }
+        else {
+            com.ngoctien.getmp3.ui.theme
+                .BrandPink
+        }
+
+    val shape =
+        RoundedCornerShape(
+            20.dp
+        )
+
     Surface(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .bouncyClickable(
+                    pressedScale =
+                        0.975f,
+
                     onClick =
                         onClick
                 ),
 
         shape =
-            RoundedCornerShape(
-                19.dp
-            ),
+            shape,
 
         color =
-            MaterialTheme
-                .colorScheme
-                .surface
-                .copy(
-                    alpha =
-                        0.74f
-                ),
+            Color.Transparent,
 
         tonalElevation =
-            3.dp,
-
-        shadowElevation =
             4.dp,
 
-        border =
-            BorderStroke(
-                width =
-                    1.dp,
+        shadowElevation =
+            6.dp
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(
+                        shape
+                    )
+                    .background(
+                        androidx.compose.ui.graphics
+                            .Brush
+                            .linearGradient(
+                                listOf(
+                                    accentStart
+                                        .copy(
+                                            alpha =
+                                                0.58f
+                                        ),
 
-                color =
-                    if (exact) {
+                                    accentEnd
+                                        .copy(
+                                            alpha =
+                                                0.30f
+                                        ),
+
+                                    com.ngoctien.getmp3.ui.theme
+                                        .BrandViolet
+                                        .copy(
+                                            alpha =
+                                                0.18f
+                                        )
+                                )
+                            )
+                    )
+                    .padding(
+                        1.dp
+                    )
+                    .clip(
+                        RoundedCornerShape(
+                            19.dp
+                        )
+                    )
+                    .background(
                         MaterialTheme
                             .colorScheme
-                            .primary
+                            .surface
                             .copy(
                                 alpha =
-                                    0.38f
+                                    0.93f
                             )
-                    }
-                    else {
-                        MaterialTheme
-                            .colorScheme
-                            .outlineVariant
-                    }
-            )
-    ) {
-        Row(
-            modifier =
-                Modifier.padding(
-                    9.dp
-                ),
-
-            verticalAlignment =
-                Alignment.CenterVertically
+                    )
+                    .padding(
+                        9.dp
+                    )
         ) {
-            IndexedCover(
-                coverPath =
-                    pair.current
-                        .coverPath,
-
-                title =
-                    pair.current
-                        .title,
-
-                size =
-                    58
-            )
-
-            Spacer(
+            Row(
                 modifier =
-                    Modifier.width(
-                        10.dp
-                    )
-            )
+                    Modifier.fillMaxWidth(),
 
-            Column(
-                modifier =
-                    Modifier.weight(
-                        1f
-                    ),
-
-                verticalArrangement =
-                    Arrangement.spacedBy(
-                        2.dp
-                    )
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
-                Text(
-                    text =
+                IndexedCover(
+                    coverPath =
+                        pair.current
+                            .coverPath,
+
+                    title =
                         pair.current
                             .title,
 
-                    maxLines =
-                        1,
-
-                    overflow =
-                        TextOverflow
-                            .Ellipsis,
-
-                    fontWeight =
-                        FontWeight.ExtraBold
+                    size =
+                        60
                 )
 
-                Text(
-                    text =
-                        pair.current
-                            .artist
-                            .ifBlank {
-                                "Chưa xác định Artist"
-                            },
-
-                    maxLines =
-                        1,
-
-                    overflow =
-                        TextOverflow
-                            .Ellipsis,
-
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodySmall,
-
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant
-                )
-
-                Text(
-                    text =
-                        buildString {
-                            append(
-                                pair.current
-                                    .album
-                                    .ifBlank {
-                                        "Chưa có Album"
-                                    }
-                            )
-
-                            val year =
-                                pair.current
-                                    .year
-                                    .trim()
-
-                            if (year.isNotBlank()) {
-                                append(
-                                    " · "
-                                )
-
-                                append(
-                                    year
-                                )
-                            }
-                        },
-
-                    maxLines =
-                        1,
-
-                    overflow =
-                        TextOverflow
-                            .Ellipsis,
-
-                    style =
-                        MaterialTheme
-                            .typography
-                            .labelSmall,
-
-                    color =
-                        MaterialTheme
-                            .colorScheme
-                            .onSurfaceVariant
-                )
-            }
-
-            Surface(
-                shape =
-                    RoundedCornerShape(
-                        99.dp
-                    ),
-
-                color =
-                    if (exact) {
-                        MaterialTheme
-                            .colorScheme
-                            .secondaryContainer
-                    }
-                    else {
-                        MaterialTheme
-                            .colorScheme
-                            .surfaceVariant
-                    }
-            ) {
-                Text(
-                    text =
-                        "$score%",
-
+                Spacer(
                     modifier =
-                        Modifier.padding(
-                            horizontal =
-                                10.dp,
+                        Modifier.width(
+                            10.dp
+                        )
+                )
 
-                            vertical =
-                                6.dp
+                Column(
+                    modifier =
+                        Modifier.weight(
+                            1f
                         ),
 
-                    fontWeight =
-                        FontWeight.ExtraBold,
+                    verticalArrangement =
+                        Arrangement.spacedBy(
+                            2.dp
+                        )
+                ) {
+                    Text(
+                        text =
+                            pair.current
+                                .title
+                                .ifBlank {
+                                    "Chưa có Title"
+                                },
 
-                    color =
-                        if (exact) {
+                        maxLines =
+                            1,
+
+                        overflow =
+                            TextOverflow
+                                .Ellipsis,
+
+                        fontWeight =
+                            FontWeight.Black
+                    )
+
+                    Text(
+                        text =
+                            pair.current
+                                .artist
+                                .ifBlank {
+                                    "Chưa xác định Artist"
+                                },
+
+                        maxLines =
+                            1,
+
+                        overflow =
+                            TextOverflow
+                                .Ellipsis,
+
+                        style =
                             MaterialTheme
-                                .colorScheme
-                                .onSecondaryContainer
-                        }
-                        else {
+                                .typography
+                                .bodySmall,
+
+                        color =
                             MaterialTheme
                                 .colorScheme
                                 .onSurfaceVariant
-                        }
+                    )
+
+                    Text(
+                        text =
+                            "Library · " +
+                                pair.reference
+                                    .title
+                                    .ifBlank {
+                                        "Chưa có Title"
+                                    },
+
+                        maxLines =
+                            1,
+
+                        overflow =
+                            TextOverflow
+                                .Ellipsis,
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelSmall,
+
+                        color =
+                            accentEnd
+                    )
+                }
+
+                Surface(
+                    shape =
+                        RoundedCornerShape(
+                            99.dp
+                        ),
+
+                    color =
+                        accentStart
+                            .copy(
+                                alpha =
+                                    0.20f
+                            ),
+
+                    border =
+                        BorderStroke(
+                            width =
+                                1.dp,
+
+                            color =
+                                accentEnd
+                                    .copy(
+                                        alpha =
+                                            0.46f
+                                    )
+                        )
+                ) {
+                    Text(
+                        text =
+                            "$score%",
+
+                        modifier =
+                            Modifier.padding(
+                                horizontal =
+                                    10.dp,
+
+                                vertical =
+                                    6.dp
+                            ),
+
+                        fontWeight =
+                            FontWeight.Black,
+
+                        color =
+                            accentEnd
+                    )
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.width(
+                            6.dp
+                        )
+                )
+
+                Text(
+                    text =
+                        "›",
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .headlineSmall,
+
+                    fontWeight =
+                        FontWeight.Bold,
+
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
                 )
             }
         }

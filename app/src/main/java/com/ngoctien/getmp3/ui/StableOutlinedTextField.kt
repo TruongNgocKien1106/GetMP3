@@ -27,6 +27,7 @@ internal fun StableOutlinedTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    readOnly: Boolean = false,
     singleLine: Boolean = false,
     minLines: Int = 1,
     maxLines: Int =
@@ -95,6 +96,7 @@ internal fun StableOutlinedTextField(
         },
 
         modifier = modifier,
+        readOnly = readOnly,
         singleLine = singleLine,
         minLines = minLines,
         maxLines = maxLines,
