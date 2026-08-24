@@ -133,9 +133,39 @@ class CompareViewModel(
      */
     fun ensureLoaded() {
         if (
-            mutableUiState.value.hasLoaded ||
             scanJob?.isActive == true
         ) {
+            return
+        }
+
+        val current =
+            mutableUiState.value
+
+        if (current.hasLoaded) {
+            if (
+                current.selectedPair == null
+            ) {
+                val nextPair =
+                    current.exactPairs
+                        .firstOrNull()
+                        ?: current.nearPairs
+                            .firstOrNull()
+
+                if (nextPair != null) {
+                    audioPreview.stop()
+
+                    mutableUiState.update {
+                        it.copy(
+                            selectedPair =
+                                nextPair,
+
+                            playingSide =
+                                null
+                        )
+                    }
+                }
+            }
+
             return
         }
 
@@ -172,17 +202,37 @@ class CompareViewModel(
                     val result =
                         repository.scan()
 
+                    val nextPair =
+                        result.exactPairs
+                            .firstOrNull()
+                            ?: result.nearPairs
+                                .firstOrNull()
+
                     mutableUiState.update {
                         it.copy(
                             exactPairs =
                                 result.exactPairs,
+
                             nearPairs =
                                 result.nearPairs,
+
                             ignoredPairCount =
                                 result.ignoredPairCount,
-                            isLoading = false,
-                            hasLoaded = true,
-                            errorMessage = null
+
+                            selectedPair =
+                                nextPair,
+
+                            playingSide =
+                                null,
+
+                            isLoading =
+                                false,
+
+                            hasLoaded =
+                                true,
+
+                            errorMessage =
+                                null
                         )
                     }
                 } catch (
@@ -329,16 +379,83 @@ class CompareViewModel(
                         )
                     }
 
-                mutableUiState.update {
-                    it.copy(
-                        selectedPair = null,
-                        playingSide = null,
-                        isWorking = false
-                    )
-                }
+                try {
+                    val refreshed =
+                        repository.scan()
 
-                /* Only re-sync the small working folder + DB matcher. */
-                refresh()
+                    val nextPair =
+                        refreshed.exactPairs
+                            .firstOrNull()
+                            ?: refreshed.nearPairs
+                                .firstOrNull()
+
+                    mutableUiState.update {
+                        it.copy(
+                            exactPairs =
+                                refreshed.exactPairs,
+
+                            nearPairs =
+                                refreshed.nearPairs,
+
+                            ignoredPairCount =
+                                refreshed.ignoredPairCount,
+
+                            selectedPair =
+                                nextPair,
+
+                            playingSide =
+                                null,
+
+                            isWorking =
+                                false,
+
+                            isLoading =
+                                false,
+
+                            hasLoaded =
+                                true,
+
+                            errorMessage =
+                                null
+                        )
+                    }
+                } catch (
+                    exception: CancellationException
+                ) {
+                    throw exception
+                } catch (
+                    refreshException: Exception
+                ) {
+                    mutableUiState.update {
+                        it.copy(
+                            selectedPair =
+                                null,
+
+                            playingSide =
+                                null,
+
+                            isWorking =
+                                false,
+
+                            isLoading =
+                                false,
+
+                            hasLoaded =
+                                false,
+
+                            errorMessage =
+                                "Đã xử lý cặp hiện tại nhưng cần đối chiếu lại."
+                        )
+                    }
+
+                    mutableEvents.emit(
+                        CompareEvent(
+                            "Đã xử lý cặp hiện tại. Đang đối chiếu lại."
+                        )
+                    )
+
+                    refresh()
+                }
             } catch (
                 exception: CancellationException
             ) {
