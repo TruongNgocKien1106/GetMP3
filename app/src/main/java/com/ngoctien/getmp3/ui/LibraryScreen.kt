@@ -6,38 +6,34 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.LibraryMusic
-import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Sync
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -45,7 +41,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,6 +55,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.ngoctien.getmp3.data.IndexedMediaEntity
@@ -71,6 +67,27 @@ import com.ngoctien.getmp3.viewmodel.LibraryFilterMode
 import com.ngoctien.getmp3.viewmodel.LibrarySortMode
 import com.ngoctien.getmp3.viewmodel.LibraryUiState
 import java.io.File
+
+private const val RECENT_WINDOW_MS =
+    7L *
+        24L *
+        60L *
+        60L *
+        1000L
+
+private enum class LibraryBrowseMode {
+    SONGS,
+    ARTISTS,
+    ALBUMS,
+    YEARS
+}
+
+private data class LibraryGroupRowData(
+    val label: String,
+    val searchValue: String,
+    val count: Int,
+    val coverPath: String?
+)
 
 @Composable
 internal fun LibraryScreen(
@@ -88,438 +105,2086 @@ internal fun LibraryScreen(
     onOpenLyrics: (IndexedMediaEntity) -> Unit,
     onEditTag: (IndexedMediaEntity) -> Unit
 ) {
-    val context = LocalContext.current
-    var infoSong by remember { mutableStateOf<IndexedMediaEntity?>(null) }
+    val context =
+        LocalContext.current
 
-    LazyColumn(
-        modifier = modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item {
-            AppPageHeader(
-                title = "Library",
-                subtitle = "${state.totalCount} bài • Nghe • tìm • quản lý",
-                icon = Icons.Rounded.LibraryMusic,
-                action = {
-                    if (state.isConfigured) {
-                        AppHeaderActionButton(
-                            icon = Icons.Rounded.Sync,
-                            contentDescription = "Đồng bộ lại Library",
-                            enabled = !indexIsScanning,
-                            onClick = onRescan
-                        )
-                    }
-                }
+    var browseMode by
+        remember {
+            mutableStateOf(
+                LibraryBrowseMode.SONGS
             )
         }
 
-        if (!state.isConfigured) {
+    var recentOnly by
+        remember {
+            mutableStateOf(
+                false
+            )
+        }
+
+    val recentThreshold =
+        System.currentTimeMillis() -
+            RECENT_WINDOW_MS
+
+    val visibleSongs =
+        if (recentOnly) {
+            state.songs
+                .filter {
+                    it.indexedAt >=
+                        recentThreshold
+                }
+        } else {
+            state.songs
+        }
+
+    val groupRows =
+        remember(
+            visibleSongs,
+            browseMode
+        ) {
+            buildGroupRows(
+                songs =
+                    visibleSongs,
+
+                mode =
+                    browseMode
+            )
+        }
+
+    AppScreenBackdrop(
+        modifier =
+            modifier
+    ) {
+        LazyColumn(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding(),
+            contentPadding =
+                PaddingValues(
+                    start =
+                        16.dp,
+
+                    end =
+                        16.dp,
+
+                    top =
+                        16.dp,
+
+                    bottom =
+                        28.dp
+                ),
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    12.dp
+                )
+        ) {
             item {
-                LibraryMessageCard(
-                    title = "Chưa cài Library",
-                    body = "Chọn thư mục Music trong Cài đặt rồi bấm Cài & đồng bộ.",
-                    actionLabel = "Cài thư mục",
-                    onAction = onOpenSettings
+                LibraryPrototypeHeader(
+                    indexIsScanning =
+                        indexIsScanning,
+
+                    onRescan =
+                        onRescan
                 )
             }
-        } else {
+
+            if (
+                !state.isConfigured
+            ) {
+                item {
+                    LibraryMessageCard(
+                        title =
+                            "Chưa cài Library",
+
+                        body =
+                            "Chọn thư mục Music trong Cài đặt rồi đồng bộ Library.",
+
+                        actionLabel =
+                            "Cài thư mục",
+
+                        onAction =
+                            onOpenSettings
+                    )
+                }
+
+                return@LazyColumn
+            }
+
             item {
-                OutlinedTextField(
-                    value = state.query,
-                    onValueChange = onQueryChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text("Tìm Title hoặc Artist") },
-                    leadingIcon = {
-                        Icon(Icons.Rounded.Search, contentDescription = null)
-                    },
-                    trailingIcon = {
-                        if (state.query.isNotBlank()) {
-                            IconButton(onClick = { onQueryChange("") }) {
-                                Icon(
-                                    Icons.Rounded.Close,
-                                    contentDescription = "Xóa từ khóa"
-                                )
-                            }
-                        }
-                    },
-                    shape = RoundedCornerShape(22.dp)
+                LibrarySearchField(
+                    query =
+                        state.query,
+
+                    onQueryChange =
+                        onQueryChange
                 )
             }
 
             item {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item {
-                        LibraryFilterChip(
-                            "Mới thêm",
-                            state.sortMode == LibrarySortMode.NEWEST
-                        ) { onSortChange(LibrarySortMode.NEWEST) }
+                LibraryPrimaryTabs(
+                    selectedMode =
+                        browseMode,
+
+                    onSelect = {
+                        browseMode =
+                            it
                     }
-                    item {
-                        LibraryFilterChip(
-                            "A-Z",
-                            state.sortMode == LibrarySortMode.TITLE
-                        ) { onSortChange(LibrarySortMode.TITLE) }
+                )
+            }
+
+            item {
+                LibraryFilterStrip(
+                    state =
+                        state,
+
+                    recentOnly =
+                        recentOnly,
+
+                    onAll = {
+                        recentOnly =
+                            false
+
+                        onFilterChange(
+                            LibraryFilterMode.ALL
+                        )
+                    },
+
+                    onAttention = {
+                        recentOnly =
+                            false
+
+                        onFilterChange(
+                            LibraryFilterMode
+                                .NEEDS_ATTENTION
+                        )
+                    },
+
+                    onRecent = {
+                        recentOnly =
+                            true
+
+                        onFilterChange(
+                            LibraryFilterMode.ALL
+                        )
+
+                        onSortChange(
+                            LibrarySortMode.NEWEST
+                        )
+                    },
+
+                    onSort = {
+                        onSortChange(
+                            if (
+                                browseMode ==
+                                LibraryBrowseMode.ARTISTS
+                            ) {
+                                LibrarySortMode.ARTIST
+                            } else {
+                                LibrarySortMode.TITLE
+                            }
+                        )
                     }
-                    item {
-                        LibraryFilterChip(
-                            "Artist",
-                            state.sortMode == LibrarySortMode.ARTIST
-                        ) { onSortChange(LibrarySortMode.ARTIST) }
-                    }
-                    item {
-                        LibraryFilterChip(
-                            "Cần xử lý",
-                            state.filterMode == LibraryFilterMode.NEEDS_ATTENTION
+                )
+            }
+
+            if (
+                indexIsScanning
+            ) {
+                item {
+                    LibrarySyncIndicator(
+                        progress =
+                            indexProgress
+                    )
+                }
+            }
+
+            item {
+                LibrarySectionHeader(
+                    mode =
+                        browseMode,
+
+                    count =
+                        if (
+                            browseMode ==
+                            LibraryBrowseMode.SONGS
                         ) {
-                            onFilterChange(
-                                if (state.filterMode == LibraryFilterMode.NEEDS_ATTENTION) {
-                                    LibraryFilterMode.ALL
+                            visibleSongs.size
+                        } else {
+                            groupRows.size
+                        }
+                )
+            }
+
+            when {
+                state.isLoading -> {
+                    item {
+                        LibraryMessageCard(
+                            title =
+                                "Đang mở Library",
+
+                            body =
+                                "Đang đọc dữ liệu đã index."
+                        )
+                    }
+                }
+
+                state.errorMessage != null -> {
+                    item {
+                        LibraryMessageCard(
+                            title =
+                                "Không đọc được Library",
+
+                            body =
+                                state.errorMessage,
+
+                            actionLabel =
+                                "Thử lại",
+
+                            onAction =
+                                onRefresh
+                        )
+                    }
+                }
+
+                state.totalCount == 0 -> {
+                    item {
+                        LibraryMessageCard(
+                            title =
+                                "Library chưa có bài",
+
+                            body =
+                                "Đồng bộ để GetMP3 đọc nhạc trong thư mục Library.",
+
+                            actionLabel =
+                                "Đồng bộ ngay",
+
+                            onAction =
+                                onRescan
+                        )
+                    }
+                }
+
+                browseMode ==
+                    LibraryBrowseMode.SONGS &&
+                    visibleSongs.isEmpty() -> {
+
+                    item {
+                        LibraryMessageCard(
+                            title =
+                                "Không có kết quả phù hợp",
+
+                            body =
+                                if (
+                                    recentOnly
+                                ) {
+                                    "Không có bài mới trong 7 ngày gần đây."
+                                } else if (
+                                    state.query
+                                        .isNotBlank()
+                                ) {
+                                    "Không tìm thấy bài khớp từ khóa hiện tại."
                                 } else {
-                                    LibraryFilterMode.NEEDS_ATTENTION
+                                    "Không có bài nào khớp bộ lọc hiện tại."
                                 }
+                        )
+                    }
+                }
+
+                browseMode !=
+                    LibraryBrowseMode.SONGS &&
+                    groupRows.isEmpty() -> {
+
+                    item {
+                        LibraryMessageCard(
+                            title =
+                                "Chưa có dữ liệu",
+
+                            body =
+                                "Không có dữ liệu phù hợp với nhóm đang chọn."
+                        )
+                    }
+                }
+
+                browseMode ==
+                    LibraryBrowseMode.SONGS -> {
+
+                    items(
+                        items =
+                            visibleSongs,
+
+                        key = {
+                            it.uri
+                        }
+                    ) { song ->
+
+                        LibraryPrototypeSongCard(
+                            song =
+                                song,
+
+                            onPlay = {
+                                playExternal(
+                                    context =
+                                        context,
+
+                                    song =
+                                        song
+                                )
+                            },
+
+                            onEditTag = {
+                                onEditTag(
+                                    song
+                                )
+                            }
+                        )
+                    }
+                }
+
+                else -> {
+                    items(
+                        items =
+                            groupRows,
+
+                        key = {
+                            "${browseMode.name}:${it.label}"
+                        }
+                    ) { group ->
+
+                        LibraryGroupCard(
+                            item =
+                                group,
+
+                            onClick = {
+                                if (
+                                    group.searchValue
+                                        .isNotBlank()
+                                ) {
+                                    onQueryChange(
+                                        group.searchValue
+                                    )
+
+                                    browseMode =
+                                        LibraryBrowseMode.SONGS
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+
+            if (
+                state.query
+                    .trim()
+                    .isNotBlank() &&
+                visibleSongs.isEmpty() &&
+                !state.isLoading
+            ) {
+                item {
+                    LibraryYouTubeCta(
+                        query =
+                            state.query,
+
+                        onClick = {
+                            onSearchYouTube(
+                                state.query
+                            )
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    // Preserve the route contract. The prototype Library list does
+    // not expose a separate Lyrics action on each song card.
+    @Suppress("UNUSED_VARIABLE")
+    val lyricsRouteContract =
+        onOpenLyrics
+}
+
+
+@Composable
+private fun LibraryPrototypeHeader(
+    indexIsScanning: Boolean,
+    onRescan: () -> Unit
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    top =
+                        4.dp,
+
+                    bottom =
+                        8.dp
+                ),
+        verticalAlignment =
+            Alignment.CenterVertically,
+        horizontalArrangement =
+            Arrangement.SpaceBetween
+    ) {
+        Text(
+            text =
+                "Library",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .headlineLarge,
+
+            fontWeight =
+                FontWeight.Black,
+
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onBackground
+        )
+
+        Surface(
+            modifier =
+                Modifier
+                    .size(
+                        58.dp
+                    )
+                    .bouncyClickable(
+                        enabled =
+                            !indexIsScanning,
+
+                        pressedScale =
+                            0.90f,
+
+                        onClick =
+                            onRescan
+                    ),
+            shape =
+                RoundedCornerShape(
+                    20.dp
+                ),
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .surface
+                    .copy(
+                        alpha =
+                            0.90f
+                    ),
+            tonalElevation =
+                7.dp,
+            shadowElevation =
+                9.dp,
+            border =
+                BorderStroke(
+                    1.dp,
+                    BrandBlue.copy(
+                        alpha =
+                            0.40f
+                    )
+                )
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                listOf(
+                                    BrandBlue.copy(
+                                        alpha =
+                                            0.18f
+                                    ),
+                                    Color.Transparent,
+                                    BrandViolet.copy(
+                                        alpha =
+                                            0.12f
+                                    )
+                                )
+                            )
+                        ),
+                contentAlignment =
+                    Alignment.Center
+            ) {
+                Icon(
+                    imageVector =
+                        Icons.Rounded.Sync,
+
+                    contentDescription =
+                        "Đồng bộ Library",
+
+                    modifier =
+                        Modifier.size(
+                            25.dp
+                        ),
+
+                    tint =
+                        if (
+                            indexIsScanning
+                        ) {
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                        } else {
+                            MaterialTheme
+                                .colorScheme
+                                .primary
+                        }
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun LibrarySearchField(
+    query: String,
+    onQueryChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value =
+            query,
+
+        onValueChange =
+            onQueryChange,
+
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(
+                    min =
+                        62.dp
+                ),
+
+        singleLine =
+            true,
+
+        placeholder = {
+            Text(
+                "Title, Artist, Album hoặc Filename"
+            )
+        },
+
+        leadingIcon = {
+            Icon(
+                imageVector =
+                    Icons.Rounded.Search,
+
+                contentDescription =
+                    null
+            )
+        },
+
+        trailingIcon = {
+            if (
+                query.isNotBlank()
+            ) {
+                IconButton(
+                    onClick = {
+                        onQueryChange(
+                            ""
+                        )
+                    }
+                ) {
+                    Icon(
+                        imageVector =
+                            Icons.Rounded.Close,
+
+                        contentDescription =
+                            "Xóa từ khóa"
+                    )
+                }
+            }
+        },
+
+        shape =
+            RoundedCornerShape(
+                24.dp
+            )
+    )
+}
+
+
+@Composable
+private fun LibraryPrimaryTabs(
+    selectedMode: LibraryBrowseMode,
+    onSelect: (LibraryBrowseMode) -> Unit
+) {
+    Surface(
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(
+                22.dp
+            ),
+        color =
+            MaterialTheme
+                .colorScheme
+                .surface
+                .copy(
+                    alpha =
+                        0.68f
+                ),
+        border =
+            BorderStroke(
+                1.dp,
+                MaterialTheme
+                    .colorScheme
+                    .outlineVariant
+            )
+    ) {
+        BoxWithConstraints(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        4.dp
+                    )
+        ) {
+            val gap =
+                5.dp
+
+            val tabWidth =
+                (
+                    maxWidth -
+                        gap *
+                        3f
+                    ) /
+                    4f
+
+            Row(
+                horizontalArrangement =
+                    Arrangement.spacedBy(
+                        gap
+                    )
+            ) {
+                LibraryPrimaryTab(
+                    text =
+                        "Bài hát",
+
+                    selected =
+                        selectedMode ==
+                            LibraryBrowseMode.SONGS,
+
+                    modifier =
+                        Modifier.width(
+                            tabWidth
+                        ),
+
+                    onClick = {
+                        onSelect(
+                            LibraryBrowseMode.SONGS
+                        )
+                    }
+                )
+
+                LibraryPrimaryTab(
+                    text =
+                        "Artist",
+
+                    selected =
+                        selectedMode ==
+                            LibraryBrowseMode.ARTISTS,
+
+                    modifier =
+                        Modifier.width(
+                            tabWidth
+                        ),
+
+                    onClick = {
+                        onSelect(
+                            LibraryBrowseMode.ARTISTS
+                        )
+                    }
+                )
+
+                LibraryPrimaryTab(
+                    text =
+                        "Album",
+
+                    selected =
+                        selectedMode ==
+                            LibraryBrowseMode.ALBUMS,
+
+                    modifier =
+                        Modifier.width(
+                            tabWidth
+                        ),
+
+                    onClick = {
+                        onSelect(
+                            LibraryBrowseMode.ALBUMS
+                        )
+                    }
+                )
+
+                LibraryPrimaryTab(
+                    text =
+                        "Năm",
+
+                    selected =
+                        selectedMode ==
+                            LibraryBrowseMode.YEARS,
+
+                    modifier =
+                        Modifier.width(
+                            tabWidth
+                        ),
+
+                    onClick = {
+                        onSelect(
+                            LibraryBrowseMode.YEARS
+                        )
+                    }
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun LibraryPrimaryTab(
+    text: String,
+    selected: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier =
+            modifier
+                .height(
+                    46.dp
+                )
+                .bouncyClickable(
+                    pressedScale =
+                        0.95f,
+
+                    onClick =
+                        onClick
+                ),
+        shape =
+            RoundedCornerShape(
+                17.dp
+            ),
+        color =
+            if (
+                selected
+            ) {
+                Color.Transparent
+            } else {
+                MaterialTheme
+                    .colorScheme
+                    .surfaceVariant
+                    .copy(
+                        alpha =
+                            0.34f
+                    )
+            },
+        tonalElevation =
+            if (
+                selected
+            ) {
+                7.dp
+            } else {
+                0.dp
+            },
+        shadowElevation =
+            if (
+                selected
+            ) {
+                7.dp
+            } else {
+                0.dp
+            }
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        if (
+                            selected
+                        ) {
+                            Brush.linearGradient(
+                                listOf(
+                                    BrandCyan,
+                                    BrandBlue,
+                                    BrandViolet
+                                )
+                            )
+                        } else {
+                            Brush.linearGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    Color.Transparent
+                                )
+                            )
+                        }
+                    ),
+            contentAlignment =
+                Alignment.Center
+        ) {
+            Text(
+                text =
+                    text,
+
+                fontWeight =
+                    if (
+                        selected
+                    ) {
+                        FontWeight.Black
+                    } else {
+                        FontWeight.Bold
+                    },
+
+                color =
+                    if (
+                        selected
+                    ) {
+                        Color.White
+                    } else {
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                    }
+            )
+        }
+    }
+}
+
+
+@Composable
+private fun LibraryFilterStrip(
+    state: LibraryUiState,
+    recentOnly: Boolean,
+    onAll: () -> Unit,
+    onAttention: () -> Unit,
+    onRecent: () -> Unit,
+    onSort: () -> Unit
+) {
+    BoxWithConstraints(
+        modifier =
+            Modifier.fillMaxWidth()
+    ) {
+        val sortWidth =
+            58.dp
+
+        val gap =
+            8.dp
+
+        val filterWidth =
+            maxWidth -
+                sortWidth -
+                gap
+
+        Row(
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    gap
+                )
+        ) {
+            Surface(
+                modifier =
+                    Modifier
+                        .width(
+                            filterWidth
+                        )
+                        .height(
+                            64.dp
+                        ),
+                shape =
+                    RoundedCornerShape(
+                        22.dp
+                    ),
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .surface
+                        .copy(
+                            alpha =
+                                0.72f
+                        ),
+                border =
+                    BorderStroke(
+                        1.dp,
+                        MaterialTheme
+                            .colorScheme
+                            .outlineVariant
+                    )
+            ) {
+                BoxWithConstraints(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(
+                                4.dp
+                            )
+                ) {
+                    val itemWidth =
+                        maxWidth /
+                            3f
+
+                    Row {
+                        LibraryCounterFilter(
+                            label =
+                                "Tất cả",
+
+                            count =
+                                state.totalCount,
+
+                            selected =
+                                state.filterMode ==
+                                    LibraryFilterMode.ALL &&
+                                    !recentOnly,
+
+                            modifier =
+                                Modifier.width(
+                                    itemWidth
+                                ),
+
+                            onClick =
+                                onAll
+                        )
+
+                        LibraryCounterFilter(
+                            label =
+                                "Cần xử lý",
+
+                            count =
+                                state.attentionCount,
+
+                            selected =
+                                state.filterMode ==
+                                    LibraryFilterMode
+                                        .NEEDS_ATTENTION &&
+                                    !recentOnly,
+
+                            modifier =
+                                Modifier.width(
+                                    itemWidth
+                                ),
+
+                            onClick =
+                                onAttention
+                        )
+
+                        LibraryCounterFilter(
+                            label =
+                                "Mới thêm",
+
+                            count =
+                                state.newCount,
+
+                            selected =
+                                recentOnly,
+
+                            modifier =
+                                Modifier.width(
+                                    itemWidth
+                                ),
+
+                            onClick =
+                                onRecent
+                        )
+                    }
+                }
+            }
+
+            Surface(
+                modifier =
+                    Modifier
+                        .width(
+                            sortWidth
+                        )
+                        .height(
+                            64.dp
+                        )
+                        .bouncyClickable(
+                            pressedScale =
+                                0.93f,
+
+                            onClick =
+                                onSort
+                        ),
+                shape =
+                    RoundedCornerShape(
+                        20.dp
+                    ),
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .surface
+                        .copy(
+                            alpha =
+                                0.82f
+                        ),
+                tonalElevation =
+                    5.dp,
+                shadowElevation =
+                    6.dp,
+                border =
+                    BorderStroke(
+                        1.dp,
+                        BrandBlue.copy(
+                            alpha =
+                                0.38f
+                        )
+                    )
+            ) {
+                Column(
+                    modifier =
+                        Modifier.fillMaxSize(),
+                    horizontalAlignment =
+                        Alignment.CenterHorizontally,
+                    verticalArrangement =
+                        Arrangement.Center
+                ) {
+                    Text(
+                        text =
+                            "AZ",
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .labelMedium,
+
+                        fontWeight =
+                            FontWeight.Black
+                    )
+
+                    Text(
+                        text =
+                            "↓",
+
+                        style =
+                            MaterialTheme
+                                .typography
+                                .titleMedium,
+
+                        color =
+                            BrandCyan
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun LibraryCounterFilter(
+    label: String,
+    count: Int,
+    selected: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .bouncyClickable(
+                    pressedScale =
+                        0.95f,
+
+                    onClick =
+                        onClick
+                ),
+        shape =
+            RoundedCornerShape(
+                17.dp
+            ),
+        color =
+            if (
+                selected
+            ) {
+                MaterialTheme
+                    .colorScheme
+                    .primary
+                    .copy(
+                        alpha =
+                            0.22f
+                    )
+            } else {
+                Color.Transparent
+            }
+    ) {
+        Column(
+            modifier =
+                Modifier.fillMaxSize(),
+            horizontalAlignment =
+                Alignment.CenterHorizontally,
+            verticalArrangement =
+                Arrangement.Center
+        ) {
+            Text(
+                text =
+                    label,
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelSmall,
+
+                fontWeight =
+                    if (
+                        selected
+                    ) {
+                        FontWeight.Black
+                    } else {
+                        FontWeight.SemiBold
+                    },
+
+                maxLines =
+                    1
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(
+                        2.dp
+                    )
+            )
+
+            Surface(
+                shape =
+                    CircleShape,
+                color =
+                    if (
+                        selected
+                    ) {
+                        Color.White.copy(
+                            alpha =
+                                0.92f
+                        )
+                    } else {
+                        MaterialTheme
+                            .colorScheme
+                            .surfaceVariant
+                    }
+            ) {
+                Text(
+                    text =
+                        count.toString(),
+
+                    modifier =
+                        Modifier.padding(
+                            horizontal =
+                                7.dp,
+
+                            vertical =
+                                2.dp
+                        ),
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall,
+
+                    fontWeight =
+                        FontWeight.Bold,
+
+                    color =
+                        if (
+                            selected
+                        ) {
+                            MaterialTheme
+                                .colorScheme
+                                .primary
+                        } else {
+                            MaterialTheme
+                                .colorScheme
+                                .onSurfaceVariant
+                        }
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun LibrarySyncIndicator(
+    progress: Float
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal =
+                        2.dp
+                ),
+        verticalArrangement =
+            Arrangement.spacedBy(
+                5.dp
+            )
+    ) {
+        LinearProgressIndicator(
+            progress = {
+                progress.coerceIn(
+                    0f,
+                    1f
+                )
+            },
+            modifier =
+                Modifier.fillMaxWidth()
+        )
+
+        Text(
+            text =
+                "Đang đồng bộ Library...",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .labelSmall,
+
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        )
+    }
+}
+
+
+@Composable
+private fun LibrarySectionHeader(
+    mode: LibraryBrowseMode,
+    count: Int
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    top =
+                        2.dp
+                ),
+        horizontalArrangement =
+            Arrangement.SpaceBetween,
+        verticalAlignment =
+            Alignment.CenterVertically
+    ) {
+        Text(
+            text =
+                when (
+                    mode
+                ) {
+                    LibraryBrowseMode.SONGS ->
+                        "Bài hát"
+
+                    LibraryBrowseMode.ARTISTS ->
+                        "Artist"
+
+                    LibraryBrowseMode.ALBUMS ->
+                        "Album"
+
+                    LibraryBrowseMode.YEARS ->
+                        "Năm"
+                },
+
+            style =
+                MaterialTheme
+                    .typography
+                    .titleMedium,
+
+            fontWeight =
+                FontWeight.Black
+        )
+
+        Text(
+            text =
+                "$count kết quả",
+
+            style =
+                MaterialTheme
+                    .typography
+                    .labelMedium,
+
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .onSurfaceVariant
+        )
+    }
+}
+
+
+@Composable
+private fun LibraryPrototypeSongCard(
+    song: IndexedMediaEntity,
+    onPlay: () -> Unit,
+    onEditTag: () -> Unit
+) {
+    val issues =
+        libraryAttentionLabels(
+            song
+        )
+
+    val needsAttention =
+        issues.isNotEmpty()
+
+    val borderColor =
+        if (
+            needsAttention
+        ) {
+            MaterialTheme
+                .colorScheme
+                .error
+                .copy(
+                    alpha =
+                        0.50f
+                )
+        } else {
+            MaterialTheme
+                .colorScheme
+                .outline
+                .copy(
+                    alpha =
+                        0.30f
+                )
+        }
+
+    Surface(
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(
+                27.dp
+            ),
+        color =
+            MaterialTheme
+                .colorScheme
+                .surface
+                .copy(
+                    alpha =
+                        0.91f
+                ),
+        tonalElevation =
+            5.dp,
+        shadowElevation =
+            8.dp,
+        border =
+            BorderStroke(
+                1.dp,
+                borderColor
+            )
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                BrandBlue.copy(
+                                    alpha =
+                                        0.08f
+                                ),
+                                Color.Transparent,
+                                if (
+                                    needsAttention
+                                ) {
+                                    MaterialTheme
+                                        .colorScheme
+                                        .error
+                                        .copy(
+                                            alpha =
+                                                0.06f
+                                        )
+                                } else {
+                                    BrandViolet.copy(
+                                        alpha =
+                                            0.04f
+                                    )
+                                }
+                            )
+                        )
+                    )
+                    .padding(
+                        14.dp
+                    )
+        ) {
+            Column(
+                verticalArrangement =
+                    Arrangement.spacedBy(
+                        10.dp
+                    )
+            ) {
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(
+                            13.dp
+                        ),
+                    verticalAlignment =
+                        Alignment.Top
+                ) {
+                    LibraryCover(
+                        song =
+                            song,
+
+                        size =
+                            88.dp
+                    )
+
+                    Column(
+                        modifier =
+                            Modifier.weight(
+                                1f
+                            ),
+                        verticalArrangement =
+                            Arrangement.spacedBy(
+                                3.dp
+                            )
+                    ) {
+                        Text(
+                            text =
+                                song.title
+                                    .ifBlank {
+                                        song.displayName
+                                            .removeSuffix(
+                                                ".mp3"
+                                            )
+                                    },
+
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .titleMedium,
+
+                            fontWeight =
+                                FontWeight.Black,
+
+                            maxLines =
+                                2,
+
+                            overflow =
+                                TextOverflow.Ellipsis
+                        )
+
+                        Text(
+                            text =
+                                song.artist
+                                    .ifBlank {
+                                        "Chưa có Artist"
+                                    },
+
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodyMedium,
+
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .onSurface
+                                    .copy(
+                                        alpha =
+                                            0.83f
+                                    ),
+
+                            maxLines =
+                                1,
+
+                            overflow =
+                                TextOverflow.Ellipsis
+                        )
+
+                        Text(
+                            text =
+                                "Album: ${
+                                    song.album
+                                        .ifBlank {
+                                            "Chưa phân loại"
+                                        }
+                                }",
+
+                            style =
+                                MaterialTheme
+                                    .typography
+                                    .bodySmall,
+
+                            color =
+                                MaterialTheme
+                                    .colorScheme
+                                    .onSurfaceVariant,
+
+                            maxLines =
+                                1,
+
+                            overflow =
+                                TextOverflow.Ellipsis
+                        )
+
+                        if (
+                            song.year
+                                .isNotBlank()
+                        ) {
+                            Text(
+                                text =
+                                    song.year,
+
+                                style =
+                                    MaterialTheme
+                                        .typography
+                                        .bodySmall,
+
+                                color =
+                                    BrandCyan
                             )
                         }
                     }
                 }
-            }
 
-            item {
                 Text(
-                    text = buildString {
-                        append("${state.totalCount} bài")
-                        if (state.newCount > 0) append(" • mới ${state.newCount}")
-                        if (state.attentionCount > 0) {
-                            append(" • cần xử lý ${state.attentionCount}")
-                        }
-                        if (state.query.isNotBlank()) {
-                            append(" • ${state.songs.size} kết quả")
-                        }
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text =
+                        song.displayName,
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .labelSmall,
+
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant,
+
+                    maxLines =
+                        1,
+
+                    overflow =
+                        TextOverflow.Ellipsis
                 )
-            }
 
-            if (indexIsScanning) {
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        LinearProgressIndicator(
-                            progress = { indexProgress.coerceIn(0f, 1f) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Text(
-                            "Đang đồng bộ Library...",
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
-                }
-            }
-
-            when {
-                state.isLoading -> item {
-                    LibraryMessageCard(
-                        "Đang mở Library",
-                        "Đang đọc dữ liệu đã index."
+                if (
+                    needsAttention
+                ) {
+                    LibraryIssueLine(
+                        issues =
+                            issues
                     )
                 }
 
-                state.errorMessage != null -> item {
-                    LibraryMessageCard(
-                        "Không đọc được Library",
-                        state.errorMessage,
-                        "Thử lại",
-                        onRefresh
-                    )
-                }
+                Row(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.End,
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+                    LibrarySongAction(
+                        text =
+                            "Nghe thử",
 
-                state.totalCount == 0 -> item {
-                    LibraryMessageCard(
-                        "Library chưa có bài",
-                        "Đồng bộ để GetMP3 đọc nhạc trong thư mục Library.",
-                        "Đồng bộ ngay",
-                        onRescan
-                    )
-                }
+                        icon =
+                            Icons.Rounded.PlayArrow,
 
-                state.songs.isEmpty() -> item {
-                    LibraryMessageCard(
-                        "Không có kết quả phù hợp",
-                        if (state.query.isNotBlank()) {
-                            "Không tìm thấy bài khớp từ khóa hiện tại."
-                        } else {
-                            "Không có bài nào khớp bộ lọc hiện tại."
-                        }
-                    )
-                }
+                        accent =
+                            BrandBlue,
 
-                else -> items(state.songs, key = { it.uri }) { song ->
-                    LibrarySongCard(
-                        song = song,
-                        onPlay = { playExternal(context, song) },
-                        onLyrics = { onOpenLyrics(song) },
-                        onEditTag = { onEditTag(song) },
-                        onInfo = { infoSong = song }
+                        onClick =
+                            onPlay
                     )
-                }
-            }
 
-            if (state.query.trim().isNotBlank() && !state.isLoading) {
-                item {
-                    LibraryYouTubeCta(
-                        query = state.query,
-                        localResultCount = state.songs.size
+                    if (
+                        needsAttention
                     ) {
-                        onSearchYouTube(state.query)
+                        Spacer(
+                            modifier =
+                                Modifier.width(
+                                    8.dp
+                                )
+                        )
+
+                        LibrarySongAction(
+                            text =
+                                "Sửa",
+
+                            icon =
+                                Icons.Rounded.Edit,
+
+                            accent =
+                                MaterialTheme
+                                    .colorScheme
+                                    .error,
+
+                            onClick =
+                                onEditTag
+                        )
                     }
                 }
             }
         }
     }
+}
 
-    infoSong?.let { song ->
-        AlertDialog(
-            onDismissRequest = { infoSong = null },
-            title = { Text(song.title.ifBlank { song.displayName }) },
-            text = {
-                Text(
-                    buildString {
-                        appendLine("Artist: ${song.artist.ifBlank { "—" }}")
-                        appendLine("Album: ${song.album.ifBlank { "—" }}")
-                        appendLine("Year: ${song.year.ifBlank { "—" }}")
-                        appendLine(
-                            "Bitrate: ${
-                                if (song.bitrateKbps > 0) {
-                                    "${song.bitrateKbps} kbps"
-                                } else {
-                                    "—"
-                                }
-                            }"
-                        )
-                        append("File: ${song.displayName}")
-                    }
+
+@Composable
+private fun LibraryIssueLine(
+    issues: List<String>
+) {
+    val displayed =
+        buildString {
+            append(
+                issues
+                    .take(
+                        2
+                    )
+                    .joinToString(
+                        " • "
+                    )
+            )
+
+            if (
+                issues.size >
+                2
+            ) {
+                append(
+                    " • +${
+                        issues.size -
+                            2
+                    }"
                 )
-            },
-            confirmButton = {
-                TextButton(onClick = { infoSong = null }) {
-                    Text("Đóng")
-                }
             }
+        }
+
+    Row(
+        verticalAlignment =
+            Alignment.CenterVertically,
+        horizontalArrangement =
+            Arrangement.spacedBy(
+                6.dp
+            )
+    ) {
+        Icon(
+            imageVector =
+                Icons.Rounded.WarningAmber,
+
+            contentDescription =
+                null,
+
+            modifier =
+                Modifier.size(
+                    17.dp
+                ),
+
+            tint =
+                MaterialTheme
+                    .colorScheme
+                    .error
+        )
+
+        Text(
+            text =
+                displayed,
+
+            style =
+                MaterialTheme
+                    .typography
+                    .labelMedium,
+
+            fontWeight =
+                FontWeight.Bold,
+
+            color =
+                MaterialTheme
+                    .colorScheme
+                    .error,
+
+            maxLines =
+                2,
+
+            overflow =
+                TextOverflow.Ellipsis
         )
     }
 }
 
+
 @Composable
-private fun LibraryFilterChip(
-    label: String,
-    selected: Boolean,
+private fun LibrarySongAction(
+    text: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    accent: Color,
     onClick: () -> Unit
 ) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(label) }
-    )
-}
-
-@Composable
-private fun LibrarySongCard(
-    song: IndexedMediaEntity,
-    onPlay: () -> Unit,
-    onLyrics: () -> Unit,
-    onEditTag: () -> Unit,
-    onInfo: () -> Unit
-) {
-    var menuExpanded by remember(song.uri) { mutableStateOf(false) }
-
     Surface(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onPlay),
-        shape = RoundedCornerShape(26.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = 5.dp,
-        shadowElevation = 7.dp,
-        border = BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outline.copy(alpha = 0.24f)
-        )
+        modifier =
+            Modifier
+                .height(
+                    44.dp
+                )
+                .bouncyClickable(
+                    pressedScale =
+                        0.92f,
+
+                    onClick =
+                        onClick
+                ),
+        shape =
+            RoundedCornerShape(
+                15.dp
+            ),
+        color =
+            accent.copy(
+                alpha =
+                    0.18f
+            ),
+        tonalElevation =
+            5.dp,
+        shadowElevation =
+            5.dp,
+        border =
+            BorderStroke(
+                1.dp,
+                accent.copy(
+                    alpha =
+                        0.50f
+                )
+            )
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier =
+                Modifier.padding(
+                    horizontal =
+                        14.dp
+                ),
+            verticalAlignment =
+                Alignment.CenterVertically,
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    6.dp
+                )
         ) {
-            LibraryCover(song)
+            Icon(
+                imageVector =
+                    icon,
 
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    song.title.ifBlank { song.displayName },
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    song.artist.ifBlank { "Chưa có Artist" },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.82f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    libraryMetadataLabel(song),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (song.needsLibraryAttention()) {
-                        BrandViolet
-                    } else {
-                        BrandCyan
-                    },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+                contentDescription =
+                    null,
 
-            Box {
-                IconButton(onClick = { menuExpanded = true }) {
-                    Icon(
-                        Icons.Rounded.MoreVert,
-                        contentDescription = "Thao tác với bài hát"
-                    )
-                }
+                modifier =
+                    Modifier.size(
+                        17.dp
+                    ),
 
-                DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false }
-                ) {
-                    LibraryMenuItem("Nghe") {
-                        menuExpanded = false
-                        onPlay()
-                    }
-                    LibraryMenuItem("Lyrics") {
-                        menuExpanded = false
-                        onLyrics()
-                    }
-                    LibraryMenuItem("Sửa thẻ") {
-                        menuExpanded = false
-                        onEditTag()
-                    }
-                    LibraryMenuItem("Thông tin") {
-                        menuExpanded = false
-                        onInfo()
-                    }
-                }
-            }
+                tint =
+                    accent
+            )
+
+            Text(
+                text =
+                    text,
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelMedium,
+
+                fontWeight =
+                    FontWeight.Black,
+
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurface
+            )
         }
     }
 }
 
+
 @Composable
-private fun LibraryMenuItem(
-    text: String,
+private fun LibraryGroupCard(
+    item: LibraryGroupRowData,
     onClick: () -> Unit
 ) {
-    DropdownMenuItem(
-        text = { Text(text) },
-        onClick = onClick
-    )
+    Surface(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .bouncyClickable(
+                    enabled =
+                        item.searchValue
+                            .isNotBlank(),
+
+                    pressedScale =
+                        0.97f,
+
+                    onClick =
+                        onClick
+                ),
+        shape =
+            RoundedCornerShape(
+                24.dp
+            ),
+        color =
+            MaterialTheme
+                .colorScheme
+                .surface
+                .copy(
+                    alpha =
+                        0.90f
+                ),
+        tonalElevation =
+            4.dp,
+        shadowElevation =
+            6.dp,
+        border =
+            BorderStroke(
+                1.dp,
+                MaterialTheme
+                    .colorScheme
+                    .outline
+                    .copy(
+                        alpha =
+                            0.28f
+                    )
+            )
+    ) {
+        Row(
+            modifier =
+                Modifier.padding(
+                    12.dp
+                ),
+            verticalAlignment =
+                Alignment.CenterVertically,
+            horizontalArrangement =
+                Arrangement.spacedBy(
+                    12.dp
+                )
+        ) {
+            LibraryGroupCover(
+                coverPath =
+                    item.coverPath
+            )
+
+            Column(
+                modifier =
+                    Modifier.weight(
+                        1f
+                    )
+            ) {
+                Text(
+                    text =
+                        item.label,
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .titleMedium,
+
+                    fontWeight =
+                        FontWeight.Black,
+
+                    maxLines =
+                        1,
+
+                    overflow =
+                        TextOverflow.Ellipsis
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.height(
+                            3.dp
+                        )
+                )
+
+                Text(
+                    text =
+                        "${item.count} bài",
+
+                    style =
+                        MaterialTheme
+                            .typography
+                            .bodySmall,
+
+                    color =
+                        MaterialTheme
+                            .colorScheme
+                            .onSurfaceVariant
+                )
+            }
+
+            Text(
+                text =
+                    "›",
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .headlineSmall,
+
+                color =
+                    BrandCyan
+            )
+        }
+    }
 }
 
-@Composable
-private fun LibraryCover(song: IndexedMediaEntity) {
-    val shape = RoundedCornerShape(18.dp)
 
-    if (!song.coverPath.isNullOrBlank()) {
+@Composable
+private fun LibraryGroupCover(
+    coverPath: String?
+) {
+    val shape =
+        RoundedCornerShape(
+            18.dp
+        )
+
+    if (
+        !coverPath
+            .isNullOrBlank()
+    ) {
         AsyncImage(
-            model = File(song.coverPath.orEmpty()),
-            contentDescription = "Cover ${song.title}",
-            modifier = Modifier.size(64.dp).clip(shape),
-            contentScale = ContentScale.Crop
+            model =
+                File(
+                    coverPath
+                ),
+
+            contentDescription =
+                null,
+
+            modifier =
+                Modifier
+                    .size(
+                        70.dp
+                    )
+                    .clip(
+                        shape
+                    ),
+
+            contentScale =
+                ContentScale.Crop
         )
     } else {
         Box(
-            modifier = Modifier
-                .size(64.dp)
-                .clip(shape)
-                .background(
-                    Brush.linearGradient(
-                        listOf(BrandCyan, BrandBlue, BrandViolet)
+            modifier =
+                Modifier
+                    .size(
+                        70.dp
                     )
-                ),
-            contentAlignment = Alignment.Center
+                    .clip(
+                        shape
+                    )
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                BrandBlue,
+                                BrandViolet
+                            )
+                        )
+                    ),
+            contentAlignment =
+                Alignment.Center
         ) {
             Icon(
-                Icons.Rounded.MusicNote,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(28.dp)
+                imageVector =
+                    Icons.Rounded.MusicNote,
+
+                contentDescription =
+                    null,
+
+                tint =
+                    Color.White
             )
         }
     }
 }
 
-private fun libraryMetadataLabel(song: IndexedMediaEntity): String = when {
-    MediaMetadataStatus.isError(song.metadataStatus) -> "Metadata lỗi"
-    song.tagTitle.isBlank() || song.tagArtist.isBlank() || song.album.isBlank() ->
-        "Thiếu tag"
-    song.year.isBlank() -> "Thiếu Year"
-    song.coverPath.isNullOrBlank() -> "Thiếu cover"
-    else -> listOfNotNull(
-        song.year.takeIf { it.isNotBlank() },
-        song.bitrateKbps.takeIf { it > 0 }?.let { "$it kbps" }
-    ).joinToString(" • ").ifBlank { "Metadata OK" }
-}
-
-private fun IndexedMediaEntity.needsLibraryAttention(): Boolean =
-    MediaMetadataStatus.isError(metadataStatus) ||
-        tagTitle.isBlank() ||
-        tagArtist.isBlank() ||
-        album.isBlank() ||
-        year.isBlank()
 
 @Composable
-private fun LibraryYouTubeCta(
-    query: String,
-    localResultCount: Int,
-    onClick: () -> Unit
+private fun LibraryCover(
+    song: IndexedMediaEntity,
+    size: Dp
 ) {
-    Surface(
-        shape = RoundedCornerShape(26.dp),
-        color = BrandBlue.copy(alpha = 0.10f),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(1.dp, BrandBlue.copy(alpha = 0.30f))
+    val shape =
+        RoundedCornerShape(
+            20.dp
+        )
+
+    if (
+        !song.coverPath
+            .isNullOrBlank()
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+        AsyncImage(
+            model =
+                File(
+                    song.coverPath
+                        .orEmpty()
+                ),
+
+            contentDescription =
+                "Cover ${song.title}",
+
+            modifier =
+                Modifier
+                    .size(
+                        size
+                    )
+                    .clip(
+                        shape
+                    ),
+
+            contentScale =
+                ContentScale.Crop
+        )
+    } else {
+        Box(
+            modifier =
+                Modifier
+                    .size(
+                        size
+                    )
+                    .clip(
+                        shape
+                    )
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                BrandCyan.copy(
+                                    alpha =
+                                        0.72f
+                                ),
+                                BrandBlue,
+                                BrandViolet
+                            )
+                        )
+                    ),
+            contentAlignment =
+                Alignment.Center
         ) {
             Text(
-                if (localResultCount == 0) {
-                    "Không tìm thấy trong Library?"
-                } else {
-                    "Đã hết kết quả local"
-                },
-                fontWeight = FontWeight.Bold
+                text =
+                    "COVER",
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .labelSmall,
+
+                fontWeight =
+                    FontWeight.Black,
+
+                color =
+                    Color.White.copy(
+                        alpha =
+                            0.90f
+                    )
             )
-            Text(
-                "Tìm tiếp \"$query\" trên YouTube.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Button(
-                onClick = onClick,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
-            ) {
-                Icon(Icons.Rounded.Download, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Tìm trên YouTube")
-            }
         }
     }
 }
+
 
 @Composable
 private fun LibraryMessageCard(
@@ -529,77 +2194,447 @@ private fun LibraryMessageCard(
     onAction: (() -> Unit)? = null
 ) {
     Surface(
-        shape = RoundedCornerShape(26.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(1.dp, BrandCyan.copy(alpha = 0.22f))
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(
+                26.dp
+            ),
+        color =
+            MaterialTheme
+                .colorScheme
+                .surface
+                .copy(
+                    alpha =
+                        0.88f
+                ),
+        tonalElevation =
+            4.dp,
+        shadowElevation =
+            5.dp,
+        border =
+            BorderStroke(
+                1.dp,
+                MaterialTheme
+                    .colorScheme
+                    .outlineVariant
+            )
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier =
+                Modifier.padding(
+                    18.dp
+                ),
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    8.dp
+                )
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            Text(
+                text =
+                    title,
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .titleMedium,
+
+                fontWeight =
+                    FontWeight.Black
+            )
+
+            Text(
+                text =
+                    body,
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodyMedium,
+
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant
+            )
+
+            if (
+                actionLabel != null &&
+                onAction != null
             ) {
-                Surface(
-                    modifier = Modifier.size(48.dp),
-                    shape = CircleShape,
-                    color = BrandCyan.copy(alpha = 0.16f)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Rounded.LibraryMusic,
-                            contentDescription = null,
-                            tint = BrandCyan
-                        )
-                    }
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(title, fontWeight = FontWeight.Bold)
-                    Text(
-                        body,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            if (actionLabel != null && onAction != null) {
                 Button(
-                    onClick = onAction,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)
+                    onClick =
+                        onAction,
+
+                    modifier =
+                        Modifier.fillMaxWidth()
                 ) {
-                    Text(actionLabel)
+                    Text(
+                        actionLabel
+                    )
                 }
             }
         }
     }
 }
 
+
+@Composable
+private fun LibraryYouTubeCta(
+    query: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(
+                24.dp
+            ),
+        color =
+            BrandBlue.copy(
+                alpha =
+                    0.11f
+            ),
+        border =
+            BorderStroke(
+                1.dp,
+                BrandBlue.copy(
+                    alpha =
+                        0.32f
+                )
+            )
+    ) {
+        Column(
+            modifier =
+                Modifier.padding(
+                    16.dp
+                ),
+            verticalArrangement =
+                Arrangement.spacedBy(
+                    10.dp
+                )
+        ) {
+            Text(
+                text =
+                    "Không tìm thấy trong Library?",
+
+                fontWeight =
+                    FontWeight.Black
+            )
+
+            Text(
+                text =
+                    "Tìm tiếp \"$query\" trên YouTube.",
+
+                style =
+                    MaterialTheme
+                        .typography
+                        .bodySmall,
+
+                color =
+                    MaterialTheme
+                        .colorScheme
+                        .onSurfaceVariant
+            )
+
+            Button(
+                onClick =
+                    onClick,
+
+                modifier =
+                    Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector =
+                        Icons.Rounded.Search,
+
+                    contentDescription =
+                        null
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.width(
+                            7.dp
+                        )
+                )
+
+                Text(
+                    "Tìm trên YouTube"
+                )
+            }
+        }
+    }
+}
+
+
+private fun buildGroupRows(
+    songs: List<IndexedMediaEntity>,
+    mode: LibraryBrowseMode
+): List<LibraryGroupRowData> {
+
+    if (
+        mode ==
+        LibraryBrowseMode.SONGS
+    ) {
+        return emptyList()
+    }
+
+    val groups:
+        Map<String, List<IndexedMediaEntity>> =
+        when (
+            mode
+        ) {
+            LibraryBrowseMode.ARTISTS ->
+                songs.groupBy {
+                    it.artist.trim()
+                }
+
+            LibraryBrowseMode.ALBUMS ->
+                songs.groupBy {
+                    it.album.trim()
+                }
+
+            LibraryBrowseMode.YEARS ->
+                songs.groupBy {
+                    it.year.trim()
+                }
+
+            LibraryBrowseMode.SONGS ->
+                emptyMap()
+        }
+
+    val rows =
+        groups.map {
+            (
+                rawValue,
+                groupSongs
+            ) ->
+
+            val label =
+                when {
+                    rawValue.isNotBlank() ->
+                        rawValue
+
+                    mode ==
+                        LibraryBrowseMode.ARTISTS ->
+                        "Chưa có Artist"
+
+                    mode ==
+                        LibraryBrowseMode.ALBUMS ->
+                        "Chưa có Album"
+
+                    else ->
+                        "Chưa có năm"
+                }
+
+            LibraryGroupRowData(
+                label =
+                    label,
+
+                searchValue =
+                    rawValue,
+
+                count =
+                    groupSongs.size,
+
+                coverPath =
+                    groupSongs
+                        .firstOrNull {
+                            !it.coverPath
+                                .isNullOrBlank()
+                        }
+                        ?.coverPath
+            )
+        }
+
+    return when (
+        mode
+    ) {
+        LibraryBrowseMode.YEARS ->
+            rows.sortedByDescending {
+                it.searchValue
+                    .toIntOrNull()
+                    ?: Int.MIN_VALUE
+            }
+
+        else ->
+            rows.sortedBy {
+                it.label.lowercase()
+            }
+    }
+}
+
+
+private fun libraryAttentionLabels(
+    song: IndexedMediaEntity
+): List<String> {
+
+    val issues =
+        linkedSetOf<String>()
+
+    if (
+        MediaMetadataStatus
+            .isError(
+                song.metadataStatus
+            )
+    ) {
+        issues +=
+            "Metadata lỗi"
+    }
+
+    val fields =
+        song.metadataErrorFields
+            .orEmpty()
+            .split(',')
+            .map {
+                it.trim()
+            }
+            .filter {
+                it.isNotBlank()
+            }
+
+    fields.forEach {
+        field ->
+
+        issues +=
+            when (
+                field
+            ) {
+                "fileType" ->
+                    "Sai định dạng file"
+
+                "file" ->
+                    "File rỗng"
+
+                "metadata" ->
+                    "Metadata lỗi"
+
+                "id3Version" ->
+                    "ID3 không phải v2.3"
+
+                "title" ->
+                    "Thiếu Title"
+
+                "artist" ->
+                    "Thiếu Artist"
+
+                "album" ->
+                    "Thiếu Album"
+
+                "year" ->
+                    "Year không đúng chuẩn"
+
+                "cover" ->
+                    "Thiếu cover"
+
+                "filename" ->
+                    "Sai chuẩn tên file"
+
+                else ->
+                    field
+            }
+    }
+
+    if (
+        song.tagTitle
+            .isBlank()
+    ) {
+        issues +=
+            "Thiếu Title"
+    }
+
+    if (
+        song.tagArtist
+            .isBlank()
+    ) {
+        issues +=
+            "Thiếu Artist"
+    }
+
+    if (
+        song.album
+            .isBlank()
+    ) {
+        issues +=
+            "Thiếu Album"
+    }
+
+    if (
+        song.year.length !=
+        4 ||
+        song.year.any {
+            !it.isDigit()
+        }
+    ) {
+        issues +=
+            "Year không đúng chuẩn"
+    }
+
+    if (
+        song.coverPath
+            .isNullOrBlank()
+    ) {
+        issues +=
+            "Thiếu cover"
+    }
+
+    return issues.toList()
+}
+
+
 private fun playExternal(
     context: Context,
     song: IndexedMediaEntity
 ) {
-    val mediaUri = Uri.parse(song.uri)
-    val mimeType = song.mimeType
-        .takeIf { it.startsWith("audio/") }
-        ?: "audio/*"
+    val uri =
+        runCatching {
+            Uri.parse(
+                song.uri
+            )
+        }
+            .getOrNull()
 
-    val playIntent = Intent(Intent.ACTION_VIEW).apply {
-        setDataAndType(mediaUri, mimeType)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-
-    val chooser = Intent.createChooser(playIntent, "Phát bằng")
-
-    runCatching {
-        context.startActivity(chooser)
-    }.onFailure {
+    if (
+        uri == null
+    ) {
         Toast.makeText(
             context,
-            "Không tìm thấy ứng dụng phát nhạc phù hợp",
+            "Không mở được file nhạc.",
             Toast.LENGTH_SHORT
         ).show()
+
+        return
     }
+
+    val intent =
+        Intent(
+            Intent.ACTION_VIEW
+        ).apply {
+            setDataAndType(
+                uri,
+                song.mimeType
+                    .ifBlank {
+                        "audio/mpeg"
+                    }
+            )
+
+            addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        }
+
+    runCatching {
+        context.startActivity(
+            intent
+        )
+    }
+        .onFailure {
+            Toast.makeText(
+                context,
+                "Không tìm thấy ứng dụng phát nhạc phù hợp.",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
 }

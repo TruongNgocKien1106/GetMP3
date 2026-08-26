@@ -15,8 +15,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-internal enum class LibrarySortMode { NEWEST, TITLE, ARTIST }
-internal enum class LibraryFilterMode { ALL, NEEDS_ATTENTION }
+internal enum class LibrarySortMode {
+    NEWEST,
+    TITLE,
+    ARTIST
+}
+
+internal enum class LibraryFilterMode {
+    ALL,
+    NEEDS_ATTENTION
+}
 
 internal data class LibraryUiState(
     val isConfigured: Boolean = false,
@@ -31,18 +39,46 @@ internal data class LibraryUiState(
     val attentionCount: Int = 0
 )
 
-internal class LibraryViewModel(application: Application) : AndroidViewModel(application) {
+internal class LibraryViewModel(
+    application: Application
+) : AndroidViewModel(application) {
+
     companion object {
-        private const val RECENT_WINDOW_MS = 7L * 24L * 60L * 60L * 1000L
+        private const val RECENT_WINDOW_MS =
+            7L *
+                24L *
+                60L *
+                60L *
+                1000L
     }
 
-    private val settingsRepository = AppSettingsRepository(application)
-    private val mediaIndexRepository = MediaIndexRepository(application)
-    private val mutableUiState = MutableStateFlow(LibraryUiState())
-    val uiState: StateFlow<LibraryUiState> = mutableUiState.asStateFlow()
+    private val settingsRepository =
+        AppSettingsRepository(
+            application
+        )
 
-    private var allSongs: List<IndexedMediaEntity> = emptyList()
-    private var refreshJob: Job? = null
+    private val mediaIndexRepository =
+        MediaIndexRepository(
+            application
+        )
+
+    private val mutableUiState =
+        MutableStateFlow(
+            LibraryUiState()
+        )
+
+    val uiState:
+        StateFlow<LibraryUiState> =
+        mutableUiState
+            .asStateFlow()
+
+    private var allSongs:
+        List<IndexedMediaEntity> =
+        emptyList()
+
+    private var refreshJob:
+        Job? =
+        null
 
     init {
         refresh()
@@ -50,94 +86,258 @@ internal class LibraryViewModel(application: Application) : AndroidViewModel(app
 
     fun refresh() {
         refreshJob?.cancel()
-        refreshJob = viewModelScope.launch {
-            val settings = settingsRepository.getSettings()
 
-            if (!settings.hasLibraryFolder) {
-                allSongs = emptyList()
-                mutableUiState.value = mutableUiState.value.copy(
-                    isConfigured = false,
-                    songs = emptyList(),
-                    isLoading = false,
-                    errorMessage = null,
-                    totalCount = 0,
-                    newCount = 0,
-                    attentionCount = 0
-                )
-                return@launch
+        refreshJob =
+            viewModelScope.launch {
+                val settings =
+                    settingsRepository
+                        .getSettings()
+
+                if (
+                    !settings
+                        .hasLibraryFolder
+                ) {
+                    allSongs =
+                        emptyList()
+
+                    mutableUiState.value =
+                        mutableUiState
+                            .value
+                            .copy(
+                                isConfigured =
+                                    false,
+
+                                songs =
+                                    emptyList(),
+
+                                isLoading =
+                                    false,
+
+                                errorMessage =
+                                    null,
+
+                                totalCount =
+                                    0,
+
+                                newCount =
+                                    0,
+
+                                attentionCount =
+                                    0
+                            )
+
+                    return@launch
+                }
+
+                mutableUiState.value =
+                    mutableUiState
+                        .value
+                        .copy(
+                            isConfigured =
+                                true,
+
+                            isLoading =
+                                true,
+
+                            errorMessage =
+                                null
+                        )
+
+                try {
+                    allSongs =
+                        mediaIndexRepository
+                            .getLibrarySongs()
+
+                    publish(
+                        mutableUiState
+                            .value
+                            .copy(
+                                isLoading =
+                                    false
+                            )
+                    )
+                } catch (
+                    exception:
+                    CancellationException
+                ) {
+                    throw exception
+                } catch (
+                    exception:
+                    Exception
+                ) {
+                    allSongs =
+                        emptyList()
+
+                    mutableUiState.value =
+                        mutableUiState
+                            .value
+                            .copy(
+                                isLoading =
+                                    false,
+
+                                songs =
+                                    emptyList(),
+
+                                errorMessage =
+                                    exception.message
+                                        ?: "Không đọc được Library"
+                            )
+                }
             }
-
-            mutableUiState.value = mutableUiState.value.copy(
-                isConfigured = true,
-                isLoading = true,
-                errorMessage = null
-            )
-
-            try {
-                allSongs = mediaIndexRepository.getLibrarySongs()
-                publish(mutableUiState.value.copy(isLoading = false))
-            } catch (exception: CancellationException) {
-                throw exception
-            } catch (exception: Exception) {
-                allSongs = emptyList()
-                mutableUiState.value = mutableUiState.value.copy(
-                    isLoading = false,
-                    songs = emptyList(),
-                    errorMessage = exception.message ?: "Không đọc được Library"
-                )
-            }
-        }
     }
 
-    fun setQuery(value: String) =
-        publish(mutableUiState.value.copy(query = value, errorMessage = null))
+    fun setQuery(
+        value: String
+    ) =
+        publish(
+            mutableUiState
+                .value
+                .copy(
+                    query =
+                        value,
 
-    fun setSortMode(value: LibrarySortMode) =
-        publish(mutableUiState.value.copy(sortMode = value))
-
-    fun setFilterMode(value: LibraryFilterMode) =
-        publish(mutableUiState.value.copy(filterMode = value))
-
-    private fun publish(base: LibraryUiState) {
-        val query = SongNameMatcher.normalizeText(base.query)
-
-        val filtered = allSongs.asSequence()
-            .filter { song ->
-                query.isBlank() ||
-                    song.normalizedTitle.contains(query) ||
-                    song.normalizedArtist.contains(query) ||
-                    song.normalizedFileName.contains(query)
-            }
-            .filter { song ->
-                base.filterMode == LibraryFilterMode.ALL ||
-                    song.needsLibraryAttention()
-            }
-            .toList()
-
-        val sorted = when (base.sortMode) {
-            LibrarySortMode.NEWEST -> filtered.sortedByDescending { it.indexedAt }
-            LibrarySortMode.TITLE ->
-                filtered.sortedBy { it.title.ifBlank { it.displayName }.lowercase() }
-            LibrarySortMode.ARTIST ->
-                filtered.sortedWith(
-                    compareBy<IndexedMediaEntity> { it.artist.lowercase() }
-                        .thenBy { it.title.lowercase() }
+                    errorMessage =
+                        null
                 )
-        }
-
-        val recentThreshold = System.currentTimeMillis() - RECENT_WINDOW_MS
-        mutableUiState.value = base.copy(
-            songs = sorted,
-            totalCount = allSongs.size,
-            newCount = allSongs.count { it.indexedAt >= recentThreshold },
-            attentionCount = allSongs.count { it.needsLibraryAttention() }
         )
+
+    fun setSortMode(
+        value: LibrarySortMode
+    ) =
+        publish(
+            mutableUiState
+                .value
+                .copy(
+                    sortMode =
+                        value
+                )
+        )
+
+    fun setFilterMode(
+        value: LibraryFilterMode
+    ) =
+        publish(
+            mutableUiState
+                .value
+                .copy(
+                    filterMode =
+                        value
+                )
+        )
+
+    private fun publish(
+        base: LibraryUiState
+    ) {
+        val query =
+            SongNameMatcher
+                .normalizeText(
+                    base.query
+                )
+
+        val filtered =
+            allSongs
+                .asSequence()
+                .filter { song ->
+                    query.isBlank() ||
+                        song.normalizedTitle
+                            .contains(query) ||
+                        song.normalizedArtist
+                            .contains(query) ||
+                        song.normalizedAlbum
+                            .contains(query) ||
+                        song.normalizedFileName
+                            .contains(query) ||
+                        SongNameMatcher
+                            .normalizeText(
+                                song.year
+                            )
+                            .contains(query)
+                }
+                .filter { song ->
+                    base.filterMode ==
+                        LibraryFilterMode.ALL ||
+                        song.needsLibraryAttention()
+                }
+                .toList()
+
+        val sorted =
+            when (
+                base.sortMode
+            ) {
+                LibrarySortMode.NEWEST ->
+                    filtered
+                        .sortedByDescending {
+                            it.indexedAt
+                        }
+
+                LibrarySortMode.TITLE ->
+                    filtered
+                        .sortedBy {
+                            it.title
+                                .ifBlank {
+                                    it.displayName
+                                }
+                                .lowercase()
+                        }
+
+                LibrarySortMode.ARTIST ->
+                    filtered
+                        .sortedWith(
+                            compareBy<IndexedMediaEntity> {
+                                it.artist
+                                    .lowercase()
+                            }
+                                .thenBy {
+                                    it.title
+                                        .lowercase()
+                                }
+                        )
+            }
+
+        val recentThreshold =
+            System.currentTimeMillis() -
+                RECENT_WINDOW_MS
+
+        mutableUiState.value =
+            base.copy(
+                songs =
+                    sorted,
+
+                totalCount =
+                    allSongs.size,
+
+                newCount =
+                    allSongs.count {
+                        it.indexedAt >=
+                            recentThreshold
+                    },
+
+                attentionCount =
+                    allSongs.count {
+                        it.needsLibraryAttention()
+                    }
+            )
     }
 }
 
-private fun IndexedMediaEntity.needsLibraryAttention(): Boolean =
-    MediaMetadataStatus.isError(metadataStatus) ||
+private fun IndexedMediaEntity.needsLibraryAttention():
+    Boolean {
+
+    val invalidYear =
+        year.length != 4 ||
+            year.any {
+                !it.isDigit()
+            }
+
+    return MediaMetadataStatus
+        .isError(
+            metadataStatus
+        ) ||
+        !metadataErrorFields
+            .isNullOrBlank() ||
         tagTitle.isBlank() ||
         tagArtist.isBlank() ||
         album.isBlank() ||
-        year.isBlank()
+        invalidYear ||
+        coverPath.isNullOrBlank()
+}
